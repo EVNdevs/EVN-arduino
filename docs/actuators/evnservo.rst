@@ -60,19 +60,17 @@ Functions
 
     Initializes servo object. Call this function before calling the other EVNServo functions.
 
+    .. code-block:: cpp
+        
+        EVNServo servo(1);
+
+        void setup1()   //call on setup1() for best performance!
+        {
+            servo.begin();
+        }
+
 .. note::
     For best performance, run this on the 2nd core using ``void setup1()``
-
-Example Program:
-
-.. code-block:: cpp
-
-    EVNServo servo(1);
-
-    void setup1()   //call on setup1() for best performance!
-    {
-        servo.begin();
-    }
 
 Using Fixed Servos
 """"""""""""""""""
@@ -81,9 +79,15 @@ Using Fixed Servos
 
     :returns: Maximum angular rotation of servo shaft (in degrees per second).
 
+    .. code-block:: cpp
+        float max_dps = servo.getMaxDPS();
+
 .. function:: uint16_t getRange()
 
     :returns: Angular range of servo (in degrees).
+
+    .. code-block:: cpp
+        int range = servo.getRange();
 
 .. function::   void write(float position, float wait_time_ms, float dps)
                 void writePosition(float position, float wait_time_ms, float dps)
@@ -93,7 +97,10 @@ Using Fixed Servos
     :param position: Position to run servo shaft to (in degrees)
     :param wait_time_ms: Time to wait before continuing the program (in milliseconds). Same effect as ``delay()``, but terminates when servos are disabled.
     :param dps: Speed to run servo at (in degrees per second), from 0 to **max_range**. When dps is 0, servo runs at max speed. Defaults to 0.
-
+    
+    .. code-block:: cpp
+        //write servo to run to 180 degrees at a speed of 30DPS, and wait 6 seconds
+        servo.write(180, 6000, 30);
 
 .. function:: void writeMicroseconds(float pulse_us, float wait_time_ms)
 
@@ -101,3 +108,7 @@ Using Fixed Servos
 
     :param pulse_us: Pulse time to transmit to servo (in microseconds) from 200us to 2800us
     :param wait_time_ms: Time to wait before continuing the program (in milliseconds). Same effect as ``delay()``, but terminates when servos are disabled.
+
+    .. code-block:: cpp
+        //write 1500us pulse to servo, and wait 3 seconds
+        servo.writeMicroseconds(1500, 3000);
