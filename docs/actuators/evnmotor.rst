@@ -37,14 +37,12 @@ Constructor
 
     :param enc_dir: When set to ``REVERSE``, flips encoder pins **only**. Not necessary for LEGO motors, but useful for non-LEGO gearmotors when the encoder input and motor output increment in opposing directions. Defaults to ``DIRECT``
 
-Example Usage:
+    .. code-block:: cpp
 
-.. code-block:: cpp
-
-    EVNMotor motor1(1, EV3_MED);
-    EVNMotor motor2(2, EV3_LARGE);
-    EVNMotor motor3(3, NXT_LARGE, REVERSE);
-    EVNMotor motor4(4, CUSTOM_MOTOR, DIRECT, REVERSE);
+        EVNMotor motor1(1, EV3_MED);
+        EVNMotor motor2(2, EV3_LARGE);
+        EVNMotor motor3(3, NXT_LARGE, REVERSE);
+        EVNMotor motor4(4, CUSTOM_MOTOR, DIRECT, REVERSE);
 
 Functions
 ---------
@@ -53,20 +51,18 @@ Functions
 
     Initializes motor object. Call this function before calling the other EVNMotor functions.
 
+    .. code-block:: cpp
+
+        EVNMotor motor(1, EV3_MED);
+
+        void setup1()   //call on setup1(), not setup()!
+        {
+            motor.begin();
+        }
+
 .. note::
     This command should be run on the 2nd core using ``void setup1()``. 
     However, you can still call the movement functions in ``void loop()`` like a normal program.
-
-Example Program:
-
-.. code-block:: cpp
-
-    EVNMotor motor(1, EV3_MED);
-
-    void setup1()   //call on setup1(), not setup()!
-    {
-        motor.begin();
-    }
 
 Measurements
 """"""""""""
@@ -75,32 +71,43 @@ Measurements
 
     :returns: Angular displacement of motor from its starting position, in degrees
 
+    .. code-block:: cpp
+
+        float pos = motor.getPosition();
+
 .. function:: float getHeading()
 
     :returns: Motor position converted to range from 0-360 degrees
 
+    .. code-block:: cpp
+
+        float pos = motor.getHeading(); //ranges from 0 to 360
+
 .. function:: void resetPosition()
 
     Reset starting position to motor's starting position.
+
+    .. code-block:: cpp
+
+        motor.resetPosition();
+        //afterwards, getPosition will return 0
 
 .. function::   float getDPS()
                 float getSpeed()
 
     :returns: Angular velocity of motor, in DPS (degrees per second)
 
+    .. code-block:: cpp
+
+        float speed = motor.getSpeed();
+
 .. function:: bool stalled()
 
     :returns: Boolean indicating when motor is stalled (unable to reach target velocity)
 
-Example Usage:
+    .. code-block:: cpp
 
-.. code-block:: cpp
-
-    float position = motor.getPosition();
-    float heading = motor.getHeading();
-    float speed = motor.getSpeed();
-    
-    motor.resetPosition();
+        bool is_motor_stalled = motor.stalled();
 
 Run Forever
 """""""""""
@@ -111,6 +118,11 @@ Run Forever
 
     :param duty_cycle: duty cycle to run the motor at (floating point number from -1 to 1)
 
+    .. code-block:: cpp
+
+        //run motor at 100% duty cycle
+        motor.runPWM(1);
+
 .. function::   void runDPS(float dps)
                 void runSpeed(float dps)
 
@@ -118,18 +130,31 @@ Run Forever
 
     :param dps: Angular velocity to run the motor at (in DPS)
 
-Example Usage:
+    .. code-block:: cpp
 
-.. code-block:: cpp
-
-    //run motor at 100% duty cycle
-    motor.runPWM(1);
-
-    //run motor at 300DPS in the negative direction
-    motor.runSpeed(-300);
+        //run motor at 300DPS in the negative direction
+        motor.runSpeed(-300);
 
 Run by a Fixed Amount
 """""""""""""""""""""
+.. function:: void runAngle(float dps, float degrees, uint8_t stop_action = STOP_BRAKE, bool wait = true)
+
+    Run motor by the given angle (relative to its starting position), then performs the given stop action.
+
+    :param dps: Angular velocity to run the motor at (in DPS)
+    :param degrees: Angular displacement which the motor has to travel (in degrees)
+    :param stop_action: Behaviour of the motor upon completing its command. Defaults to ``STOP_BRAKE``
+
+        * ``STOP_BRAKE`` -- Brake (Slow decay)
+        * ``STOP_COAST`` -- Coast (Fast decay)
+        * ``STOP_HOLD`` -- Hold position
+
+    :param wait: Block function from returning until command is finished
+
+    .. code-block:: cpp
+
+        //run motor for 360 degrees of rotation at speed 300DPS
+        motor.runAngle(300, 360, STOP_BRAKE);
 
 .. function:: void runPosition(float dps, float position, uint8_t stop_action = STOP_BRAKE, bool wait = true)
 
@@ -145,19 +170,10 @@ Run by a Fixed Amount
     
     :param wait: Block function from returning until command is finished
 
-.. function:: void runAngle(float dps, float degrees, uint8_t stop_action = STOP_BRAKE, bool wait = true)
+    .. code-block:: cpp
 
-    Run motor by the given angle (relative to its starting position), then performs the given stop action.
-
-    :param dps: Angular velocity to run the motor at (in DPS)
-    :param degrees: Angular displacement which the motor has to travel (in degrees)
-    :param stop_action: Behaviour of the motor upon completing its command. Defaults to ``STOP_BRAKE``
-
-        * ``STOP_BRAKE`` -- Brake (Slow decay)
-        * ``STOP_COAST`` -- Coast (Fast decay)
-        * ``STOP_HOLD`` -- Hold position
-
-    :param wait: Block function from returning until command is finished
+        //return motor to position 0 at speed 300DPS
+        motor.runPosition(300, 0, STOP_BRAKE);
 
 .. function:: void runHeading(float dps, float heading, uint8_t stop_action = STOP_BRAKE, bool wait = true)
 
@@ -173,6 +189,11 @@ Run by a Fixed Amount
 
     :param wait: Block function from returning until command is finished
 
+    .. code-block:: cpp
+
+        //return motor to heading 0 at speed 300DPS (i.e. position % 360 = o)
+        motor.runHeading(300, 0, STOP_BRAKE);
+
 .. function:: void runTime(float dps, uint32_t time_ms, uint8_t stop_action = STOP_BRAKE, bool wait = true)
 
     Run motor for the given amount of time, then performs the given stop action.
@@ -187,29 +208,19 @@ Run by a Fixed Amount
 
     :param wait: Block function from returning until command is finished
 
+    .. code-block:: cpp
+
+        //run motor for 3 seconds at speed 300DPS
+        motor.runTime(300, 3000, STOP_BRAKE);
+
 .. function:: bool completed()
 
     :returns: Boolean indicating whether the motor has hit its target position / completed running for the set amount of time
 
-Example Usage:
+    .. code-block:: cpp
 
-.. code-block:: cpp
-
-    //run motor to a position of 180 degrees
-    motor.runPosition(120, 180);
-
-    //run motor at 120DPS in the negative direction for 1 second (1000ms)
-    motor.runTime(-120, 1000, STOP_COAST);
-
-    //run motor1 180 degrees in the negative direction from its current position
-    motor1.runAngle(120, -180, STOP_HOLD, false);
-
-    //at the same time, run motor2 to a heading of 75 degrees
-    motor2.runHeading(120, 75, STOP_HOLD);
-
-    //ensure that motor1 has completed before proceeding
-    while (!motor1.completed());
-
+        //ensure that motor has completed command before proceeding
+        while (!motor.completed());
 
 Stopping
 """""""""
@@ -219,22 +230,26 @@ Stopping
 
     Brakes the motor (slow decay).
 
+    .. code-block:: cpp
+        
+        motor.stop();
+        motor.brake(); //same effect
+
 .. function:: void coast()
 
     Coasts the motor (fast decay). Compared to `brake()`, motor comes to a stop more slowly.
+
+    .. code-block:: cpp
+        
+        motor.coast();
 
 .. function:: void hold()
 
     Hold the motor in its current position. Stops the motor shaft from moving freely.
 
-Example Usage:
-
-.. code-block:: cpp
-
-    motor.stop();
-    motor.brake();
-    motor.coast();
-    motor.hold();
+    .. code-block:: cpp
+        
+        motor.hold();
 
 Control Settings
 """"""""""""""""
