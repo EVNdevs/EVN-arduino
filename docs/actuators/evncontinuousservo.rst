@@ -47,9 +47,9 @@ Constructor
     
     .. code-block:: cpp
 
-        EVNContinuousServo servo(1);
+        EVNContinuousServo cservo(1);
 
-        EVNContinuousServo servo2(2, DIRECT, 600, 2400);
+        EVNContinuousServo cservo(2, DIRECT, 600, 2400);
 
 Functions
 ---------
@@ -60,11 +60,11 @@ Functions
 
     .. code-block:: cpp
 
-        EVNContinuousServo servo(1);
+        EVNContinuousServo cservo(1);
 
         void setup1()   //call on setup1() for best performance!
         {
-            servo.begin();
+            cservo.begin();
         }
 
 .. note::
@@ -81,6 +81,7 @@ Using Continuous Servos
     :param duty_cycle: Duty cycle to run servo at (-1 to 1).
 
     .. code-block:: cpp
+
         //write servo to run at 80% duty cycle
         cservo.write(0.8);
 
@@ -91,5 +92,6 @@ Using Continuous Servos
     :param pulse_us: Pulse time to transmit to continuous rotation servo (in microseconds) from 200us to 2800us
 
     .. code-block:: cpp
+
         //write 1500us pulse to continuous rotation servo
         cservo.writeMicroseconds(1500);
