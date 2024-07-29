@@ -253,7 +253,6 @@ Stopping
 
 Control Settings
 """"""""""""""""
-
 .. function:: void setPID(float p, float i, float d)
 
     Sets PID gain values for the speed controller (controls rotational/angular velocity of motor shaft).
@@ -264,20 +263,61 @@ Control Settings
     :param ki: Integral gain
     :param kd: Derivative gain
 
-.. note:: Tuning motor PIDs is a bit tricky (you won't have to do it for LEGO motors), but we will try to create a guide for it soon!
+    .. code-block:: cpp
+
+        motor.setPID(0.4, 0.03, 2);
 
 .. function:: void setAccel(float accel_dps_sq)
 
-    Set acceleration value of motor (in deg/s^2)
+    Set acceleration value of motor (in deg/s^2). This value can be adjusted to avoid wheel slippage caused by high accelerations.
+
+    .. code-block:: cpp
+
+        motor.setAccel(500);
 
 .. function:: void setDecel(float decel_dps_sq)
 
-    Set acceleration value of motor (in deg/s^2)
+    Set deceleration value of motor (in deg/s^2). This value can be adjusted to avoid wheel slippage caused by high accelerations.
+
+    .. code-block:: cpp
+
+        motor.setDecel(500);
 
 .. function:: void setMaxRPM(float max_rpm)
 
-    Set max RPM of motor (in rotations per minute)
+    Set max RPM (revolutions per minute) of motor
+
+    :param max_rpm: Maximum RPM of motor
+
+    .. code-block:: cpp
+
+        motor.setMaxRPM(140);
 
 .. function:: void setPPR(uint32_t ppr)
 
-    Set pulses per revolution of motor shaft
+    Set pulses per revolution of motor shaft. For all LEGO EV3/NXT motors, PPR is 360 so it requires no adjustment.
+
+    Some motor manufacturers specify the motor's CPR (counts per revolution), which is 4 times of a motor's PPR.
+
+    :param ppr: Pulses per revolution of motor
+
+    .. code-block:: cpp
+
+        motor.setPPR(823);
+
+How Our Motor Control Works
+""""""""""""""""""""""""""""
+This is a little technical, but feel free to skip it and move on to the settings functions!
+
+For move functions where the motor rotates by a fixed amount, what we actually do is set a **target position** for the motor to move to. 
+This target position starts out as the motor's **current position**, but **increments over time** until it reaches the **end position** given by the user.
+
+It increments at the speed given by the user, so if the user wants to run their motor at 30DPS, the position signal increases at a rate of 30 degrees per second.
+
+Now that we have the position signal, we need a way to command our motor to follow this position signal closely (thus moving at the desired speed to the desired endpoint).
+We use a **Proportional-Integral-Derivative (PID) controller** to do so. It receives the **error** between our motor's current position and the target position signal, and **outputs the required duty cycle** we need to run our motor at.
+
+However, this approach usually requires one to **tune** the PID controller's settings to ensure the motor follows the position signal closely, without being too slow or oscillating. 
+Tuning motor PIDs is a bit tricky (you won't have to do it for LEGO motors), but we will be creating a guide for it soon!
+
+For move functions where the motor runs for a fixed time or runs forever, we eliminate the I component to avoid exceeding the user-input target speed. In other words, not exceeding the target speed is prioritized over achieving the correct average speed (distance over time).
