@@ -111,7 +111,7 @@ public:
 	void setMaxRPM(float max_rpm);
 	void setPPR(uint32_t ppr);
 
-	void runPWM(float duty_cycle);
+	void runPWM(float duty_cycle_pct);
 	void runSpeed(float dps) { this->runDPS(dps); };
 	void runDPS(float dps);
 

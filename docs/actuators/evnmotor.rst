@@ -112,16 +112,16 @@ Measurements
 Run Forever
 """""""""""
 
-.. function:: void runPWM(float duty_cycle)
+.. function:: void runPWM(float duty_cycle_pct)
 
-    Runs the motor at the given duty cycle using PWM until a new command is called. Motor speed will vary with load torque applied.
+    Runs the motor at the given duty cycle (in %) using PWM until a new command is called. Motor speed will vary with load torque applied.
 
-    :param duty_cycle: duty cycle to run the motor at (floating point number from -1 to 1)
+    :param duty_cycle_pct: duty cycle to run the motor at in % (number from -100 to 100)
 
     .. code-block:: cpp
 
-        //run motor at 100% duty cycle
-        motor.runPWM(1);
+        //run motor at 80% duty cycle
+        motor.runPWM(80);
 
 .. function::   void runDPS(float dps)
                 void runSpeed(float dps)

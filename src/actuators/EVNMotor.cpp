@@ -187,7 +187,7 @@ uint8_t EVNMotor::clean_input_stop_action(uint8_t stop_action)
 	return min(2, stop_action);
 }
 
-void EVNMotor::runPWM(float duty_cycle)
+void EVNMotor::runPWM(float duty_cycle_pct)
 {
 	while (_pid_control.stopAction_static_running);
 	_pid_control.core0_writing = true;
@@ -200,7 +200,7 @@ void EVNMotor::runPWM(float duty_cycle)
 
 	_pid_control.core0_writing = false;
 
-	runPWM_static(&_pid_control, duty_cycle);
+	runPWM_static(&_pid_control, constrain(duty_cycle_pct, -100, 100) * 0.01);
 }
 
 void EVNMotor::runDPS(float dps)

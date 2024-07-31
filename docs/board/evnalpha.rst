@@ -68,8 +68,7 @@ Functions
 LED / Button
 """"""""""""
 
-.. function::   bool read()
-                bool buttonRead()
+.. function::   bool buttonRead()
 
     Get button output (varies depending on mode parameter in class constructor)
 
@@ -77,10 +76,9 @@ LED / Button
 
     .. code-block:: cpp
 
-        bool button_output = board.read();
+        bool button_output = board.buttonRead();
 
-.. function::   void write(bool state)
-                void ledWrite(bool state)
+.. function::   void ledWrite(bool state)
 
     Set LED to turn on (``true``) or off (``false``). However, the LED state can be overridden by the battery reading functions (see below).
 
@@ -88,8 +86,8 @@ LED / Button
 
     .. code-block:: cpp
 
-        board.write(true);  //LED on
-        board.write(false); //LED off
+        board.ledWrite(true);  //LED on
+        board.ledWrite(false); //LED off
 
 I2C Port Control
 """"""""""""""""

@@ -89,8 +89,7 @@ Using Fixed Servos
     .. code-block:: cpp
         int range = servo.getRange();
 
-.. function::   void write(float position, float wait_time_ms, float dps)
-                void writePosition(float position, float wait_time_ms, float dps)
+.. function::   void write(float position, uint16_t wait_time_ms, float dps)
 
     Rotate motor shaft to given angular position.
 
@@ -102,7 +101,7 @@ Using Fixed Servos
         //write servo to run to 180 degrees at a speed of 30DPS, and wait 6 seconds
         servo.write(180, 6000, 30);
 
-.. function:: void writeMicroseconds(float pulse_us, float wait_time_ms)
+.. function:: void writeMicroseconds(uint16_t pulse_us, uint16_t wait_time_ms)
 
     Sends pulse of given length to servo.
 

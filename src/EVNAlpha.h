@@ -28,9 +28,7 @@ public:
     void begin();
 
     //Button & LED Functions
-    bool read() { return this->buttonRead(); };
     bool buttonRead() { return button_led.read(); };
-    void write(bool state) { this->write(state); };
     void ledWrite(bool state) { if (!button_led.getFlash()) digitalWrite(PIN_LED, state); };
 
     void setMode(uint8_t mode) { button_led.setMode(mode); };
@@ -43,6 +41,7 @@ public:
     bool getLinkMovement() { return button_led.getLinkMovement(); };
     bool getButtonInvert() { return button_led.getButtonInvert(); };
 
+    // not exposed to the user, since flash is used for battery alerts
     // void setFlash(bool enable) { button_led.setFlash(enable); };
     // bool getFlash() { return button_led.getFlash(); };
 
