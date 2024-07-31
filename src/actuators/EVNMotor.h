@@ -102,8 +102,7 @@ public:
 	float getPosition();
 	float getHeading();
 	void resetPosition();
-	float getDPS();
-	float getSpeed() { return this->getDPS(); };
+	float getSpeed();
 
 	void setPID(float p, float i, float d);
 	void setAccel(float accel_dps_sq);
@@ -112,8 +111,7 @@ public:
 	void setPPR(uint32_t ppr);
 
 	void runPWM(float duty_cycle_pct);
-	void runSpeed(float dps) { this->runDPS(dps); };
-	void runDPS(float dps);
+	void runSpeed(float dps);
 
 	void runPosition(float dps, float position, uint8_t stop_action = STOP_BRAKE, bool wait = true);
 	void runAngle(float dps, float degrees, uint8_t stop_action = STOP_BRAKE, bool wait = true);

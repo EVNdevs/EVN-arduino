@@ -92,8 +92,7 @@ Measurements
         motor.resetPosition();
         //afterwards, getPosition will return 0
 
-.. function::   float getDPS()
-                float getSpeed()
+.. function::   float getSpeed()
 
     :returns: Angular velocity of motor, in DPS (degrees per second)
 
@@ -123,8 +122,7 @@ Run Forever
         //run motor at 80% duty cycle
         motor.runPWM(80);
 
-.. function::   void runDPS(float dps)
-                void runSpeed(float dps)
+.. function::   void runSpeed(float dps)
 
     Runs the motor at the given angular velocity until a new command is called. Motor will attempt to maintain constant speed despite varying load torque.
 
