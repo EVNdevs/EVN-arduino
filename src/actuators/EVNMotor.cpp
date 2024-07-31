@@ -167,7 +167,7 @@ void EVNMotor::resetPosition()
 	_encoder.position_offset = getPosition_static(&_encoder);
 }
 
-float EVNMotor::getDPS()
+float EVNMotor::getSpeed()
 {
 	return getDPS_static(&_encoder);
 }
@@ -187,7 +187,7 @@ uint8_t EVNMotor::clean_input_stop_action(uint8_t stop_action)
 	return min(2, stop_action);
 }
 
-void EVNMotor::runPWM(float duty_cycle)
+void EVNMotor::runPWM(float duty_cycle_pct)
 {
 	while (_pid_control.stopAction_static_running);
 	_pid_control.core0_writing = true;
@@ -200,10 +200,10 @@ void EVNMotor::runPWM(float duty_cycle)
 
 	_pid_control.core0_writing = false;
 
-	runPWM_static(&_pid_control, duty_cycle);
+	runPWM_static(&_pid_control, constrain(duty_cycle_pct, -100, 100) * 0.01);
 }
 
-void EVNMotor::runDPS(float dps)
+void EVNMotor::runSpeed(float dps)
 {
 	while (_pid_control.stopAction_static_running);
 	_pid_control.core0_writing = true;
@@ -283,16 +283,16 @@ void EVNMotor::runTime(float dps, uint32_t time_ms, uint8_t stop_action, bool wa
 	if (wait) while (!this->completed());
 }
 
-void EVNMotor::brake()
+void EVNMotor::stop()
 {
 	_pid_control.stop_action = STOP_BRAKE;
-	stopAction_static(&_pid_control, &_encoder, micros(), getPosition(), getDPS());
+	stopAction_static(&_pid_control, &_encoder, micros(), getPosition(), getSpeed());
 }
 
 void EVNMotor::coast()
 {
 	_pid_control.stop_action = STOP_COAST;
-	stopAction_static(&_pid_control, &_encoder, micros(), getPosition(), getDPS());
+	stopAction_static(&_pid_control, &_encoder, micros(), getPosition(), getSpeed());
 }
 
 void EVNMotor::hold()
@@ -306,7 +306,7 @@ void EVNMotor::hold()
 
 	_pid_control.core0_writing = false;
 
-	stopAction_static(&_pid_control, &_encoder, micros(), getPosition(), getDPS());
+	stopAction_static(&_pid_control, &_encoder, micros(), getPosition(), getSpeed());
 }
 
 bool EVNMotor::completed()
@@ -635,11 +635,6 @@ void EVNDrivebase::driveToXY(float speed, float turn_rate, float x, float y, uin
 }
 
 void EVNDrivebase::stop()
-{
-	this->brake();
-}
-
-void EVNDrivebase::brake()
 {
 	db.stop_action = STOP_BRAKE;
 	stopAction_static(&db);

@@ -36,7 +36,6 @@ public:
     EVNServo(uint8_t port, bool servo_dir = DIRECT, uint16_t range = 270, float start_position = 135, uint16_t min_pulse_us = 600, uint16_t max_pulse_us = 2400, float max_dps = 500);
     void begin();
     void write(float position, uint16_t wait_time_ms = 0, float dps = 0);
-    void writePosition(float position, uint16_t wait_time_ms = 0, float dps = 0);
     void writeMicroseconds(uint16_t pulse_us, uint16_t wait_time_ms = 0);
     uint16_t getRange() { return _servo.range; };
     float getMaxDPS() { return _servo.max_dps; };
@@ -136,8 +135,7 @@ public:
 
     EVNContinuousServo(uint8_t port, bool servo_dir = DIRECT, uint16_t min_pulse_us = 600, uint16_t max_pulse_us = 2400);
     void begin();
-    void write(float duty_cycle);
-    void writeDutyCycle(float duty_cycle);
+    void write(float duty_cycle_pct);
     void writeMicroseconds(uint16_t pulse_us);
 
 protected:

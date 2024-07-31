@@ -43,8 +43,8 @@ void loop()
             break;
 
         case 4: //stop
-            left.brake();
-            right.brake();
+            left.stop();
+            right.stop();
             break;
         }
     }

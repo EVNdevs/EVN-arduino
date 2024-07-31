@@ -102,8 +102,7 @@ public:
 	float getPosition();
 	float getHeading();
 	void resetPosition();
-	float getDPS();
-	float getSpeed() { return this->getDPS(); };
+	float getSpeed();
 
 	void setPID(float p, float i, float d);
 	void setAccel(float accel_dps_sq);
@@ -111,9 +110,8 @@ public:
 	void setMaxRPM(float max_rpm);
 	void setPPR(uint32_t ppr);
 
-	void runPWM(float duty_cycle);
-	void runSpeed(float dps) { this->runDPS(dps); };
-	void runDPS(float dps);
+	void runPWM(float duty_cycle_pct);
+	void runSpeed(float dps);
 
 	void runPosition(float dps, float position, uint8_t stop_action = STOP_BRAKE, bool wait = true);
 	void runAngle(float dps, float degrees, uint8_t stop_action = STOP_BRAKE, bool wait = true);
@@ -126,7 +124,6 @@ public:
 	//position / target -> -inf - inf
 
 	void stop();
-	void brake();
 	void coast();
 	void hold();
 
@@ -671,7 +668,6 @@ public:
 	void driveToXY(float speed, float turn_rate, float x, float y, uint8_t stop_action = STOP_BRAKE, bool restore_initial_heading = true);
 
 	void stop();
-	void brake();
 	void coast();
 	void hold();
 
@@ -734,8 +730,8 @@ private:
 		switch (arg->stop_action)
 		{
 		case STOP_BRAKE:
-			arg->motor_left->brake();
-			arg->motor_right->brake();
+			arg->motor_left->stop();
+			arg->motor_right->stop();
 			break;
 		case STOP_COAST:
 			arg->motor_left->coast();
@@ -1185,15 +1181,10 @@ public:
 
 	void stop()
 	{
-		this->brake();
-	};
-
-	void brake()
-	{
-		_fl->brake();
-		_fr->brake();
-		_bl->brake();
-		_br->brake();
+		_fl->stop();
+		_fr->stop();
+		_bl->stop();
+		_br->stop();
 	};
 
 	void coast()

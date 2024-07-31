@@ -55,11 +55,6 @@ void EVNServo::begin()
 
 void EVNServo::write(float position, uint16_t wait_time_ms, float dps)
 {
-    this->writePosition(position, wait_time_ms, dps);
-}
-
-void EVNServo::writePosition(float position, uint16_t wait_time_ms, float dps)
-{
     if (dps == 0)
     {
         _servo.position = constrain(position, 0, _servo.range);
@@ -132,15 +127,10 @@ void EVNContinuousServo::begin()
     attach_servo_interrupt(&_servo);
 }
 
-void EVNContinuousServo::write(float duty_cycle)
+void EVNContinuousServo::write(float duty_cycle_pct)
 {
-    this->writeDutyCycle(duty_cycle);
-}
-
-void EVNContinuousServo::writeDutyCycle(float duty_cycle)
-{
-    float duty_cyclec = constrain(duty_cycle, -1, 1);
-    uint16_t pulse = (uint16_t)((1 - fabs(duty_cycle)) * (float)(_servo.max_pulse_us - _servo.min_pulse_us) / 2);
+    float duty_cyclec = constrain(duty_cycle_pct, -100, 100) * 0.01;
+    uint16_t pulse = (uint16_t)((1 - fabs(duty_cyclec)) * (float)(_servo.max_pulse_us - _servo.min_pulse_us) / 2);
 
     if ((_servo.servo_dir == DIRECT) == (duty_cyclec > 0))
         pulse = _servo.min_pulse_us + pulse;

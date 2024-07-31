@@ -45,13 +45,11 @@ Constructor
     :param min_pulse_us: Minimum pulse time sent to the servo motor (in microseconds). Defaults to 600
     :param max_pulse_us: Maximum pulse time sent to the servo motor (in microseconds). Defaults to 2400
     
-Example Usage:
+    .. code-block:: cpp
 
-.. code-block:: cpp
+        EVNContinuousServo cservo(1);
 
-    EVNContinuousServo servo(1);
-
-    EVNContinuousServo servo2(2, DIRECT, 600, 2400);
+        EVNContinuousServo cservo(2, DIRECT, 600, 2400);
 
 Functions
 ---------
@@ -60,33 +58,39 @@ Functions
 
     Initializes continuous rotation servo object. Call this function before calling the other EVNContinuousServo functions.
 
+    .. code-block:: cpp
+
+        EVNContinuousServo cservo(1);
+
+        void setup1()   //call on setup1() for best performance!
+        {
+            cservo.begin();
+        }
+
 .. note::
     For best performance, run this on the 2nd core using ``void setup1()``
-
-Example Program:
-
-.. code-block:: cpp
-
-    EVNContinuousServo servo(1);
-
-    void setup1()   //call on setup1() for best performance!
-    {
-        servo.begin();
-    }
 
 Using Continuous Servos
 """"""""""""""""""""""""
 
-.. function::   void write(float duty_cycle)
-                void writeDutyCycle(float duty_cycle)
+.. function::   void write(float duty_cycle_pct)
 
-    Runs continuous rotation servo at given duty cycle (-100% - 100%)
+    Runs continuous rotation servo at given duty cycle in %(-100 to 100)
 
-    :param duty_cycle: Duty cycle to run servo at (-1 to 1).
+    :param duty_cycle_pct: Duty cycle to run servo at (Number from -100 to 100).
 
+    .. code-block:: cpp
 
-.. function:: void writeMicroseconds(float pulse_us)
+        //write servo to run at 80% duty cycle
+        cservo.write(80);
+
+.. function:: void writeMicroseconds(uint16_t pulse_us)
 
     Sends pulse of given length to continuous rotation servo
 
     :param pulse_us: Pulse time to transmit to continuous rotation servo (in microseconds) from 200us to 2800us
+
+    .. code-block:: cpp
+
+        //write 1500us pulse to continuous rotation servo
+        cservo.writeMicroseconds(1500);

@@ -1,7 +1,7 @@
 ``EVNAlpha``
 ========================================
 
-EVNAlpha is a class used to interface with the onboard hardware on EVN Alpha.
+EVNAlpha is a class used to interface with the onboard hardware on EVN Alpha:
 
 * Button
 * LED
@@ -15,7 +15,7 @@ EVNAlpha uses **hardware interrupts** for the onboard button to act as an toggle
 
 By default, the button output is also linked to 2 other functions. Both can disabled by the user if needed:
 
-* Motor Operation: the button acts as a motor disable switch, so that users can pause their robot before uploading
+* Motor Operation: the button can act as a motor disable switch, so that users can pause their robot before uploading
 * LED: the LED acts as an indicator for the button output
 
 EVN Alpha has 2 TCA9548A I2C multiplexers, 1 on each I2C bus. This allows users to connect multiple I2C devices with the same I2C address without worrying about address clashing. However, users must set the port (1-16) for a given peripheral before communicating with it. EVNAlpha includes functions for port selection and de-selection to ease this process.
@@ -42,15 +42,13 @@ EVN Alpha has 2 TCA9548A I2C multiplexers, 1 on each I2C bus. This allows users 
 
     :param i2c_freq: I2C frequency in Hz. Defaults to 400000 (400kHz).
 
-Example Usage:
+    .. code-block:: cpp
 
-.. code-block:: cpp
+        //constructor with default options
+        EVNAlpha board;
 
-    //constructor with default options
-    EVNAlpha board;
-
-    //constructor if you wish to set non-default options
-    EVNAlpha board(BUTTON_PUSHBUTTON, false, false, false, 400000);
+        //constructor if you wish to set non-default options
+        EVNAlpha board(BUTTON_PUSHBUTTON, false, false, false, 400000);
 
 Functions
 ---------
@@ -58,79 +56,94 @@ Functions
 
     Initializes on-board hardware. This function should be called at the start of ``void setup()``, before anything else.
 
-Example Program:
+    .. code-block:: cpp
 
-.. code-block:: cpp
+        EVNAlpha board;
 
-    EVNAlpha board;
-
-    void setup()
-    {
-        board.begin();
-    }
+        void setup()
+        {
+            board.begin();
+        }
 
 LED / Button
 """"""""""""
 
-.. function::   bool read()
-                bool buttonRead()
+.. function::   bool buttonRead()
 
     Get button output (varies depending on mode parameter in class constructor)
 
     :returns: boolean signifying button output
 
-.. function::   void write(bool state)
-                void ledWrite(bool state)
+    .. code-block:: cpp
+
+        bool button_output = board.buttonRead();
+
+.. function::   void ledWrite(bool state)
 
     Set LED to turn on (``true``) or off (``false``). However, the LED state can be overridden by the battery reading functions (see below).
 
     :param state: state to write to LED
 
-Example Usage:
+    .. code-block:: cpp
 
-.. code-block:: cpp
-
-    board.read();
-    board.write(true);  //LED on
-    board.write(false); //LED off
+        board.ledWrite(true);  //LED on
+        board.ledWrite(false); //LED off
 
 I2C Port Control
 """"""""""""""""
 
+These functions will be used mainly if you are trying to operate third-party I2C devices, that aren't Standard Peripherals.
+
 .. function:: void setPort(uint8_t port)
 
-    :param port: I2C port to be enabled (1--16)
+    :param port: I2C port to be enabled (1-16)
+
+    .. code-block:: cpp
+        
+        //set I2C port 16 to be active
+        board.setPort(16);
 
 .. function:: uint8_t getPort()
 
-    :returns: last I2C port called using ``setPort()`` (1--16)
+    :returns: last I2C port called using ``setPort()`` (1-16)
 
+    .. code-block:: cpp
+
+        int port = board.getPort(); //returns 1 on startup
+    
 .. function:: uint8_t getWirePort()
 
-    :returns: last Wire I2C port called using ``setPort()`` (1--8)
+    :returns: last Wire I2C port called using ``setPort()`` (1-8)
+
+    .. code-block:: cpp
+        
+        int wport = board.getWirePort();    //returns 1 on startup
 
 .. function:: uint8_t getWire1Port()
 
-    :returns: last Wire1 I2C port called using ``setPort()`` (9--16)
+    :returns: last Wire1 I2C port called using ``setPort()`` (9-16)
+
+    .. code-block:: cpp
+        
+        int w1port = board.getWire1Port();  //returns 9 on startup
 
 .. function:: void printPorts()
 
-    Prints all I2C devices on every port using ``Serial``
+    This is an I2C port scanner function which prints all I2C devices on every port using ``Serial``
 
-Example Usage:
+    .. code-block:: cpp
+        
+        board.printPorts();
 
-.. code-block:: cpp
+    Example Serial Monitor Output:
 
-    board.getPort();        //returns 1 on startup
-    board.getWirePort();    //returns 1 on startup
-    board.getWire1Port();   //returns 9 on startup
+    .. code-block::
 
-    board.setPort(3);       //set Wire to connect to Port 3
-    board.setPort(10);      //set Wire1 to connect to Port 10
+        EVN Alpha I2C Port Scanner
+        Battery: 8.183V | Cell 1: 4.096V | Cell 2: 4.087
+        Port 16: 0x6A
 
-    board.getPort();        //returns 10
-    board.getWirePort();    //returns 3
-    board.getWire1Port();   //returns 10
+    Even though no peripherals are connected to the board, port 16 has one I2C device under address 0x6A, which is our onboard battery charger and voltage measurement device.
 
 Battery Voltage Reading
 """"""""""""""""""""""""
@@ -156,7 +169,11 @@ To add the alert to your code, add ``getBatteryVoltage()`` (or ``getCell1Voltage
     :param low_threshold_mv: Battery voltage threshold (in millivolts). When battery voltage falls below this voltage and ``flash_when_low`` is ``true``, low voltage alert is triggered. Defaults to 6900.
 
     :returns: combined voltage of both battery cells in millivolts
+    
+    .. code-block:: c++
 
+        int battery = board.getBatteryVoltage();
+        
 .. function:: int16_t getCell1Voltage(bool flash_when_low = true, uint16_t low_threshold_mv = 3450)
 
     Cell 1 refers to the cell nearer to the edge of the board.
@@ -165,6 +182,10 @@ To add the alert to your code, add ``getBatteryVoltage()`` (or ``getCell1Voltage
     :param low_threshold_mv: Cell voltage threshold (in millivolts). When this cell's voltage falls below this threshold and ``flash_when_low`` is ``true``, low battery alert is triggered. Defaults to 3450.
 
     :returns: voltage of first cell in millivolts
+
+    .. code-block:: c++
+
+        int cell1 = board.getCell1Voltage();
 
 .. function:: int16_t getCell2Voltage(bool flash_when_low = true, uint16_t low_threshold_mv = 3450)
 
@@ -175,50 +196,47 @@ To add the alert to your code, add ``getBatteryVoltage()`` (or ``getCell1Voltage
 
     :returns: voltage of second cell in millivolts
 
-Example Program:
+    .. code-block:: c++
 
-.. code-block:: cpp
-
-    EVNAlpha board;
-
-    void setup()
-    {
-        board.begin();
-
-        int batt = board.getBatteryVoltage();
-        int cell1 = board.getCell1Voltage();
         int cell2 = board.getCell2Voltage();
-    }
-
-Example Output (on Serial Monitor):
-
-.. code-block:: cpp
-
-    8392
-    4198
-    4194
 
 Set Functions
 """""""""""""
 .. function:: void setMode(uint8_t mode)
 
-    :param mode: Determines behaviour of ``buttonRead()``
+    :param mode: Determines behaviour of ``buttonRead()`` (options shown below)
     
     * ``BUTTON_TOGGLE``
     * ``BUTTON_PUSHBUTTON``
     * ``BUTTON_DISABLE``
 
+    .. code-block:: c++
+
+        board.setMode(BUTTON_TOGGLE);
+
 .. function:: void setLinkLED(bool enable)
 
     :param enable: Links LED to display ``buttonRead()`` output
+
+    .. code-block:: c++
+
+        board.setLinkLED(true);
 
 .. function:: void setLinkMovement(bool enable)
 
     :param enable: Links all motor and servo operation to ``buttonRead()`` output
 
+    .. code-block:: c++
+
+        board.setLinkMovement(true);
+
 .. function:: void setButtonInvert(bool enable)
 
     :param enable: Inverts output of ``buttonRead()``
+
+    .. code-block:: c++
+
+        board.setButtonInvert(true);
 
 Get Functions
 """"""""""""""
@@ -236,15 +254,33 @@ Get Functions
     * 1 (``BUTTON_TOGGLE``)
     * 2 (``BUTTON_PUSHBUTTON``)
 
-.. function:: bool setLinkLED()
+    .. code-block:: c++
+
+        if (board.getMode() == BUTTON_TOGGLE)
+        {
+
+        }
+
+.. function:: bool getLinkLED()
 
     :returns: Whether LED is linked to ``buttonRead()`` output
 
-.. function:: bool setLinkMovement()
+    .. code-block:: c++
+
+        bool link_led = board.getLinkLED();
+
+.. function:: bool getLinkMovement()
 
     :returns: Whether motor and servo operation is linked to ``buttonRead()`` output
 
-.. function:: bool setButtonInvert()
+    .. code-block:: c++
+
+        bool link_movement = board.getLinkLED();
+
+.. function:: bool getButtonInvert()
 
     :returns: Whether output of ``buttonRead()`` is inverted
 
+    .. code-block:: c++
+
+        bool button_invert = board.getButtonInvert();

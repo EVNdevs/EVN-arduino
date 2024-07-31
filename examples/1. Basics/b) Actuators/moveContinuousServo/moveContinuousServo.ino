@@ -34,17 +34,17 @@ void loop()
     //if button outputs "true", run the servo at different speeds and directions for 4 seconds
     if (board.buttonRead())
     {
-        servo.writeDutyCycle(-1);
+        servo.write(-100);
         delay(1000);
-        servo.writeDutyCycle(-0.5);
+        servo.write(-50);
         delay(1000);
-        servo.writeDutyCycle(0.25);
+        servo.write(25);
         delay(1000);
-        servo.writeDutyCycle(1);
+        servo.write(100);
         delay(1000);
     }
     else
     {
-        servo.writeDutyCycle(0);    //otherwise, stop servo
+        servo.write(0);    //otherwise, stop servo
     }
 }

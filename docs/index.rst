@@ -40,8 +40,8 @@ To find out more about purchasing, visit our `product website`_.
    guides/compass-cal
    guides/third-party-i2c
    guides/platformio
-   guides/soldering
 ..
+   guides/soldering
    guides/third-party-motors
    guides/motor-pid-cal
    guides/drivebase-pid-cal
@@ -64,8 +64,8 @@ In addition, it contains code from additional open source projects:
 Acknowledgements
 ----------------
 
-We'd like to thank the following people for their contributions to the Kickstarter:
+.. note:: Acknowledgements will be added soon :)
 
-TBA soon! :)
+We'd like to thank the following people for their contributions to the Kickstarter:
 
 Without them, EVN would not exist today.

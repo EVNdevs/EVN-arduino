@@ -100,8 +100,7 @@ Fused Measurements
 """"""""""""""""""
 .. function::   void update()
 
-.. function::   float read(bool blocking = true)
-                float readYaw(bool blocking = true)
+.. function::   float readYaw(bool blocking = true)
 
     :param blocking: Block function from returning a value until a new reading is obtained. Defaults to ``true``
     :returns: Yaw orientation in degrees

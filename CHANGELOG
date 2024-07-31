@@ -1,3 +1,22 @@
+0.10.4 (01/08/24)
+
+This is a small update to update docs and make style changes to the library.
+
+Many aliased (duplicate) functions have been removed from the following classes:
+* EVNAlpha
+* EVNMotor
+* EVNDrivebase
+* EVNIMUSensor
+* EVNColourSensor
+* EVNServo
+* EVNContinuousServo
+
+More alias functions may be removed in future updates, and some may remain but this will be an exception, not the norm moving forward.
+
+-- Bugfixes --
+
+EVNMotor: stop() was declared but undefined. It has now been defined, and replaces brake() as the braking function. So do not call brake() in your code.
+
 0.10.3 (28/07/24)
 
 -- Features --

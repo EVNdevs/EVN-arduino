@@ -54,8 +54,6 @@ Printing Data to a Row
 """"""""""""""""""""""
 
 .. function::   void writeLabel(uint8_t row, data)
-                void writeLine(uint8_t row, data)
-                void write(uint8_t row, data)
                 void print(uint8_t row, data)
                 
 

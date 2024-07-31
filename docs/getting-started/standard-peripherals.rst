@@ -46,7 +46,7 @@ Standard Peripherals each come with a cable to connect to Alpha.
     * The 270 Degree Servo and Continuous Servo Peripherals come with non-removable 3-Wire cables.
 
 At one end of the cable, all the wires will be joined into one plastic connector. 
-This connector plugs into the EVN Alpha brick, and has a notch which acts as a **key** to avoid being plugged in reverse.
+With the exception of the Servo Peripherals, this connector plugs into the EVN Alpha brick, and has a notch to avoid being plugged in reverse (called a **key**).
 The wire colours are also colour-coded to match the pin layout of the ports on EVN Alpha.
 
 On the other end of the cable, each wire is separated from the others. They all need to be connected to the Peripheral, but they're not joined together
@@ -54,8 +54,20 @@ because the layout of the pins differs with each Peripheral.
 
 The library reference page for each Peripheral (linked below) contains a pin layout section to guide you on the connections.
 
-I2C Wire Colours
-"""""""""""""""""""
+The pins we used on the Alpha and Standard Peripherals are standard 2.54mm pitch pin headers, and the cables can be substituted with 2.54mm Dupont jumper wires as well! 
+Jumper cables don't have a key, so you'll need to be slightly more careful, but they will work perfectly. Likewise, our cables will function well for interfacing with non-Standard Peripherals if they also 2.54mm pitch pins.
+
+Wiring
+--------
+
+Generally speaking, all peripherals have a VCC pin and GND pin.
+
+In order to supply power to these peripherals, the GND pin on the peripheral should be connected to a GND pin on the controller (EVN Alpha) and the VCC pin on the peripheral should be connected to a voltage output on the controller (depending on the peripheral, this could be a 3.3V or 5V pin).
+
+As for the data pins, each communication protocol is wired in a different manner:
+
+I2C
+"""""
 
 .. list-table::
    :widths: 25 25 50
@@ -77,7 +89,9 @@ I2C Wire Colours
      - SDA
      - Serial Data
 
-Serial Wire Colours
+I2C is wired such that the SDA pin of the host (EVN Alpha) is connected to the SDA pin of a peripheral, and the same goes for the SCL pins.
+
+Serial Wiring
 """""""""""""""""""
 
 .. list-table::
@@ -100,7 +114,9 @@ Serial Wire Colours
      - TX
      - Receive
 
-Servo Wire Colours
+Serial UART is wired such that the Transmit (TX) pin of the peripheral connects to the Receive (RX) pin of the host, and vice versa (TX of one always connects to RX of the other).
+
+Servo Wiring
 """""""""""""""""""
 
 .. list-table::
@@ -120,8 +136,7 @@ Servo Wire Colours
      - GND
      - Ground
 
-The pins we used on the Alpha and Standard Peripherals are standard 2.54mm pitch pin headers, and the cables can be substituted with 2.54mm Dupont jumper wires as well! 
-Jumper cables don't have a key, so you'll need to be slightly more careful, but they will work perfectly. Likewise, our cables will function well for interfacing with non-Standard Peripherals, as long as they also use 2.54mm pitch pins.
+The Servo ports only have one Signal pin, so as long as the signal pins on both peripheral and host are connected, you're all good.
 
 List of Standard Peripherals
 ----------------------------
