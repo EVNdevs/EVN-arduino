@@ -283,7 +283,7 @@ void EVNMotor::runTime(float dps, uint32_t time_ms, uint8_t stop_action, bool wa
 	if (wait) while (!this->completed());
 }
 
-void EVNMotor::brake()
+void EVNMotor::stop()
 {
 	_pid_control.stop_action = STOP_BRAKE;
 	stopAction_static(&_pid_control, &_encoder, micros(), getPosition(), getDPS());
@@ -635,11 +635,6 @@ void EVNDrivebase::driveToXY(float speed, float turn_rate, float x, float y, uin
 }
 
 void EVNDrivebase::stop()
-{
-	this->brake();
-}
-
-void EVNDrivebase::brake()
 {
 	db.stop_action = STOP_BRAKE;
 	stopAction_static(&db);

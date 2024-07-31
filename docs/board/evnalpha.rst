@@ -111,7 +111,7 @@ These functions will be used mainly if you are trying to operate third-party I2C
 
     .. code-block:: cpp
 
-        int port = board.getPort();        //returns 1 on startup
+        int port = board.getPort(); //returns 1 on startup
     
 .. function:: uint8_t getWirePort()
 
@@ -119,7 +119,7 @@ These functions will be used mainly if you are trying to operate third-party I2C
 
     .. code-block:: cpp
         
-        int wport = board.getWirePort();        //returns 1 on startup
+        int wport = board.getWirePort();    //returns 1 on startup
 
 .. function:: uint8_t getWire1Port()
 
@@ -127,7 +127,7 @@ These functions will be used mainly if you are trying to operate third-party I2C
 
     .. code-block:: cpp
         
-        int w1port = board.getWire1Port();        //returns 9 on startup
+        int w1port = board.getWire1Port();  //returns 9 on startup
 
 .. function:: void printPorts()
 

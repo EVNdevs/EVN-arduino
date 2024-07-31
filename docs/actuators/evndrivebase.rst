@@ -299,18 +299,16 @@ Stopping
 """"""""
 
 .. function::   void stop();
-                void brake();
 
     Brakes both drivebase motors (slow decay)
 
     .. code-block:: cpp
         
         db.stop();
-        db.brake(); //same effect
 
 .. function:: void coast();
     
-    Coast both drivebase motors (fast decay)
+    Coasts both drivebase motors to a stop (fast decay)
     
     .. code-block:: cpp
     

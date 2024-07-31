@@ -225,19 +225,17 @@ Run by a Fixed Amount
 Stopping
 """""""""
 
-.. function::   void stop()
-                void brake()
+.. function::    void stop()
 
     Brakes the motor (slow decay).
 
     .. code-block:: cpp
         
         motor.stop();
-        motor.brake(); //same effect
 
 .. function:: void coast()
 
-    Coasts the motor (fast decay). Compared to `brake()`, motor comes to a stop more slowly.
+    Coasts the motor (fast decay). Compared to `stop()`, motor comes to a stop more slowly.
 
     .. code-block:: cpp
         

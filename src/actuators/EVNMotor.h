@@ -126,7 +126,6 @@ public:
 	//position / target -> -inf - inf
 
 	void stop();
-	void brake();
 	void coast();
 	void hold();
 
@@ -671,7 +670,6 @@ public:
 	void driveToXY(float speed, float turn_rate, float x, float y, uint8_t stop_action = STOP_BRAKE, bool restore_initial_heading = true);
 
 	void stop();
-	void brake();
 	void coast();
 	void hold();
 
@@ -734,8 +732,8 @@ private:
 		switch (arg->stop_action)
 		{
 		case STOP_BRAKE:
-			arg->motor_left->brake();
-			arg->motor_right->brake();
+			arg->motor_left->stop();
+			arg->motor_right->stop();
 			break;
 		case STOP_COAST:
 			arg->motor_left->coast();
@@ -1185,15 +1183,10 @@ public:
 
 	void stop()
 	{
-		this->brake();
-	};
-
-	void brake()
-	{
-		_fl->brake();
-		_fr->brake();
-		_bl->brake();
-		_br->brake();
+		_fl->stop();
+		_fr->stop();
+		_bl->stop();
+		_br->stop();
 	};
 
 	void coast()
