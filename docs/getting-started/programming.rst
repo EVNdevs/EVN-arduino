@@ -86,8 +86,8 @@ This is what an example sketch with 2 motors and 2 colour sensors would look lik
 
     void loop()
     {
-        int cs1_reading = cs1.read();
-        int cs2_reading = cs2.read();
+        int cs1_reading = cs1.readClear();
+        int cs2_reading = cs2.readClear();
 
         //do something with colour sensor readings here
 

@@ -90,21 +90,7 @@ public:
 
   //alias for writeLabel
   template <typename T>
-  void writeLine(uint8_t row, T line)
-  {
-    this->writeLabel(row, line);
-  };
-
-  //alias for writeLabel
-  template <typename T>
   void print(uint8_t row, T line)
-  {
-    this->writeLabel(row, line);
-  };
-
-  //alias for writeLabel
-  template <typename T>
-  void write(uint8_t row, T line)
   {
     this->writeLabel(row, line);
   };

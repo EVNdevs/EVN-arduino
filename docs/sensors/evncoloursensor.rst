@@ -84,8 +84,7 @@ Functions
 Reading Raw RGBC Values
 """""""""""""""""""""""
 
-.. function::   uint16_t read(bool blocking = true)
-                uint16_t readClear(bool blocking = true)
+.. function::   uint16_t readClear(bool blocking = true)
 
     Returns raw clear reading from sensor.
 
