@@ -98,8 +98,6 @@ This is what an example sketch with 2 motors and 2 colour sensors would look lik
 
 More examples can be found in the EVN library examples (File > Examples > EVN...).
 
-.. note:: Example sketches are a little sparse right now, we hope to add more as soon as we can
-
 Uploading Shortcuts
 -------------------
 

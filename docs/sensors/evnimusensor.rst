@@ -8,8 +8,6 @@ This class provides the following features and functionalities for our 6DoF IMU 
 
 .. note:: This class does I2C port selection automatically, so users do not need to call ``setPort()`` using their EVNAlpha objects.
 
-.. note:: We're working on fusing the accelerometer and gyroscope readings together to obtain orientation data, so that should be coming soon!
-
 Wiring (I2C)
 ------------
 
