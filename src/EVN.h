@@ -2,9 +2,15 @@
 #define EVN_h
 
 #if ( defined(ARDUINO_EVN_ALPHA) )
-#elif ( defined(ARDUINO_GENERIC_RP2040) )
 #else
 #error This library is for EVN Alpha using the Arduino-Pico core only! Please check your Tools->Board settings.
+#endif
+
+#if (ARDUINO_PICO_MAJOR > 3)
+#elif (ARDUINO_PICO_MAJOR == 3 && ARDUINO_PICO_MINOR > 9)
+#elif (ARDUINO_PICO_MAJOR == 3 && ARDUINO_PICO_MINOR == 9 && ARDUINO_PICO_REVISION >= 4)
+#else
+#error Please update Arduino Pico to version >= 3.9.4.
 #endif
 
 #include "EVNAlpha.h"
