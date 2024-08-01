@@ -1,8 +1,8 @@
 Picture,Name,Port Type,Library
-|colour.png|,Colour Sensor,I2C,`EVNColourSensor`_
-|distance.png|,Distance Sensor,I2C,`EVNDistanceSensor`_
-|compass.png|,Compass Sensor,I2C,`EVNCompassSensor`_
-|imu.png|,6-Axis IMU Sensor,I2C,`EVNIMUSensor`_
-|gesture.png|,Gesture Sensor,I2C,`EVNGestureSensor`_
-|env.png|,Environment Sensor,I2C,`EVNEnvSensor`_
-|touch.png|,Capacitive Touch Array,I2C,`EVNTouchArray`_
+|colour.JPG|,Colour Sensor,I2C,`EVNColourSensor`_
+|distance.JPG|,Distance Sensor,I2C,`EVNDistanceSensor`_
+|compass.JPG|,Compass Sensor,I2C,`EVNCompassSensor`_
+|imu.JPG|,6-Axis IMU Sensor,I2C,`EVNIMUSensor`_
+|gesture.JPG|,Gesture Sensor,I2C,`EVNGestureSensor`_
+|env.JPG|,Environment Sensor,I2C,`EVNEnvSensor`_
+|touch.JPG|,Capacitive Touch Array,I2C,`EVNTouchArray`_

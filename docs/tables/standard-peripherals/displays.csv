@@ -1,5 +1,5 @@
 Picture,Name,Port Type,Library
-|oled.png|,OLED Display,I2C,`EVNDisplay`_
-|matrix.png|,LED Matrix,I2C,`EVNMatrixLED`_
-|sevenseg.png|,7-Segment LED,I2C,`EVNSevenSegmentLED`_
-|rgb.png|,RGB LED,Servo,`EVNRGBLED`_
+|oled.JPG|,OLED Display,I2C,`EVNDisplay`_
+|matrix.JPG|,LED Matrix,I2C,`EVNMatrixLED`_
+|sevenseg.JPG|,7-Segment LED,I2C,`EVNSevenSegmentLED`_
+|rgb.JPG|,RGB LED,Servo,`EVNRGBLED`_

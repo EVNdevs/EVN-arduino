@@ -144,44 +144,44 @@ List of Standard Peripherals
 .. csv-table:: Sensors
   :align: center
   :file: ../tables/standard-peripherals/sensors.csv
-  :widths: 30, 30, 30, 10
+  :widths: 50, 30, 10, 10
   :header-rows: 1
 
 .. csv-table:: Displays
   :align: center
   :file: ../tables/standard-peripherals/displays.csv
-  :widths: 30, 30, 30, 10
+  :widths: 50, 30, 10, 10
   :header-rows: 1
 
 .. csv-table:: Actuators
   :align: center
   :file: ../tables/standard-peripherals/actuators.csv
-  :widths: 30, 30, 30, 10
+  :widths: 50, 30, 10, 10
   :header-rows: 1
 
 .. csv-table:: Others
   :align: center
   :file: ../tables/standard-peripherals/others.csv
-  :widths: 30, 30, 30, 10
+  :widths: 50, 30, 10, 10
   :header-rows: 1
 
 .. note:: There are more actuator software classes for the LEGO® MINDSTORMS® EV3 and NXT motors (``EVNMotor``, ``EVNDrivebase``), which are of course fully compatible despite not being Standard Peripherals.
 
-.. |colour.png| image:: ../images/standard-peripherals/colour.png
-.. |distance.png| image:: ../images/standard-peripherals/distance.png
-.. |compass.png| image:: ../images/standard-peripherals/compass.png
-.. |imu.png| image:: ../images/standard-peripherals/imu.png
-.. |gesture.png| image:: ../images/standard-peripherals/gesture.png
-.. |env.png| image:: ../images/standard-peripherals/env.png
-.. |touch.png| image:: ../images/standard-peripherals/touch.png
-.. |oled.png| image:: ../images/standard-peripherals/oled.png
-.. |matrix.png| image:: ../images/standard-peripherals/matrix.png
-.. |sevenseg.png| image:: ../images/standard-peripherals/sevenseg.png
-.. |rgb.png| image:: ../images/standard-peripherals/rgb.png
-.. |analog.png| image:: ../images/standard-peripherals/analog.png
-.. |bluetooth.png| image:: ../images/standard-peripherals/bluetooth.png
-.. |servo.png| image:: ../images/standard-peripherals/servo.png
-.. |contservo.png| image:: ../images/standard-peripherals/contservo.png
+.. |colour.JPG| image:: ../images/standard-peripherals/colour.JPG
+.. |distance.JPG| image:: ../images/standard-peripherals/distance.JPG
+.. |compass.JPG| image:: ../images/standard-peripherals/compass.JPG
+.. |imu.JPG| image:: ../images/standard-peripherals/imu.JPG
+.. |gesture.JPG| image:: ../images/standard-peripherals/gesture.JPG
+.. |env.JPG| image:: ../images/standard-peripherals/env.JPG
+.. |touch.JPG| image:: ../images/standard-peripherals/touch.JPG
+.. |oled.JPG| image:: ../images/standard-peripherals/oled.JPG
+.. |matrix.JPG| image:: ../images/standard-peripherals/matrix.JPG
+.. |sevenseg.JPG| image:: ../images/standard-peripherals/sevenseg.JPG
+.. |rgb.JPG| image:: ../images/standard-peripherals/rgb.JPG
+.. |analog.JPG| image:: ../images/standard-peripherals/analog.JPG
+.. |bluetooth.JPG| image:: ../images/standard-peripherals/bluetooth.JPG
+.. |servo.JPG| image:: ../images/standard-peripherals/servo.JPG
+.. |contservo.JPG| image:: ../images/standard-peripherals/contservo.JPG
 
 
 .. _EVNColourSensor: ../sensors/EVNColourSensor.html
