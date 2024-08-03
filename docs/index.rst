@@ -12,6 +12,10 @@ To find out more about purchasing, visit our `product website`_.
 
 .. _product website: https://coresg.tech/evn/
 
+.. image:: images/brick_side.JPG
+   :width: 70%
+   :align: center
+
 .. toctree::
    :maxdepth: 1
    :caption: Getting Started
