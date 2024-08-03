@@ -521,6 +521,7 @@ void EVNDrivebase::driveTurnRate(float speed, float turn_rate)
 	db.target_speed = speedc;
 	db.target_turn_rate = turn_ratec;
 	db.drive = true;
+	db.drive_position = false;
 
 	db.core0_writing = false;
 }

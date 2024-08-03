@@ -104,24 +104,12 @@ public:
 	void resetPosition();
 	float getSpeed();
 
-	void setPID(float p, float i, float d);
-	void setAccel(float accel_dps_sq);
-	void setDecel(float decel_dps_sq);
-	void setMaxRPM(float max_rpm);
-	void setPPR(uint32_t ppr);
-
 	void runPWM(float duty_cycle_pct);
 	void runSpeed(float dps);
-
 	void runPosition(float dps, float position, uint8_t stop_action = STOP_BRAKE, bool wait = true);
 	void runAngle(float dps, float degrees, uint8_t stop_action = STOP_BRAKE, bool wait = true);
 	void runHeading(float dps, float heading, uint8_t stop_action = STOP_BRAKE, bool wait = true);
-
 	void runTime(float dps, uint32_t time_ms, uint8_t stop_action = STOP_BRAKE, bool wait = true);
-
-	//heading -> 0 - 360
-	//angle / degrees -> relative
-	//position / target -> -inf - inf
 
 	void stop();
 	void coast();
@@ -129,6 +117,13 @@ public:
 
 	bool completed();
 	bool stalled();
+
+	void setPID(float p, float i, float d);
+	void setAccel(float accel_dps_sq);
+	void setDecel(float decel_dps_sq);
+	void setMaxRPM(float max_rpm);
+	void setPPR(uint32_t ppr);
+
 	//TODO: add end function
 
 protected:
@@ -634,25 +629,10 @@ class EVNDrivebase
 {
 public:
 	static const uint8_t MAX_DB_OBJECTS = 2;
-	static const uint16_t PID_TIMER_INTERVAL_US = 1000;
+	static const uint16_t PID_TIMER_INTERVAL_US = 2000;
 
 	EVNDrivebase(float wheel_dia, float axle_track, EVNMotor* motor_left, EVNMotor* motor_right);
 	void begin();
-
-	void setSpeedPID(float kp, float ki, float kd);
-	void setTurnRatePID(float kp, float ki, float kd);
-	void setSpeedAccel(float speed_accel);
-	void setSpeedDecel(float speed_decel);
-	void setTurnRateAccel(float turn_rate_accel);
-	void setTurnRateDecel(float turn_rate_decel);
-
-	float getDistance();
-	float getAngle();
-	float getHeading();
-	float getX();
-	float getY();
-	void resetXY();
-	float getDistanceToPoint(float x, float y);
 
 	void drivePct(float speed_outer_pct, float turn_rate_pct);
 	void drive(float speed, float turn_rate);
@@ -673,8 +653,21 @@ public:
 
 	bool completed();
 
+	void setSpeedPID(float kp, float ki, float kd);
+	void setTurnRatePID(float kp, float ki, float kd);
+	void setSpeedAccel(float speed_accel);
+	void setSpeedDecel(float speed_decel);
+	void setTurnRateAccel(float turn_rate_accel);
+	void setTurnRateDecel(float turn_rate_decel);
+
+	float getDistance();
+	float getAngle();
+	float getHeading();
+	float getX();
+	float getY();
+	void resetXY();
+	float getDistanceToPoint(float x, float y);
 	//TODO: add end function
-	//TODO: make functions more thread-safe
 
 private:
 	float clean_input_turn_rate(float turn_rate);
@@ -815,7 +808,7 @@ private:
 				{
 					if (stop_time_to_decel_speed > stop_time_to_decel_turn_rate)
 						stop_turn_rate_decel *= stop_time_to_decel_turn_rate / stop_time_to_decel_speed;
-					else if (stop_time_to_decel_speed > stop_time_to_decel_turn_rate)
+					else if (stop_time_to_decel_turn_rate > stop_time_to_decel_speed)
 						stop_speed_decel *= stop_time_to_decel_speed / stop_time_to_decel_turn_rate;
 				}
 
@@ -919,7 +912,6 @@ private:
 			arg->motor_left->runSpeed(arg->target_motor_left_dps);
 			arg->motor_right->runSpeed(arg->target_motor_right_dps);
 
-
 			bool old_sign_from_target_dist;
 			bool old_sign_from_target_angle;
 
@@ -931,13 +923,10 @@ private:
 
 			//increment target angle and XY position
 			//if output of speed or turn rate output is saturated or motors are stalled, stop incrementing (avoid excessive overshoot that PID cannot correct)
-			if (fabs(arg->speed_error * arg->speed_pid->getKp()
-				+ arg->speed_pid->getIntegral() * arg->speed_pid->getKi() * (arg->drive_position ? 1 : 0)) < arg->max_dps
-
-				&& fabs(arg->angle_error * arg->turn_rate_pid->getKp()
-					+ arg->turn_rate_pid->getIntegral() * arg->turn_rate_pid->getKi() * (arg->drive_position ? 1 : 0)) < arg->max_dps
-
-				&& !arg->motor_left->stalled() && !arg->motor_right->stalled())
+			if (fabs(arg->speed_error * arg->speed_pid->getKp() + arg->speed_pid->getIntegral() * arg->speed_pid->getKi()) < arg->max_dps
+				&& fabs(arg->angle_error * arg->turn_rate_pid->getKp() + arg->turn_rate_pid->getIntegral() * arg->turn_rate_pid->getKi()) < arg->max_dps
+				&& !arg->motor_left->stalled() && !arg->motor_right->stalled()
+				)
 			{
 				//calculating time taken to decel/accel to target speed & turn rate
 				float new_speed_accel = arg->speed_accel;
@@ -968,8 +957,8 @@ private:
 				}
 				else
 				{
-					time_to_decel_speed = fabs(0 - arg->target_speed_constrained) / arg->speed_decel;
-					time_to_accel_speed = fabs(target_speed_after_decel - 0) / arg->speed_accel;
+					time_to_decel_speed = fabs(arg->target_speed_constrained) / arg->speed_decel;
+					time_to_accel_speed = fabs(target_speed_after_decel) / arg->speed_accel;
 				}
 
 				if (target_turn_rate_after_decel >= 0 && arg->target_turn_rate_constrained >= 0)
@@ -990,8 +979,8 @@ private:
 				}
 				else
 				{
-					time_to_decel_turn_rate = fabs(0 - arg->target_turn_rate_constrained) / arg->turn_rate_decel;
-					time_to_accel_turn_rate = fabs(target_turn_rate_after_decel - 0) / arg->turn_rate_accel;
+					time_to_decel_turn_rate = fabs(arg->target_turn_rate_constrained) / arg->turn_rate_decel;
+					time_to_accel_turn_rate = fabs(target_turn_rate_after_decel) / arg->turn_rate_accel;
 				}
 
 				float time_to_hit_speed = time_to_accel_speed + time_to_decel_speed;
