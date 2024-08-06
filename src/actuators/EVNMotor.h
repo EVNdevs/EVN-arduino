@@ -91,7 +91,7 @@ class EVNMotor
 public:
 	static const uint32_t PWM_FREQ = 20000;
 	static const uint32_t PWM_MAX_VAL = 255;
-	static const uint16_t PID_TIMER_INTERVAL_US = 1000;
+	static const uint16_t PID_TIMER_INTERVAL_US = 2000;
 	static const uint32_t ENCODER_PULSE_TIMEOUT_US = 166667 * 2;
 
 	friend class EVNDrivebase;
@@ -127,11 +127,12 @@ public:
 	//TODO: add end function
 
 protected:
+	void runSpeedDB(float dps);
+
 	float clean_input_dps(float dps);
 	uint8_t clean_input_dir(float dps);
 	uint8_t clean_input_stop_action(uint8_t stop_action);
 
-	float _position_offset = 0;
 	pid_control_t _pid_control;
 	encoder_state_t _encoder;
 
@@ -288,7 +289,7 @@ protected:
 	static float getPosition_static(encoder_state_t* arg)
 	{
 		// resolution of encoder readout is in CPR (4 * PPR)
-		return (float)arg->position * 360 / (4 * arg->ppr) - arg->position_offset;
+		return ((float)arg->position * 90.0 / arg->ppr) - arg->position_offset;
 	}
 
 	static float getDPS_static(encoder_state_t* arg)
@@ -336,11 +337,11 @@ protected:
 		else if (last_pulse_width > arg->avg_pulse_width)
 		{
 			float final_dps = (1000000 / last_pulse_width) / arg->ppr * 360;
-			return final_dps * arg->dir;
+			return final_dps * (float)arg->dir;
 		}
 
 		else
-			return arg->avg_dps * arg->dir;
+			return arg->avg_dps * (float)arg->dir;
 	}
 
 	static void pid_update(pid_control_t* pidArg, encoder_state_t* encoderArg)
@@ -405,11 +406,11 @@ protected:
 			else
 				pidArg->pos_pid->setKi(ki * time_since_last_loop_scaled);
 
-			if (fabs((pidArg->x - pos) * pidArg->pos_pid->getKp() + pidArg->pos_pid->getIntegral() * pidArg->pos_pid->getKi()) < 1) //anti-windup
+			if (fabs((pidArg->x - pos) * pidArg->pos_pid->getKp() + pidArg->pos_pid->getIntegral() * pidArg->pos_pid->getKi()) <= 1) //anti-windup
 			{
 				pidArg->stalled = false;
 
-				if (pidArg->target_dps_constrained <= signed_target_dps_end_decel)
+				if (pidArg->target_dps_constrained < signed_target_dps_end_decel)
 				{
 					if (pidArg->target_dps_constrained > 0)
 						pidArg->target_dps_constrained += time_since_last_loop * pidArg->accel;
@@ -528,13 +529,13 @@ protected:
 
 	// pin change interrupt ISRs (calling generic functions)
 	// RPM measurement only uses pulses on one encoder wheel (more accurate, from our testing)
-	static void isr0() { uint64_t now = micros(); pos_update(encoderArgs[0]);velocity_update(encoderArgs[0], now); }
+	static void isr0() { uint64_t now = micros(); pos_update(encoderArgs[0]); velocity_update(encoderArgs[0], now); }
 	static void isr1() { pos_update(encoderArgs[0]); }
-	static void isr2() { uint64_t now = micros(); pos_update(encoderArgs[1]);velocity_update(encoderArgs[1], now); }
+	static void isr2() { uint64_t now = micros(); pos_update(encoderArgs[1]); velocity_update(encoderArgs[1], now); }
 	static void isr3() { pos_update(encoderArgs[1]); }
-	static void isr4() { uint64_t now = micros(); pos_update(encoderArgs[2]);velocity_update(encoderArgs[2], now); }
+	static void isr4() { uint64_t now = micros(); pos_update(encoderArgs[2]); velocity_update(encoderArgs[2], now); }
 	static void isr5() { pos_update(encoderArgs[2]); }
-	static void isr6() { uint64_t now = micros(); pos_update(encoderArgs[3]);velocity_update(encoderArgs[3], now); }
+	static void isr6() { uint64_t now = micros(); pos_update(encoderArgs[3]); velocity_update(encoderArgs[3], now); }
 	static void isr7() { pos_update(encoderArgs[3]); }
 
 	// timer interrupt ISR (calling generic functions for each port)
@@ -858,7 +859,7 @@ private:
 			else
 				arg->turn_rate_pid->setKi(ki * time_since_last_loop_scaled);
 
-			arg->angle_error = constrain(arg->angle_error, -1, 1);
+			// arg->angle_error = constrain(arg->angle_error, -1, 1);
 			arg->angle_output = arg->turn_rate_pid->compute(arg->angle_error);
 
 			// arg->turn_rate_pid->setKp(kp);
@@ -874,7 +875,7 @@ private:
 			else
 				arg->speed_pid->setKi(ki * time_since_last_loop_scaled);
 
-			//speed error is the euclidean distance between the db position and its target (converted to motor degrees)
+			//speed error is the distance between the db position and its target (converted to motor degrees)
 			arg->speed_error = arg->target_distance - arg->current_distance;
 			arg->speed_error = arg->speed_error / M_PI / arg->wheel_dia * 360;
 			arg->speed_output = arg->speed_pid->compute(arg->speed_error);
@@ -890,28 +891,31 @@ private:
 			arg->target_motor_right_dps = arg->speed_output + arg->angle_output;
 
 			//maintain ratio between speeds when either speed exceeds motor limits
-			float ratio = arg->target_motor_left_dps / arg->target_motor_right_dps;
-			if (fabs(arg->target_motor_left_dps) > arg->max_dps)
+			if (arg->target_motor_left_dps != 0 && arg->target_motor_right_dps != 0)
 			{
-				if (arg->target_motor_left_dps > 0)
-					arg->target_motor_left_dps = arg->max_dps;
-				else
-					arg->target_motor_left_dps = -arg->max_dps;
-				arg->target_motor_right_dps = arg->target_motor_left_dps / ratio;
-			}
+				float ratio = arg->target_motor_left_dps / arg->target_motor_right_dps;
+				if (fabs(arg->target_motor_left_dps) > arg->max_dps)
+				{
+					if (arg->target_motor_left_dps > 0)
+						arg->target_motor_left_dps = arg->max_dps;
+					else
+						arg->target_motor_left_dps = -arg->max_dps;
+					arg->target_motor_right_dps = arg->target_motor_left_dps / ratio;
+				}
 
-			if (fabs(arg->target_motor_right_dps) > arg->max_dps)
-			{
-				if (arg->target_motor_right_dps > 0)
-					arg->target_motor_right_dps = arg->max_dps;
-				else
-					arg->target_motor_right_dps = -arg->max_dps;
-				arg->target_motor_left_dps = arg->target_motor_right_dps * ratio;
+				if (fabs(arg->target_motor_right_dps) > arg->max_dps)
+				{
+					if (arg->target_motor_right_dps > 0)
+						arg->target_motor_right_dps = arg->max_dps;
+					else
+						arg->target_motor_right_dps = -arg->max_dps;
+					arg->target_motor_left_dps = arg->target_motor_right_dps * ratio;
+				}
 			}
 
 			//write speeds to motors
-			arg->motor_left->runSpeed(arg->target_motor_left_dps);
-			arg->motor_right->runSpeed(arg->target_motor_right_dps);
+			arg->motor_left->runSpeedDB(arg->target_motor_left_dps);
+			arg->motor_right->runSpeedDB(arg->target_motor_right_dps);
 
 			bool old_sign_from_target_dist;
 			bool old_sign_from_target_angle;

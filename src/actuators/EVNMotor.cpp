@@ -220,6 +220,18 @@ void EVNMotor::runSpeed(float dps)
 	_pid_control.core0_writing = false;
 }
 
+void EVNMotor::runSpeedDB(float dps)
+{
+	_pid_control.target_dps = clean_input_dps(dps);
+	_pid_control.run_dir = clean_input_dir(dps);
+
+	_pid_control.run_pwm = false;
+	_pid_control.run_pos = false;
+	_pid_control.run_time = false;
+	_pid_control.run_speed = true;
+	_pid_control.hold = false;
+}
+
 void EVNMotor::runPosition(float dps, float position, uint8_t stop_action, bool wait)
 {
 	while (_pid_control.stopAction_static_running);
