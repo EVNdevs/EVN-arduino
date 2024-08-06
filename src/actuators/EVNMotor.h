@@ -91,7 +91,7 @@ class EVNMotor
 public:
 	static const uint32_t PWM_FREQ = 20000;
 	static const uint32_t PWM_MAX_VAL = 255;
-	static const uint16_t PID_TIMER_INTERVAL_US = 1000;
+	static const uint16_t PID_TIMER_INTERVAL_US = 2000;
 	static const uint32_t ENCODER_PULSE_TIMEOUT_US = 166667 * 2;
 
 	friend class EVNDrivebase;
@@ -104,24 +104,12 @@ public:
 	void resetPosition();
 	float getSpeed();
 
-	void setPID(float p, float i, float d);
-	void setAccel(float accel_dps_sq);
-	void setDecel(float decel_dps_sq);
-	void setMaxRPM(float max_rpm);
-	void setPPR(uint32_t ppr);
-
 	void runPWM(float duty_cycle_pct);
 	void runSpeed(float dps);
-
 	void runPosition(float dps, float position, uint8_t stop_action = STOP_BRAKE, bool wait = true);
 	void runAngle(float dps, float degrees, uint8_t stop_action = STOP_BRAKE, bool wait = true);
 	void runHeading(float dps, float heading, uint8_t stop_action = STOP_BRAKE, bool wait = true);
-
 	void runTime(float dps, uint32_t time_ms, uint8_t stop_action = STOP_BRAKE, bool wait = true);
-
-	//heading -> 0 - 360
-	//angle / degrees -> relative
-	//position / target -> -inf - inf
 
 	void stop();
 	void coast();
@@ -129,14 +117,22 @@ public:
 
 	bool completed();
 	bool stalled();
+
+	void setPID(float p, float i, float d);
+	void setAccel(float accel_dps_sq);
+	void setDecel(float decel_dps_sq);
+	void setMaxRPM(float max_rpm);
+	void setPPR(uint32_t ppr);
+
 	//TODO: add end function
 
 protected:
+	void runSpeedDB(float dps);
+
 	float clean_input_dps(float dps);
 	uint8_t clean_input_dir(float dps);
 	uint8_t clean_input_stop_action(uint8_t stop_action);
 
-	float _position_offset = 0;
 	pid_control_t _pid_control;
 	encoder_state_t _encoder;
 
@@ -224,8 +220,8 @@ protected:
 		if (motors_enabled()) {
 			if (speedc == 0)
 			{
-				digitalWrite(pidArg->motora, HIGH);
-				digitalWrite(pidArg->motorb, HIGH);
+				digitalWrite(pidArg->motora, LOW);
+				digitalWrite(pidArg->motorb, LOW);
 			}
 			else if (speedc == 1)
 			{
@@ -239,13 +235,13 @@ protected:
 			}
 			else if (speedc > 0)
 			{
-				analogWrite(pidArg->motora, speedc * PWM_MAX_VAL);
 				digitalWrite(pidArg->motorb, LOW);
+				analogWrite(pidArg->motora, speedc * PWM_MAX_VAL);
 			}
 			else
 			{
-				analogWrite(pidArg->motorb, -speedc * PWM_MAX_VAL);
 				digitalWrite(pidArg->motora, LOW);
+				analogWrite(pidArg->motorb, -speedc * PWM_MAX_VAL);
 			}
 		}
 	}
@@ -293,7 +289,7 @@ protected:
 	static float getPosition_static(encoder_state_t* arg)
 	{
 		// resolution of encoder readout is in CPR (4 * PPR)
-		return (float)arg->position * 360 / (4 * arg->ppr) - arg->position_offset;
+		return ((float)arg->position * 90.0 / arg->ppr) - arg->position_offset;
 	}
 
 	static float getDPS_static(encoder_state_t* arg)
@@ -341,11 +337,11 @@ protected:
 		else if (last_pulse_width > arg->avg_pulse_width)
 		{
 			float final_dps = (1000000 / last_pulse_width) / arg->ppr * 360;
-			return final_dps * arg->dir;
+			return final_dps * (float)arg->dir;
 		}
 
 		else
-			return arg->avg_dps * arg->dir;
+			return arg->avg_dps * (float)arg->dir;
 	}
 
 	static void pid_update(pid_control_t* pidArg, encoder_state_t* encoderArg)
@@ -410,11 +406,11 @@ protected:
 			else
 				pidArg->pos_pid->setKi(ki * time_since_last_loop_scaled);
 
-			if (fabs((pidArg->x - pos) * pidArg->pos_pid->getKp() + pidArg->pos_pid->getIntegral() * pidArg->pos_pid->getKi()) < 1) //anti-windup
+			if (fabs((pidArg->x - pos) * pidArg->pos_pid->getKp() + pidArg->pos_pid->getIntegral() * pidArg->pos_pid->getKi()) <= 1) //anti-windup
 			{
 				pidArg->stalled = false;
 
-				if (pidArg->target_dps_constrained <= signed_target_dps_end_decel)
+				if (pidArg->target_dps_constrained < signed_target_dps_end_decel)
 				{
 					if (pidArg->target_dps_constrained > 0)
 						pidArg->target_dps_constrained += time_since_last_loop * pidArg->accel;
@@ -490,6 +486,7 @@ protected:
 			else
 				alarm_pool_add_repeating_timer_us(EVNISRTimer1::sharedAlarmPool(), PID_TIMER_INTERVAL_US, timerisr, NULL, &EVNISRTimer1::sharedISRTimer(3));
 		}
+
 		switch (encoderArg->enca)
 		{
 		case PIN_MOTOR1_ENCA:
@@ -634,25 +631,10 @@ class EVNDrivebase
 {
 public:
 	static const uint8_t MAX_DB_OBJECTS = 2;
-	static const uint16_t PID_TIMER_INTERVAL_US = 1000;
+	static const uint16_t PID_TIMER_INTERVAL_US = 2000;
 
 	EVNDrivebase(float wheel_dia, float axle_track, EVNMotor* motor_left, EVNMotor* motor_right);
 	void begin();
-
-	void setSpeedPID(float kp, float ki, float kd);
-	void setTurnRatePID(float kp, float ki, float kd);
-	void setSpeedAccel(float speed_accel);
-	void setSpeedDecel(float speed_decel);
-	void setTurnRateAccel(float turn_rate_accel);
-	void setTurnRateDecel(float turn_rate_decel);
-
-	float getDistance();
-	float getAngle();
-	float getHeading();
-	float getX();
-	float getY();
-	void resetXY();
-	float getDistanceToPoint(float x, float y);
 
 	void drivePct(float speed_outer_pct, float turn_rate_pct);
 	void drive(float speed, float turn_rate);
@@ -673,8 +655,21 @@ public:
 
 	bool completed();
 
+	void setSpeedPID(float kp, float ki, float kd);
+	void setTurnRatePID(float kp, float ki, float kd);
+	void setSpeedAccel(float speed_accel);
+	void setSpeedDecel(float speed_decel);
+	void setTurnRateAccel(float turn_rate_accel);
+	void setTurnRateDecel(float turn_rate_decel);
+
+	float getDistance();
+	float getAngle();
+	float getHeading();
+	float getX();
+	float getY();
+	void resetXY();
+	float getDistanceToPoint(float x, float y);
 	//TODO: add end function
-	//TODO: make functions more thread-safe
 
 private:
 	float clean_input_turn_rate(float turn_rate);
@@ -815,7 +810,7 @@ private:
 				{
 					if (stop_time_to_decel_speed > stop_time_to_decel_turn_rate)
 						stop_turn_rate_decel *= stop_time_to_decel_turn_rate / stop_time_to_decel_speed;
-					else if (stop_time_to_decel_speed > stop_time_to_decel_turn_rate)
+					else if (stop_time_to_decel_turn_rate > stop_time_to_decel_speed)
 						stop_speed_decel *= stop_time_to_decel_speed / stop_time_to_decel_turn_rate;
 				}
 
@@ -855,7 +850,7 @@ private:
 				arg->angle_error += 360;
 			arg->angle_error /= 180;
 
-			float kp = arg->turn_rate_pid->getKp();
+			// float kp = arg->turn_rate_pid->getKp();
 			float ki = arg->turn_rate_pid->getKi();
 			// float kd = arg->turn_rate_pid->getKd();
 
@@ -864,14 +859,14 @@ private:
 			else
 				arg->turn_rate_pid->setKi(ki * time_since_last_loop_scaled);
 
-			arg->angle_error = constrain(arg->angle_error, -1, 1);
+			// arg->angle_error = constrain(arg->angle_error, -1, 1);
 			arg->angle_output = arg->turn_rate_pid->compute(arg->angle_error);
 
-			arg->turn_rate_pid->setKp(kp);
+			// arg->turn_rate_pid->setKp(kp);
 			arg->turn_rate_pid->setKi(ki);
 			// arg->turn_rate_pid->setKd(kd);
 
-			kp = arg->speed_pid->getKp();
+			// kp = arg->speed_pid->getKp();
 			ki = arg->speed_pid->getKi();
 			// kd = arg->speed_pid->getKd();
 
@@ -880,45 +875,47 @@ private:
 			else
 				arg->speed_pid->setKi(ki * time_since_last_loop_scaled);
 
-			//speed error is the euclidean distance between the db position and its target (converted to motor degrees)
+			//speed error is the distance between the db position and its target (converted to motor degrees)
 			arg->speed_error = arg->target_distance - arg->current_distance;
 			arg->speed_error = arg->speed_error / M_PI / arg->wheel_dia * 360;
 			arg->speed_output = arg->speed_pid->compute(arg->speed_error);
 
-			arg->speed_pid->setKp(kp);
+			// arg->speed_pid->setKp(kp);
 			arg->speed_pid->setKi(ki);
 			// arg->speed_pid->setKd(kd);
 
 			//calculate motor speeds
 			//speed output   -> average speed
 			//heading output -> difference between speeds
-			arg->target_motor_left_dps = constrain(arg->speed_output - arg->angle_output, -arg->max_dps, arg->max_dps);
-			arg->target_motor_right_dps = constrain(arg->speed_output + arg->angle_output, -arg->max_dps, arg->max_dps);
+			arg->target_motor_left_dps = arg->speed_output - arg->angle_output;
+			arg->target_motor_right_dps = arg->speed_output + arg->angle_output;
 
 			//maintain ratio between speeds when either speed exceeds motor limits
-			float ratio = arg->target_motor_left_dps / arg->target_motor_right_dps;
-			if (fabs(arg->target_motor_left_dps) > arg->max_dps)
+			if (arg->target_motor_left_dps != 0 && arg->target_motor_right_dps != 0)
 			{
-				if (arg->target_motor_left_dps > 0)
-					arg->target_motor_left_dps = arg->max_dps;
-				else
-					arg->target_motor_left_dps = -arg->max_dps;
-				arg->target_motor_right_dps = arg->target_motor_left_dps / ratio;
-			}
+				float ratio = arg->target_motor_left_dps / arg->target_motor_right_dps;
+				if (fabs(arg->target_motor_left_dps) > arg->max_dps)
+				{
+					if (arg->target_motor_left_dps > 0)
+						arg->target_motor_left_dps = arg->max_dps;
+					else
+						arg->target_motor_left_dps = -arg->max_dps;
+					arg->target_motor_right_dps = arg->target_motor_left_dps / ratio;
+				}
 
-			if (fabs(arg->target_motor_right_dps) > arg->max_dps)
-			{
-				if (arg->target_motor_right_dps > 0)
-					arg->target_motor_right_dps = arg->max_dps;
-				else
-					arg->target_motor_right_dps = -arg->max_dps;
-				arg->target_motor_left_dps = arg->target_motor_right_dps * ratio;
+				if (fabs(arg->target_motor_right_dps) > arg->max_dps)
+				{
+					if (arg->target_motor_right_dps > 0)
+						arg->target_motor_right_dps = arg->max_dps;
+					else
+						arg->target_motor_right_dps = -arg->max_dps;
+					arg->target_motor_left_dps = arg->target_motor_right_dps * ratio;
+				}
 			}
 
 			//write speeds to motors
-			arg->motor_left->runSpeed(arg->target_motor_left_dps);
-			arg->motor_right->runSpeed(arg->target_motor_right_dps);
-
+			arg->motor_left->runSpeedDB(arg->target_motor_left_dps);
+			arg->motor_right->runSpeedDB(arg->target_motor_right_dps);
 
 			bool old_sign_from_target_dist;
 			bool old_sign_from_target_angle;
@@ -931,91 +928,84 @@ private:
 
 			//increment target angle and XY position
 			//if output of speed or turn rate output is saturated or motors are stalled, stop incrementing (avoid excessive overshoot that PID cannot correct)
-			if (fabs(arg->speed_error * arg->speed_pid->getKp()
-				+ arg->speed_pid->getIntegral() * arg->speed_pid->getKi() * (arg->drive_position ? 1 : 0)) < arg->max_dps
-
-				&& fabs(arg->angle_error * arg->turn_rate_pid->getKp()
-					+ arg->turn_rate_pid->getIntegral() * arg->turn_rate_pid->getKi() * (arg->drive_position ? 1 : 0)) < arg->max_dps
-
-				&& !arg->motor_left->stalled() && !arg->motor_right->stalled())
+			if (fabs(arg->speed_error * arg->speed_pid->getKp() + arg->speed_pid->getIntegral() * arg->speed_pid->getKi()) < arg->max_dps
+				&& fabs(arg->angle_error * arg->turn_rate_pid->getKp() + arg->turn_rate_pid->getIntegral() * arg->turn_rate_pid->getKi()) < arg->max_dps
+				&& !arg->motor_left->stalled() && !arg->motor_right->stalled()
+				)
 			{
+
 				//calculating time taken to decel/accel to target speed & turn rate
 				float new_speed_accel = arg->speed_accel;
 				float new_speed_decel = arg->speed_decel;
 				float new_turn_rate_accel = arg->turn_rate_accel;
 				float new_turn_rate_decel = arg->turn_rate_decel;
 
-				float time_to_decel_speed = 0;
-				float time_to_accel_speed = 0;
-				float time_to_decel_turn_rate = 0;
-				float time_to_accel_turn_rate = 0;
+				float time_to_hit_speed = 0;
+				float time_to_hit_turn_rate = 0;
 
-				if (target_speed_after_decel >= 0 && arg->target_speed_constrained >= 0)
+				if (target_speed_after_decel != arg->target_speed_constrained &&
+					target_turn_rate_after_decel != arg->target_turn_rate_constrained)
 				{
-					float difference = target_speed_after_decel - arg->target_speed_constrained;
-					if (difference > 0)
-						time_to_accel_speed = fabs(difference) / arg->speed_accel;
-					else
-						time_to_decel_speed = fabs(difference) / arg->speed_decel;
-				}
-				else if (target_speed_after_decel <= 0 && arg->target_speed_constrained <= 0)
-				{
-					float difference = target_speed_after_decel - arg->target_speed_constrained;
-					if (difference < 0)
-						time_to_accel_speed = fabs(difference) / arg->speed_accel;
-					else
-						time_to_decel_speed = fabs(difference) / arg->speed_decel;
-				}
-				else
-				{
-					time_to_decel_speed = fabs(0 - arg->target_speed_constrained) / arg->speed_decel;
-					time_to_accel_speed = fabs(target_speed_after_decel - 0) / arg->speed_accel;
-				}
-
-				if (target_turn_rate_after_decel >= 0 && arg->target_turn_rate_constrained >= 0)
-				{
-					float difference = target_turn_rate_after_decel - arg->target_turn_rate_constrained;
-					if (difference > 0)
-						time_to_accel_turn_rate = fabs(difference) / arg->turn_rate_accel;
-					else
-						time_to_decel_turn_rate = fabs(difference) / arg->turn_rate_decel;
-				}
-				else if (target_turn_rate_after_decel < 0 && arg->target_turn_rate_constrained < 0)
-				{
-					float difference = target_turn_rate_after_decel - arg->target_turn_rate_constrained;
-					if (difference < 0)
-						time_to_accel_turn_rate = fabs(difference) / arg->turn_rate_accel;
-					else
-						time_to_decel_turn_rate = fabs(difference) / arg->turn_rate_decel;
-				}
-				else
-				{
-					time_to_decel_turn_rate = fabs(0 - arg->target_turn_rate_constrained) / arg->turn_rate_decel;
-					time_to_accel_turn_rate = fabs(target_turn_rate_after_decel - 0) / arg->turn_rate_accel;
-				}
-
-				float time_to_hit_speed = time_to_accel_speed + time_to_decel_speed;
-				float time_to_hit_turn_rate = time_to_decel_turn_rate + time_to_accel_turn_rate;
-
-				//stretch the accel/decel trajectories for turn rate and speed to match each other
-				if (time_to_hit_speed != 0 && time_to_hit_turn_rate != 0)
-				{
-					if (time_to_hit_speed > time_to_hit_turn_rate)
+					if (target_speed_after_decel > 0 && arg->target_speed_constrained > 0)
 					{
-						//slow down turn rate to match time taken to hit target speed
-						new_turn_rate_accel *= constrain(time_to_hit_turn_rate / time_to_hit_speed, 0, 1);
-						new_turn_rate_decel *= constrain(time_to_hit_turn_rate / time_to_hit_speed, 0, 1);
+						float difference = target_speed_after_decel - arg->target_speed_constrained;
+						if (difference > 0)
+							time_to_hit_speed = fabs(difference) / arg->speed_accel;
+						else
+							time_to_hit_speed = fabs(difference) / arg->speed_decel;
+					}
+					else if (target_speed_after_decel < 0 && arg->target_speed_constrained < 0)
+					{
+						float difference = target_speed_after_decel - arg->target_speed_constrained;
+						if (difference < 0)
+							time_to_hit_speed = fabs(difference) / arg->speed_accel;
+						else
+							time_to_hit_speed = fabs(difference) / arg->speed_decel;
 					}
 					else
+						time_to_hit_speed = fabs(arg->target_speed_constrained) / arg->speed_decel +
+						fabs(target_speed_after_decel) / arg->speed_accel;
+
+					if (target_turn_rate_after_decel > 0 && arg->target_turn_rate_constrained > 0)
 					{
-						//slow down speed to match time taken to hit target turn_rate
-						new_speed_accel *= constrain(time_to_hit_speed / time_to_hit_turn_rate, 0, 1);
-						new_speed_decel *= constrain(time_to_hit_speed / time_to_hit_turn_rate, 0, 1);
+						float difference = target_turn_rate_after_decel - arg->target_turn_rate_constrained;
+						if (difference > 0)
+							time_to_hit_turn_rate = fabs(difference) / arg->turn_rate_accel;
+						else
+							time_to_hit_turn_rate = fabs(difference) / arg->turn_rate_decel;
+					}
+					else if (target_turn_rate_after_decel < 0 && arg->target_turn_rate_constrained < 0)
+					{
+						float difference = target_turn_rate_after_decel - arg->target_turn_rate_constrained;
+						if (difference < 0)
+							time_to_hit_turn_rate = fabs(difference) / arg->turn_rate_accel;
+						else
+							time_to_hit_turn_rate = fabs(difference) / arg->turn_rate_decel;
+					}
+					else
+						time_to_hit_turn_rate = fabs(arg->target_turn_rate_constrained) / arg->turn_rate_decel +
+						fabs(target_turn_rate_after_decel) / arg->turn_rate_accel;
+
+					//stretch the accel/decel trajectories for turn rate and speed to match each other
+					if (time_to_hit_speed != 0 && time_to_hit_turn_rate != 0)
+					{
+						if (time_to_hit_speed > time_to_hit_turn_rate)
+						{
+							//slow down turn rate to match time taken to hit target speed
+							new_turn_rate_accel *= constrain(time_to_hit_turn_rate / time_to_hit_speed, 0, 1);
+							new_turn_rate_decel *= constrain(time_to_hit_turn_rate / time_to_hit_speed, 0, 1);
+						}
+						else
+						{
+							//slow down speed to match time taken to hit target turn_rate
+							new_speed_accel *= constrain(time_to_hit_speed / time_to_hit_turn_rate, 0, 1);
+							new_speed_decel *= constrain(time_to_hit_speed / time_to_hit_turn_rate, 0, 1);
+						}
 					}
 				}
 
 				//apply accel/decel to hit target speed
-				if (arg->target_speed_constrained <= target_speed_after_decel)
+				if (arg->target_speed_constrained < target_speed_after_decel)
 				{
 					if (arg->target_speed_constrained > 0)
 						arg->target_speed_constrained += time_since_last_loop * new_speed_accel;
@@ -1025,7 +1015,7 @@ private:
 					if (arg->target_speed_constrained > target_speed_after_decel)
 						arg->target_speed_constrained = target_speed_after_decel;
 				}
-				else
+				else if (arg->target_speed_constrained > target_speed_after_decel)
 				{
 					if (arg->target_speed_constrained > 0)
 						arg->target_speed_constrained -= time_since_last_loop * new_speed_decel;
@@ -1037,7 +1027,7 @@ private:
 				}
 
 				//apply accel/decel to hit target turn rate
-				if (arg->target_turn_rate_constrained <= target_turn_rate_after_decel)
+				if (arg->target_turn_rate_constrained < target_turn_rate_after_decel)
 				{
 					if (arg->target_turn_rate_constrained > 0)
 						arg->target_turn_rate_constrained += time_since_last_loop * new_turn_rate_accel;
@@ -1047,7 +1037,7 @@ private:
 					if (arg->target_turn_rate_constrained > target_turn_rate_after_decel)
 						arg->target_turn_rate_constrained = target_turn_rate_after_decel;
 				}
-				else
+				else if (arg->target_turn_rate_constrained > target_turn_rate_after_decel)
 				{
 					if (arg->target_turn_rate_constrained > 0)
 						arg->target_turn_rate_constrained -= time_since_last_loop * new_turn_rate_decel;

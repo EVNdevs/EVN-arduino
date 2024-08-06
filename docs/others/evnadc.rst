@@ -91,7 +91,7 @@ Get Functions
     :returns: Input voltage range that ADC is set to
 
 Single-Shot Measurement (Synchronous)
-""""""""""""""""""""""""""""""""""
+""""""""""""""""""""""""""""""""""""""
 
 This kind of measurement is the same as the ``analogRead()`` functionality you get on Arduino boards.
 
@@ -111,7 +111,7 @@ The host requests the ADC to start a measurement and waits for the ADC to measur
     :returns: analog voltage measured in microvolts (one millionth of a volt)
 
 Single-Shot Measurement (Asynchronous)
-""""""""""""""""""""""""""""""""""
+""""""""""""""""""""""""""""""""""""""""""
 
 Asynchronous single-shot measurements allow you to request the ADC for a measurement, but continue to do other tasks until the measurement is ready.
 

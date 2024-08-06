@@ -8,8 +8,6 @@ This class provides the following features and functionalities for our 6DoF IMU 
 
 .. note:: This class does I2C port selection automatically, so users do not need to call ``setPort()`` using their EVNAlpha objects.
 
-.. note:: We're working on fusing the accelerometer and gyroscope readings together to obtain orientation data, so that should be coming soon!
-
 Wiring (I2C)
 ------------
 
@@ -98,7 +96,26 @@ Gyroscope Measurements
 
 Fused Measurements
 """"""""""""""""""
+Gyroscope measurements are susceptible to drift. Gyroscope measure rate of rotation along each axis (X, Y & Z). This means that when perfectly stationary, a perfect gyroscope should return 0 along all axes. 
+
+However, this perfect gyroscope does not exist. All gyroscopes are susceptible to drift in their readings. Even if a gyroscope is initially calibrated to return 0 when perfectly stationary,
+
+the readings will drift over time based on various factors such as surrounding temperature, which makes it hard to correct for or even predict.
+
+One solution to this is to fuse gyroscope readings with accelerometer and magnetometer readings. When well calibrated, accelerometer readings can compensate for pitch/roll drift, while magnetometer/compass readings can compensate for yaw drift.
+
+There are many fusion algorithms out there, but we are using **Madgwick** fusion for this library. 
+It is a stretch to say fusion makes these problems go away entirely (in the end, the fusion algorithm's output can only be as good as the data it receives), but it can make the difference between usable and unusable.
+
+Additionally, there is a caveat: in order to obtain fused measurements, ``update()`` needs to be called in your loop at a frequency at least higher than the update rate of the IMU.
+
 .. function::   void update()
+
+    To use fused measurements, this function needs to be called at a rate higher than the update rate of your IMU Sensor Standard Peripheral (and the faster, the better).
+
+    .. code-block:: cpp
+        
+        imu.update()
 
 .. function::   float readYaw(bool blocking = true)
 
@@ -137,6 +154,10 @@ Fused Measurements
     The primary benefit of adding compass readings to sensor fusion is to compensate for yaw/heading drift in the gyroscope.
 
     :param compass: Pointer to EVNCompassSensor object (e.g. ``&compass``, where ``compass`` refers to an ``EVNCompassSensor`` object declared in the code)
+
+    .. code-block:: cpp
+
+        imu.linkCompass(&compass);
 
 Sensor Settings
 """""""""""""""

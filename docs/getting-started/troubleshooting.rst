@@ -1,7 +1,7 @@
 Troubleshooting
 ===============
 
-.. note:: This page is a work-in-progress! Expect it to be filled up in future updates.
+.. note:: This page is a work-in-progress! Expect it to be filled up over time.
 
 **My Serial prints at the start of the program are not appearing in Serial Monitor.**
 

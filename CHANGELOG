@@ -1,3 +1,19 @@
+0.10.5 (05/08/24)
+
+Very small update, most of the changes are to the documentation
+
+-- Features --
+
+Library now raises readable errors when compiling without EVN Alpha selected, or with an Arduino-Pico core version that is too old
+
+Docs now have images of the standard peripherals!
+
+-- Bugfixes --
+
+Not a bugfix, but EVNDrivebase seems to have some issues at low speeds using EV3 Medium motors
+
+We will be looking into this issue and hopefully pushing changes to fix it if it is common.
+
 0.10.4 (01/08/24)
 
 This is a small update to update docs and make style changes to the library.

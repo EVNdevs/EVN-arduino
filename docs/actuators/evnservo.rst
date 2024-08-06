@@ -80,6 +80,7 @@ Using Fixed Servos
     :returns: Maximum angular rotation of servo shaft (in degrees per second).
 
     .. code-block:: cpp
+
         float max_dps = servo.getMaxDPS();
 
 .. function:: uint16_t getRange()
@@ -87,6 +88,7 @@ Using Fixed Servos
     :returns: Angular range of servo (in degrees).
 
     .. code-block:: cpp
+
         int range = servo.getRange();
 
 .. function::   void write(float position, uint16_t wait_time_ms, float dps)
@@ -98,6 +100,7 @@ Using Fixed Servos
     :param dps: Speed to run servo at (in degrees per second), from 0 to **max_range**. When dps is 0, servo runs at max speed. Defaults to 0.
     
     .. code-block:: cpp
+
         //write servo to run to 180 degrees at a speed of 30DPS, and wait 6 seconds
         servo.write(180, 6000, 30);
 
@@ -109,5 +112,6 @@ Using Fixed Servos
     :param wait_time_ms: Time to wait before continuing the program (in milliseconds). Same effect as ``delay()``, but terminates when servos are disabled.
 
     .. code-block:: cpp
+        
         //write 1500us pulse to servo, and wait 3 seconds
         servo.writeMicroseconds(1500, 3000);
