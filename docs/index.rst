@@ -68,8 +68,41 @@ In addition, it contains code from additional open source projects:
 Acknowledgements
 ----------------
 
-.. note:: Acknowledgements will be added soon :)
-
 We'd like to thank the following people for their contributions to the Kickstarter:
 
-Without them, EVN would not exist today.
+.. list-table::
+   :widths: 33 33 33
+   :header-rows: 0
+
+   * - Robots-Blog.com
+     - Arthur Tan
+     - Robert Lau
+   * - Tan Chien Hao
+     - shrmnk
+     - John Seet
+   * - Heng Jia Min
+     - Jim Anderson
+     - Steven Lim
+   * - robotins
+     - Alice Teoh
+     - Justin H
+   * - Colin "TinMan" Kulsa
+     - Don Meyer
+     - Lars Shakya Buch-Jepsen
+   * - Roel Thijs
+     - bechuts
+     - Andrea Anderlini
+   * - WhizNut
+     - Heng Meng Lek
+     - shenc
+   * - Jonathan Carpenter
+     - Volker Schmidt
+     - davalillo
+   * - Sam "Pasamio" Moffatt
+     - Ashlee 🐈
+     - mrshu
+   * - Stéphane Hulard
+     - Shannon Prescott
+     - 
+
+Without them (and many more unnamed backers), EVN would not exist today.
