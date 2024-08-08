@@ -71,7 +71,7 @@ Acknowledgements
 We'd like to thank the following people for their contributions to the Kickstarter:
 
 .. list-table::
-   :widths: 33 33 34
+   :widths: 33 33 33
    :header-rows: 0
 
    * - Robots-Blog.com
@@ -105,4 +105,4 @@ We'd like to thank the following people for their contributions to the Kickstart
      - Shannon Prescott
      - 
 
-Without them (and our many unnamed backers), EVN would not exist today.
+Without them (and many more unnamed backers), EVN would not exist today.
