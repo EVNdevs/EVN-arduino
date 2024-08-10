@@ -14,8 +14,8 @@ As the Arduino-Pico core `docs`_ state:
 Despite the added features, all your programs can still be written in Arduino code, and basic functions like compile, upload and serial monitor are present.
 
 If you're wondering why we don't promote PlatformIO as the default way to program EVN, 
-it doesn't officially support the Arduino-Pico core that our libraries build upon, 
-so it can be a little more troublesome to setup. But if you're up for it, here we go!
+it can be a little more troublesome to setup as PlatformIO does not natively support our board despite being a community project.
+But if you're up for it, here we go!
 
 Steps
 -------
@@ -74,7 +74,7 @@ Steps
 
     .. code-block::
 
-        git clone https://github.com/HTY2003/EVN-PlatformIO-Example.git
+        git clone https://github.com/EVNdevs/EVN-PlatformIO-Example.git
 
 6. Open the project in Visual Studio Code (File > Open Folder > Select your project folder).
 
@@ -109,6 +109,25 @@ Steps
 
 .. note:: Creating a "New Project" without using our example template is possible, but you will need to swap out the contents of ``platformio.ini`` with the contents from our example.
 
+Updating PlatformIO Integration
+-----------------------------------
+
+As mentioned earlier, EVN Alpha is not natively supported by PlatformIO. 
+
+The only RP2040 boards natively supported are the Arduino Nano RP2040 Connect and Pi Pico, as shown in `this repo`_.
+
+Our boards are actually added via `this project`_, which integrates a version of the Arduino-Pico core (and all its supported boards) into PlatformIO.
+
+Updating the integration ensures that more up-to-date versions of the Arduino-Pico core can be used.
+
+Run the following line in the PlatformIO CLI to update:
+
+.. code-block::
+
+    pio pkg update -g -p https://github.com/maxgerhardt/platform-raspberrypi.git
+
+Alternatively, update it in the PIO Home > Platforms > Updates GUI.
+
 Additional Resources
 --------------------
 
@@ -123,4 +142,6 @@ Here are some additional resources you may want to explore:
 .. _Visual Studio Code: https://code.visualstudio.com/download
 .. _docpage: https://arduino-pico.readthedocs.io/en/latest/platformio.html
 .. _docs: https://arduino-pico.readthedocs.io/en/latest/platformio.html
-.. _this repository: https://github.com/HTY2003/EVN-PlatformIO-Example
+.. _this repository: https://github.com/EVNdevs/EVN-PlatformIO-Example
+.. _this repo: https://github.com/platformio/platform-raspberrypi
+.. _this project: https://github.com/maxgerhardt/platform-raspberrypi
