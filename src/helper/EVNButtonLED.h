@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include "EVNISRTimer.h"
+#include "../evn_pins_defs.h"
 
 #define BUTTON_DISABLE		0
 #define BUTTON_TOGGLE		1

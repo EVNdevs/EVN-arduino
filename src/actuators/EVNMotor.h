@@ -6,6 +6,7 @@
 #include "../helper/EVNISRTimer.h"
 #include "../helper/PIDController.h"
 #include "../evn_motor_defs.h"
+#include "../evn_pins_defs.h"
 
 //INPUT PARAMETER MACROS
 #define DIRECT	1
