@@ -1,6 +1,16 @@
 Programming with PlatformIO on VSCode
 =====================================
 
+.. warning::
+
+    This guide is outdated! We are in the process of adding EVN Alpha as a board option in PlatformIO (instead of using Generic RP2040), but it has not been added yet.
+
+    Until it is added, the guide below and code upload will still work, but the EVN library will most likely fail to compile. 
+    
+    If you still wish to use PlatformIO right now, you can follow the guide below, but remove the EVN-arduino URL from your platformio.ini file. 
+    
+    You won't be able to use the library, but you will be able to upload code without Arduino IDE.
+
 .. image:: ../images/platformio/platformio.png
 
 As the Arduino-Pico core `docs`_ state:

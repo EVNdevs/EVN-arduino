@@ -13,16 +13,14 @@ Adding these functions will allow you to interface with any I2C device
 #define SENSOR_PORT 1
 #define SENSOR2_PORT 9
 
-EVNAlpha board(BUTTON_TOGGLE, LED_LINK, MOTORS_LINK);
+EVNAlpha board;
 VL53L0X sensor, sensor2;
 
 void setup()
 {
 	//---EVN ONLY---
-	//initialize board at the very start of void setup()
-	//this sets the pin definitions for I2C & UART, as well as the onboard button
-	board.begin();
-	//-------------
+	board.begin(); 	//initialize board
+	//--------------
 
 	Serial.begin(9600);
 	Wire.begin();
