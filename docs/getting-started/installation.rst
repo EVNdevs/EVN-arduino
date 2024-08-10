@@ -19,7 +19,11 @@ After installing Arduino IDE, install Earle F Philhower's Arduino-Pico core (V3.
 
 1. Open Preferences in Arduino IDE (File > Preferences)
 
-2. Enter the following URL in the Additional Boards Manager URLs field: https://github.com/earlephilhower/arduino-pico/releases/download/global/package_rp2040_index.json
+2. Enter the following URL in the Additional Boards Manager URLs field: 
+
+.. code-block::
+    
+    https://github.com/earlephilhower/arduino-pico/releases/download/global/package_rp2040_index.json
 
 3. Open Boards Manager in Arduino IDE (Tools > Board > Boards Manager...)
 
