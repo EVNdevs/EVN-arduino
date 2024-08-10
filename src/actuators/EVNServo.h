@@ -5,6 +5,7 @@
 #include <Servo.h>
 #include "../EVNAlpha.h"
 #include "../helper/EVNISRTimer.h"
+#include "../evn_pins_defs.h"
 
 #define DIRECT	1
 #define REVERSE	0

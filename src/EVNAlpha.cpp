@@ -22,14 +22,24 @@ EVNAlpha::EVNAlpha(uint8_t mode, bool link_led, bool link_movement, bool button_
 void EVNAlpha::begin()
 {
     //set correct I2C and Serial pins
-    // Wire.setSDA(WIRE0_SDA);
-    // Wire.setSCL(WIRE0_SCL);
-    // Wire1.setSDA(WIRE1_SDA);
-    // Wire1.setSCL(WIRE1_SCL);
-    // Serial1.setRX(SERIAL1_RX);
-    // Serial1.setTX(SERIAL1_TX);
-    // Serial2.setRX(SERIAL2_RX);
-    // Serial2.setTX(SERIAL2_TX);
+#if (defined(ARDUINO_GENERIC_RP2040))
+    Wire1.setSDA(PIN_WIRE1_SDA);
+    Wire1.setSCL(PIN_WIRE1_SCL);
+#endif
+
+#if (defined(ARDUINO_GENERIC_RP2040) && defined(__SPI0_DEVICE))
+    SPI.setRX(PIN_SPI0_MISO);
+    SPI.setTX(PIN_SPI0_MOSI);
+    SPI.setSCK(PIN_SPI0_SCK);
+    SPI.setCS(PIN_SPI0_SS);
+#endif
+
+#if (defined(ARDUINO_GENERIC_RP2040) && defined(__SPI1_DEVICE))
+    SPI1.setRX(PIN_SPI1_MISO);
+    SPI1.setTX(PIN_SPI1_MOSI);
+    SPI1.setSCK(PIN_SPI1_SCK);
+    SPI1.setCS(PIN_SPI1_SS);
+#endif
 
     //initialize helper objects
     ports.begin();
