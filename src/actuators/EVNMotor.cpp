@@ -97,18 +97,18 @@ EVNMotor::EVNMotor(uint8_t port, uint8_t motortype, uint8_t motor_dir, uint8_t e
 	}
 
 	//make sure motor does not run
-	_pid_control.run_pwm = false;
-	_pid_control.hold = false;
-	_pid_control.run_speed = false;
-	_pid_control.run_time = false;
-	_pid_control.run_pos = false;
-	_pid_control.stopAction_static_running = false;
-	_pid_control.core0_writing = false;
+	// _pid_control.run_pwm = false;
+	// _pid_control.hold = false;
+	// _pid_control.run_speed = false;
+	// _pid_control.run_time = false;
+	// _pid_control.run_pos = false;
+	// _pid_control.stopAction_static_running = false;
+	// _pid_control.core0_writing = false;
 
-	_encoder.position = 0;
-	_encoder.position_offset = 0;
-	_encoder.dps_calculated = false;
-	_encoder.obtained_one_pulse = false;
+	// _encoder.position = 0;
+	// _encoder.position_offset = 0;
+	// _encoder.dps_calculated = false;
+	// _encoder.obtained_one_pulse = false;
 }
 
 void EVNMotor::begin()
@@ -355,10 +355,10 @@ EVNDrivebase::EVNDrivebase(float wheel_dia, float axle_track, EVNMotor* motor_le
 
 	db.axle_track = fabs(axle_track);
 	db.wheel_dia = fabs(wheel_dia);
-	db.drive = false;
-	db.drive_position = false;
-	db.stopAction_static_running = false;
-	db.core0_writing = false;
+	// db.drive = false;
+	// db.drive_position = false;
+	// db.stopAction_static_running = false;
+	// db.core0_writing = false;
 
 	db.max_speed = db.max_rpm / 60 * db.wheel_dia * M_PI;
 	db.max_turn_rate = db.max_rpm * 6 * db.wheel_dia / axle_track;

@@ -134,8 +134,8 @@ protected:
 	uint8_t clean_input_dir(float dps);
 	uint8_t clean_input_stop_action(uint8_t stop_action);
 
-	pid_control_t _pid_control;
-	encoder_state_t _encoder;
+	pid_control_t _pid_control = {};
+	encoder_state_t _encoder = {};
 
 	static bool ports_started[4];
 	static encoder_state_t* encoderArgs[4]; // static list of pointers to each instances' structs
@@ -680,7 +680,7 @@ private:
 	float radius_to_turn_rate(float speed, float radius);
 	void enable_drive_position(uint8_t stop_action, bool wait);
 
-	drivebase_state_t db;
+	drivebase_state_t db = {};
 	static drivebase_state_t* dbArgs[MAX_DB_OBJECTS];
 	static bool dbs_enabled[MAX_DB_OBJECTS];
 
