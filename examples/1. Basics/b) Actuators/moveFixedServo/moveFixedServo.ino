@@ -7,7 +7,7 @@ The following program demonstrates some basic EVNServo functionality.
 
 #define SERVO_PORT 1  //set servo port here
 
-EVNAlpha board(BUTTON_TOGGLE, true, true);
+EVNAlpha board;
 EVNServo servo(SERVO_PORT);
 
 //EVNAlpha board(BUTTON_TOGGLE, true, true);
