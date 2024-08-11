@@ -7,7 +7,7 @@ The following program demonstrates some basic EVNServo functionality.
 
 #define SERVO_PORT 1  //set servo port here
 
-EVNAlpha board(BUTTON_TOGGLE, true, true);
+EVNAlpha board;
 EVNServo servo(SERVO_PORT);
 
 //EVNAlpha board(BUTTON_TOGGLE, true, true);
@@ -34,6 +34,6 @@ void loop()
     if (board.buttonRead())
     {
         servo.write(0, 1000);       //set servo to move to position of 0deg, and wait for 1 second
-        servo.write(270, 9500, 20); //set servo to move to position of 270deg at a speed of 20deg per second, and wait for 5 seconds
+        servo.write(270, 9500, 20); //set servo to move to position of 270deg at a speed of 20deg per second, and wait for 9.5 seconds
     }
 }

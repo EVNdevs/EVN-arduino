@@ -42,7 +42,7 @@ public:
     float getMaxDPS() { return _servo.max_dps; };
 
 protected:
-    servo_state_t _servo;
+    servo_state_t _servo = {};
     static servo_state_t* servoArgs[4];
     static bool servos_enabled[4];
     static bool cservos_enabled[4];

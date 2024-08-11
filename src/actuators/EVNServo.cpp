@@ -12,11 +12,8 @@ EVNServo::EVNServo(uint8_t port, bool servo_dir, uint16_t range, float start_pos
     _servo.range = range;
     _servo.min_pulse_us = min_pulse_us;
     _servo.max_pulse_us = max_pulse_us;
-    _servo.dps = 0;
     _servo.max_dps = max(1, max_dps);
     _servo.position = constrain(start_position, 0, range);
-    _servo.end_position = 0;
-    _servo.sweep = false;
 
     uint8_t portc = constrain(port, 1, 4);
     _servo.port = portc;
