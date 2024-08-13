@@ -83,9 +83,20 @@ Measurements
 
         float pos = motor.getHeading(); //ranges from 0 to 360
 
+.. function:: void setPosition(float position)
+
+    Reset motor's current position to given position
+
+    :param position: Position (in degrees) for motor position to be set to
+
+    .. code-block:: cpp
+
+        motor.setPosition(60);
+        //afterwards, getPosition will return 60
+
 .. function:: void resetPosition()
 
-    Reset starting position to motor's starting position.
+    Reset motor's current position to 0
 
     .. code-block:: cpp
 

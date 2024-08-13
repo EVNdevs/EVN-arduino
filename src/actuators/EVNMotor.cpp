@@ -148,9 +148,14 @@ float EVNMotor::getHeading()
 	return fmod(fmod(getPosition_static(&_encoder), 360) + 360, 360);
 }
 
+void EVNMotor::setPosition(float position)
+{
+	_encoder.position_offset = ((float)_encoder.position * 90.0 / _encoder.ppr) - position;
+}
+
 void EVNMotor::resetPosition()
 {
-	_encoder.position_offset = getPosition_static(&_encoder);
+	this->setPosition(0);
 }
 
 float EVNMotor::getSpeed()
