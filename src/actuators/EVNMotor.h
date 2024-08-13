@@ -102,6 +102,7 @@ public:
 	void begin();
 	float getPosition();
 	float getHeading();
+	void setPosition(float position);
 	void resetPosition();
 	float getSpeed();
 
