@@ -1,3 +1,23 @@
+0.10.6 (19/08/24)
+
+A lot of bugfixes!
+
+-- Features --
+
+EVNMotor: setPosition() function added
+
+-- Bugfixes --
+
+EVNBluetooth: Was pretty much broken before, has been fully tested working with documentation and examples
+
+PlatformIO Support: Was broken for a while after being added to Arduino-Pico core, has been fixed
+
+Generic RP2040 Board Support: It's now possible to use this profile for programming! As long as begin() is called on an EVNAlpha object, the pins should be set correctly and work fine.
+
+Dynamic Creation: EVNMotor/Drivebase/Servo/ContinuousServo and all other classes should support being created dynamically (using new) now
+
+EVNMotor: resetPosition() fails after being called once, this has been fixed
+
 0.10.5 (05/08/24)
 
 Very small update, most of the changes are to the documentation
