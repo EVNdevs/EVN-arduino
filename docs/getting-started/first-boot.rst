@@ -14,7 +14,9 @@ Here's the list of items you need to get EVN Alpha up and running:
 
     * Most modern laptops are capable of this, but any charging brick works too
 
-If you have purchased a Hacker Kit, refer to our Soldering & Assembly Guide (coming soon!) on how to solder a board.
+If you have purchased a DIY Kit, refer to our `DIY Guide`_ for soldering instructions and assembly.
+
+.. _DIY Guide: ../guides/diy-v1_4.html
 
 18650 Battery Selection
 -----------------------

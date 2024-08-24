@@ -41,9 +41,12 @@ Cables
 -------
 
 Standard Peripherals each come with a cable to connect to Alpha.
-    * Peripherals which use I2C or Serial Ports have 4-Wire cables
-    * Peripherals which use Servo Ports have 3-Wire cables
-    * The 270 Degree Servo and Continuous Servo Peripherals come with non-removable 3-Wire cables.
+
+* Peripherals which use I2C or Serial Ports have 4-Wire cables
+
+* Peripherals which use Servo Ports have 3-Wire cables
+
+* The 270 Degree Servo and Continuous Servo Peripherals come with non-removable 3-Wire cables.
 
 At one end of the cable, all the wires will be joined into one plastic connector. 
 With the exception of the Servo Peripherals, this connector plugs into the EVN Alpha brick, and has a notch to avoid being plugged in reverse (called a **key**).
@@ -55,7 +58,9 @@ because the layout of the pins differs with each Peripheral.
 The library reference page for each Peripheral (linked below) contains a pin layout section to guide you on the connections.
 
 The pins we used on the Alpha and Standard Peripherals are standard 2.54mm pitch pin headers, and the cables can be substituted with 2.54mm Dupont jumper wires as well! 
-Jumper cables don't have a key, so you'll need to be slightly more careful, but they will work perfectly. Likewise, our cables will function well for interfacing with non-Standard Peripherals if they also 2.54mm pitch pins.
+Jumper cables don't have a key, so you'll need to be slightly more careful with your wiring, but they will work perfectly. 
+
+Likewise, our cables will function well for interfacing with non-Standard Peripherals if they also have 2.54mm pitch pins.
 
 Wiring
 --------
