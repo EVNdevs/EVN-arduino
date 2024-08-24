@@ -1,17 +1,20 @@
-Soldering EVN Alpha V1.4
-========================
+DIY Guide for EVN Alpha V1.4
+============================
 
 .. note:: This guide is incomplete (mainly missing pictures). Coming Soon!
 
 What You Need
 -------------
+
 Components
 """"""""""
+
 * 1 EVN Alpha PCB
 
 * 4 RJ11 Right Buckle Connectors (i.e. "the EV3 Port")
 
 * Male 2.54mm Pin Headers of varying lengths and colours
+
     * 16-Pin: 1 Red, 1 Black, 1 Yellow, 1 Blue
     * 6-pin: 4 White 
     * 4-pin: 2 White, 1 Red, 1 Black, 1 Yellow
@@ -25,13 +28,20 @@ These are the quantities needed to assemble one EVN Alpha, but you will find tha
 
 Equipment
 """""""""
+
 * Soldering Iron
 * Solder Wire
+
 * Desoldering Pump (optional)
+
     * Not strictly necessary if you solder perfectly, but nice to have
+
 * Fume Extractor (optional)
+
     * Fumes emitted from soldering can be harmful, so try to have a fume extractor or work in a ventilated environment :)
+
 * Soldering Helping Hand (optional)
+
     * If your helping hand has sharp metal edges that can scratch the PCB, it may be better to do without it
 
 This equipment will be sourced by yourself.
@@ -78,6 +88,7 @@ So depending on your solder and iron power, you may have to adjust the temperatu
 
 Header Pins
 -----------
+
 Each of the pin header is located on the top side of the board, in the layout shown below:
 
 Realistically, as long as you can ensure the pin header is perpendicular to the PCB surface, you can solder them on however you want.
@@ -131,12 +142,13 @@ Buttons
 
 The buttons for EVN Alpha are clipped such that the pin does not stick out of the PCB. This is to done to avoid clashing with the 18650 battery holder.
 
-What we will do for the buttons is solder them into place, but without having solder sticking out of the PCB.
+The most important thing to note when soldering the buttons is to avoid having large blobs of solder sticking out of the PCB.
 
-Place all 4 buttons
+Place all 4 buttons on the PCB (on the same side as the pins), making sure that they are resting flat against the PCB.
 
+Place the board upside down and start soldering the pins. Ensure that the solder is fully liquified and flows into the hole for good electrical contact, but avoid adding too much solder. If there is too much solder, feel free to remove some of it with a desoldering pump and try again.
 
-
+The end result should be that the soldered pad appears flat, without sticking out of the PCB.
 
 Battery Holder
 --------------
@@ -147,15 +159,25 @@ The PCB solder pads for the holder are much larger than the holder pins. In orde
 
 Once the holder has been positioned, solder the 4 large solder pads. Ensure that your solder melts fully for a good electrical connection.
 
+3D Printing Your Shells
+-----------------------
+
+The 3D printable shells and shell assembly instructions can be found on this `Thingiverse page`_.
+
+.. note:: We'll add more details here soon! For now, the instructions on the Thingiverse page should suffice.
+
+.. _Thingiverse page: https://www.thingiverse.com/thing:6726710
+
 Conclusion
 ----------
 
-Your board is now ready! Proceed to `First Boot` to get your board ready for upload.
+Your board is now ready! 
+
+Afterwards, proceed to `First Boot` to get your board ready for upload.
 
 Soldering Alpha isn't as tricky as SMD reflow work, but it is quite laborious due to the sheer number of pins to be soldered.
 Our priority for Kickstarter was to get all core functionality up and running, so optimizing production to scale well was a matter that received less attention.
 
 The next few versions of Alpha will most likely be targeted towards easing production and getting more components soldered right from the factory.
 
-In the future, we may not even sell a solder-it-yourself kit! At least not one with this many pins. But in the meantime, we hope this guide was helpful and made the soldering process a little less painful.
-
+In the future, we may not even sell a DIY kit! At least not one with this many unsoldered pins. In the meantime, we hope this guide was helpful and made the soldering process a little less painful.
