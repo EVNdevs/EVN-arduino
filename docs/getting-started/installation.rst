@@ -1,6 +1,8 @@
 Installation
 ============
 
+Installation steps should be roughly the same for all OSes (Windows, Mac OSX, Linux, etc.) unless stated otherwise.
+
 Arduino IDE Installation
 -------------------------
 
@@ -32,7 +34,7 @@ After installing Arduino IDE, install Earle F Philhower's Arduino-Pico core (V3.
 Updating Arduino-Pico Core
 """"""""""""""""""""""""""
 
-If you have an existing installation of the Arduino-Pico core on Windows, you may be unable to successfully compile after updating it. This is an `issue`_ with the Arduino IDE failing to extract the files correctly. 
+If you have an existing installation of the Arduino-Pico core **on Windows**, you may be unable to successfully compile after updating it. This is an `issue`_ with the Arduino IDE failing to extract the files correctly. 
 
 .. _issue: https://github.com/arduino/Arduino/issues/11842
 

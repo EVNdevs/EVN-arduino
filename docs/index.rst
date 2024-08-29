@@ -103,6 +103,6 @@ We'd like to thank the following people for their contributions to the Kickstart
     - mrshu
   * - Stéphane Hulard
     - Shannon Prescott
-    - 
+    - Backer #18
 
 Without them (and many more unnamed backers), EVN would not exist today.
