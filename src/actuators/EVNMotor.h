@@ -41,7 +41,7 @@ class EVNMotor
 
 		//DPS MEASUREMENT (TIME BETWEEN PULSES)
 		volatile uint8_t last_edge_index;
-		volatile uint64_t edge_times[NO_OF_EDGES_STORED];
+		volatile uint32_t edge_times[NO_OF_EDGES_STORED];
 		volatile bool dps_calculated;
 		volatile bool obtained_one_pulse;
 		volatile float avg_dps;
@@ -76,7 +76,7 @@ class EVNMotor
 		volatile uint8_t stop_action;
 
 		//LOOP VARIABLES
-		volatile uint64_t last_update;
+		volatile uint32_t last_update;
 		volatile float target_dps_end_decel;
 		volatile float target_dps_constrained;
 		volatile float x;
@@ -84,7 +84,7 @@ class EVNMotor
 		volatile float output;
 
 		volatile uint8_t counter;
-		volatile uint64_t start_time_us;
+		volatile uint32_t start_time_us;
 
 		volatile bool stalled;
 	};
@@ -164,7 +164,7 @@ protected:
 		return (arg->run_speed || arg->run_time || arg->run_pos || arg->hold);
 	}
 
-	static void velocity_update(encoder_state_t* arg, uint64_t now)
+	static void velocity_update(encoder_state_t* arg, uint32_t now)
 	{
 		if (arg->enca_state)
 		{
@@ -248,7 +248,7 @@ protected:
 		}
 	}
 
-	static void stopAction_static(pid_control_t* pidArg, encoder_state_t* encoderArg, uint64_t now, float pos, float dps)
+	static void stopAction_static(pid_control_t* pidArg, encoder_state_t* encoderArg, uint32_t now, float pos, float dps)
 	{
 		if (pidArg->core0_writing) return;
 		pidArg->stopAction_static_running = true;
@@ -296,37 +296,37 @@ protected:
 
 	static float getDPS_static(encoder_state_t* arg)
 	{
-		uint64_t now = micros();
-		float last_pulse_width = now - arg->edge_times[arg->last_edge_index];
+		int64_t last_pulse_width = micros() - arg->edge_times[arg->last_edge_index];
+		int64_t last_full_pulse_width = 0;
 
 		if (!arg->obtained_one_pulse) return 0;
 
 		if (!arg->dps_calculated)
 		{
 			float sum_dps = 0;
-			float sum_pulse_width = 0;
-			float number_of_pulses = 0;
+			uint8_t number_of_pulses = 0;
 
-			for (uint8_t i = 0; i < (NO_OF_EDGES_STORED - 1); i++)
+			for (uint8_t i = 0; i < NO_OF_EDGES_STORED; i++)
 			{
 				uint8_t end_index = (arg->last_edge_index - i + NO_OF_EDGES_STORED) % NO_OF_EDGES_STORED;
 				uint8_t start_index = (end_index - 1 + NO_OF_EDGES_STORED) % NO_OF_EDGES_STORED;
-				uint64_t end = arg->edge_times[end_index];
-				uint64_t start = arg->edge_times[start_index];
+				uint32_t end = arg->edge_times[end_index];
+				uint32_t start = arg->edge_times[start_index];
 
-				float pulse_width = end - start;
+				int64_t pulse_width = end - start;
 				float pulse_dps = 0;
 				if (pulse_width > 0)
 				{
-					pulse_dps = 360000000 / pulse_width / arg->ppr;
+					pulse_dps = 360000000.0 / pulse_width / arg->ppr;
 					number_of_pulses++;
 				}
 
-				sum_pulse_width += pulse_width;
+				if (i == NO_OF_EDGES_STORED - 1)
+					last_full_pulse_width = pulse_width;
+
 				sum_dps += pulse_dps;
 			}
 
-			arg->avg_pulse_width = sum_pulse_width / number_of_pulses;
 			arg->avg_dps = sum_dps / number_of_pulses;
 			arg->dps_calculated = true;
 		}
@@ -334,25 +334,24 @@ protected:
 		// if timeout, DPS is 0
 		if (last_pulse_width > ENCODER_PULSE_TIMEOUT_US) return 0;
 
-		// if latest pulse is longer than prior pulses, use latest pulse
+		// if latest pulse is longer than pulse width of last 2 edges, use latest pulse
 		// this occurs when the motor is slowing down (pulses get longer and longer)
-		else if (last_pulse_width > arg->avg_pulse_width)
+		else if (last_pulse_width > last_full_pulse_width)
 		{
-			float final_dps = (1000000 / last_pulse_width) / arg->ppr * 360;
+			float final_dps = 360000000.0 / last_pulse_width / arg->ppr;
 			return final_dps * (float)arg->dir;
 		}
-
 		else
 			return arg->avg_dps * (float)arg->dir;
 	}
 
 	static void pid_update(pid_control_t* pidArg, encoder_state_t* encoderArg)
 	{
-		uint64_t now = micros();
+		uint32_t now = micros();
 		float pos = getPosition_static(encoderArg);
 		float dps = getDPS_static(encoderArg);
-		float time_since_last_loop_scaled = ((float)now - (float)pidArg->last_update) / 1000;
-		float time_since_last_loop = time_since_last_loop_scaled / 1000;
+		float time_since_last_loop_scaled = ((float)(now - pidArg->last_update)) / 1000;	//milliseconds
+		float time_since_last_loop = time_since_last_loop_scaled / 1000;					//seconds
 		pidArg->last_update = now;
 
 		if (motors_enabled() && loop_control_enabled(pidArg))
@@ -436,14 +435,14 @@ protected:
 				bool old_sign_from_target_pos;
 				if (position_control_enabled(pidArg))
 				{
-					old_sign_from_target_pos = (pidArg->x - pidArg->target_pos >= 0) ? true : false;
+					old_sign_from_target_pos = (pidArg->x - pidArg->target_pos > 0) ? true : false;
 				}
 
 				pidArg->x += time_since_last_loop * pidArg->target_dps_constrained;
 
 				if (position_control_enabled(pidArg))
 				{
-					bool new_sign_from_target_pos = (pidArg->x - pidArg->target_pos >= 0) ? true : false;
+					bool new_sign_from_target_pos = (pidArg->x - pidArg->target_pos > 0) ? true : false;
 
 					if (old_sign_from_target_pos != new_sign_from_target_pos)
 						pidArg->x = pidArg->target_pos;
@@ -531,13 +530,13 @@ protected:
 
 	// pin change interrupt ISRs (calling generic functions)
 	// RPM measurement only uses pulses on one encoder wheel (more accurate, from our testing)
-	static void isr0() { uint64_t now = micros(); pos_update(encoderArgs[0]); velocity_update(encoderArgs[0], now); }
+	static void isr0() { uint32_t now = micros(); pos_update(encoderArgs[0]); velocity_update(encoderArgs[0], now); }
 	static void isr1() { pos_update(encoderArgs[0]); }
-	static void isr2() { uint64_t now = micros(); pos_update(encoderArgs[1]); velocity_update(encoderArgs[1], now); }
+	static void isr2() { uint32_t now = micros(); pos_update(encoderArgs[1]); velocity_update(encoderArgs[1], now); }
 	static void isr3() { pos_update(encoderArgs[1]); }
-	static void isr4() { uint64_t now = micros(); pos_update(encoderArgs[2]); velocity_update(encoderArgs[2], now); }
+	static void isr4() { uint32_t now = micros(); pos_update(encoderArgs[2]); velocity_update(encoderArgs[2], now); }
 	static void isr5() { pos_update(encoderArgs[2]); }
-	static void isr6() { uint64_t now = micros(); pos_update(encoderArgs[3]); velocity_update(encoderArgs[3], now); }
+	static void isr6() { uint32_t now = micros(); pos_update(encoderArgs[3]); velocity_update(encoderArgs[3], now); }
 	static void isr7() { pos_update(encoderArgs[3]); }
 
 	// timer interrupt ISR (calling generic functions for each port)
@@ -576,7 +575,7 @@ typedef struct
 	PIDController* speed_pid;
 
 	//LOOP
-	volatile uint64_t last_update;
+	volatile uint32_t last_update;
 	volatile uint8_t stop_action;
 
 	//USER-SET
@@ -607,12 +606,6 @@ typedef struct
 	volatile float target_motor_right_dps;
 
 	//DRIVE POSITION
-	// volatile float start_position_x;
-	// volatile float start_position_y;
-	// volatile float start_angle;
-	// volatile float start_distance;
-	// volatile float end_position_x;
-	// volatile float end_position_y;
 	volatile float end_angle;
 	volatile float end_distance;
 
@@ -777,7 +770,7 @@ private:
 
 	static void pid_update(drivebase_state_t* arg)
 	{
-		uint64_t now = micros();
+		uint32_t now = micros();
 		float time_since_last_loop_scaled = ((float)now - (float)arg->last_update) / 1000;
 		float time_since_last_loop = time_since_last_loop_scaled / 1000;
 		arg->last_update = now;
@@ -828,21 +821,6 @@ private:
 				if (current_angle_error < error_to_start_decel_turn_rate)
 					target_turn_rate_after_decel = arg->target_turn_rate * sqrt(current_angle_error / error_to_start_decel_turn_rate);
 			}
-
-			// arg->angle_to_target = atan2(arg->target_position_y - arg->position_y, arg->target_position_x - arg->position_x);
-			// arg->angle_to_target = arg->angle_to_target / M_PI * 180;
-			// if (arg->angle_to_target < 0)
-			// 	arg->angle_to_target += 360;
-			// float error_att_to_cur = arg->angle_to_target - fmod(fmod(arg->current_angle, 360) + 360, 360);
-			// if (error_att_to_cur > 180)
-			//  error_att_to_cur -= 360;
-			// if (error_att_to_cur < -180)
-			//  error_att_to_cur += 360;
-			// error_att_to_cur /= 180;
-			// angle error->difference between angle to target and current angle(-1 to 1)
-			// float cx = arg->target_position_x + cos(arg->target_angle / 180 * M_PI);
-			// float cy = arg->target_position_y + sin(arg->target_angle / 180 * M_PI);
-			// float perpendicular_distance = fabs((cx - arg->target_position_x) * (arg->position_y - arg->target_position_y) - (cy - arg->target_position_y) * (arg->position_x - arg->target_position_x));
 
 			//angle error = the difference between the robot's current angle and the angle it should travel at
 			arg->angle_error = arg->target_angle - arg->current_angle;
@@ -895,18 +873,19 @@ private:
 			//maintain ratio between speeds when either speed exceeds motor limits
 			if (arg->target_motor_left_dps != 0 && arg->target_motor_right_dps != 0)
 			{
-				float ratio = arg->target_motor_left_dps / arg->target_motor_right_dps;
 				if (fabs(arg->target_motor_left_dps) > arg->max_dps)
 				{
+					float ratio = arg->target_motor_right_dps / arg->target_motor_left_dps;
 					if (arg->target_motor_left_dps > 0)
 						arg->target_motor_left_dps = arg->max_dps;
 					else
 						arg->target_motor_left_dps = -arg->max_dps;
-					arg->target_motor_right_dps = arg->target_motor_left_dps / ratio;
+					arg->target_motor_right_dps = arg->target_motor_left_dps * ratio;
 				}
 
 				if (fabs(arg->target_motor_right_dps) > arg->max_dps)
 				{
+					float ratio = arg->target_motor_left_dps / arg->target_motor_right_dps;
 					if (arg->target_motor_right_dps > 0)
 						arg->target_motor_right_dps = arg->max_dps;
 					else
@@ -924,8 +903,8 @@ private:
 
 			if (arg->drive_position)
 			{
-				old_sign_from_target_dist = (arg->target_distance - arg->end_distance >= 0) ? true : false;
-				old_sign_from_target_angle = (arg->target_angle - arg->end_angle >= 0) ? true : false;
+				old_sign_from_target_dist = (arg->target_distance - arg->end_distance > 0) ? true : false;
+				old_sign_from_target_angle = (arg->target_angle - arg->end_angle > 0) ? true : false;
 			}
 
 			//increment target angle and XY position
@@ -1059,8 +1038,8 @@ private:
 
 			if (arg->drive_position)
 			{
-				bool new_sign_from_target_dist = (arg->target_distance - arg->end_distance >= 0) ? true : false;
-				bool new_sign_from_target_angle = (arg->target_angle - arg->end_angle >= 0) ? true : false;
+				bool new_sign_from_target_dist = (arg->target_distance - arg->end_distance > 0) ? true : false;
+				bool new_sign_from_target_angle = (arg->target_angle - arg->end_angle > 0) ? true : false;
 
 				if (old_sign_from_target_dist != new_sign_from_target_dist)
 					arg->target_distance = arg->end_distance;

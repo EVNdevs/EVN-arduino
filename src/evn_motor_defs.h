@@ -1,4 +1,4 @@
-//TUNING FOR CUSTOM GEARMOTOR
+//TUNING FOR CUSTOM MOTOR
 //edit this to change CUSTOM_MOTOR defaults
 #define KP_CUSTOM		        0.25       //position PID gains (PD controller)
 #define KI_CUSTOM	        	0.000125
