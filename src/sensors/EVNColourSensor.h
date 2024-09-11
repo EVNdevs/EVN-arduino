@@ -391,7 +391,7 @@ private:
 
     uint32_t _last_reading_us;
     uint8_t _int_cycles;
-    uint64_t _int_time_us;
+    uint32_t _int_time_us;
     uint16_t _max_count;
     gain _gain;
 

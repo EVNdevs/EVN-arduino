@@ -69,7 +69,7 @@ void EVNServo::write(float position, uint16_t wait_time_ms, float dps)
         _servo.sweep = true;
     }
 
-    uint64_t start_time = millis();
+    uint32_t start_time = millis();
     while ((millis() - start_time) < wait_time_ms)
     {
         if (!motors_enabled())
@@ -82,7 +82,7 @@ void EVNServo::writeMicroseconds(uint16_t pulse_us, uint16_t wait_time_ms)
     _servo.pulse = constrain(pulse_us, 200, 2800);
     _servo.sweep = false;
 
-    uint64_t start_time = millis();
+    uint32_t start_time = millis();
     while ((millis() - start_time) < wait_time_ms)
     {
         if (!motors_enabled())

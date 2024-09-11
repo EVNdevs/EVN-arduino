@@ -126,7 +126,7 @@ public:
 
         if (calibrate_gyro)
         {
-            uint64_t start_time = millis();
+            uint32_t start_time = millis();
 
             setCalibrationGyro(0, 0, 0);
 
@@ -567,8 +567,8 @@ private:
 
     uint8_t _top_axis = AXIS_Z, _front_axis = AXIS_X, _right_axis = AXIS_Y;
 
-    uint64_t _measurement_time_us;
-    uint64_t _last_reading_us;
+    uint32_t _measurement_time_us;
+    uint32_t _last_reading_us;
 
     bool _accel_calibrated;
 

@@ -71,7 +71,7 @@ The function outputs can be evaluated against numbers or their written versions 
         }
     }
 
-.. function:: uint8_t readGesture(bool blocking = false, uint64_t timeout_ms = 5000)
+.. function:: uint8_t readGesture(bool blocking = false, uint32_t timeout_ms = 5000)
 
     The function starts by checking if the start of a gesture has been detected by the sensor.
 
@@ -87,7 +87,7 @@ The function outputs can be evaluated against numbers or their written versions 
     :param timeout_ms: Time the sensor should wait for a new gesture before returning when ``blocking`` is ``true``  (in milliseconds). Defaults to 5000
     :returns: Numerical representation of gesture
 
-.. function:: uint8_t readGestureUpDown(bool blocking = false, uint64_t timeout_ms = 5000)
+.. function:: uint8_t readGestureUpDown(bool blocking = false, uint32_t timeout_ms = 5000)
 
     Same as ``readGesture``, but only returns ``GESTURE_NONE``, ``GESTURE_UP`` or ``GESTURE_DOWN``. Ensures that diagonal gestures will be not returned as ``GESTURE_LEFT`` or ``GESTURE_RIGHT``.
 
@@ -95,7 +95,7 @@ The function outputs can be evaluated against numbers or their written versions 
     :param timeout_ms: Time the sensor should wait for a new gesture before returning when ``blocking`` is ``true``  (in milliseconds). Defaults to 5000
     :returns: Numerical representation of gesture (``GESTURE_NONE``, ``GESTURE_UP`` or ``GESTURE_DOWN``)
 
-.. function:: uint8_t readGestureLeftRight(bool blocking = false, uint64_t timeout_ms = 5000)
+.. function:: uint8_t readGestureLeftRight(bool blocking = false, uint32_t timeout_ms = 5000)
 
     Same as ``readGesture``, but only returns ``GESTURE_NONE``, ``GESTURE_LEFT`` or ``GESTURE_RIGHT``. Ensures that diagonal gestures will be not returned as ``GESTURE_UP`` or ``GESTURE_DOWN``.
 

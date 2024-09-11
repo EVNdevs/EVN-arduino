@@ -176,7 +176,6 @@ private:
     bool _attached;
 
     bool _buffer_changed = true;
-    uint64_t _last_transmission_us;
 
     uint8_t _led_count;
     uint8_t _pin;

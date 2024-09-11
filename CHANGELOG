@@ -1,3 +1,15 @@
+0.10.7 (11/09/24)
+
+Small update to fix a rather glaring issue with the motor/drivebase classes.
+
+-- Bugfixes --
+
+EVNMotor & EVNDrivebase: For functions with a defined endpoint (e.g. straight, runPos), motors sometimes randomly run indefinitely past the endpoint. This bug has been fixed.
+
+-- Changes --
+
+Syntax Colouring: From now on, the only library syntax that will be highlighted are constants (e.g. EV3_LARGE) and class names (e.g. EV3 Colour Sensor)
+
 0.10.6 (19/08/24)
 
 A lot of bugfixes!

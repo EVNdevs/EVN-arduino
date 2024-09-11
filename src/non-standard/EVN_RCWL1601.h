@@ -138,7 +138,7 @@ private:
     };
 
 private:
-    uint64_t _last_trigger_time_us;
+    uint32_t _last_trigger_time_us;
     uint32_t _distance_um, _timeout_reading;
     bool _trigger_sent;
     bool _sensor_started;

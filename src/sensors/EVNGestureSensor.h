@@ -423,7 +423,7 @@ public:
         return false;
     };
 
-    uint8_t readGesture(bool blocking = false, uint64_t timeout_ms = 5000)
+    uint8_t readGesture(bool blocking = false, uint32_t timeout_ms = 5000)
     {
         if (_sensor_started)
         {
@@ -436,7 +436,7 @@ public:
         return GESTURE_NONE;
     };
 
-    uint8_t readGestureUpDown(bool blocking = false, uint64_t timeout_ms = 5000)
+    uint8_t readGestureUpDown(bool blocking = false, uint32_t timeout_ms = 5000)
     {
         if (_sensor_started)
         {
@@ -449,7 +449,7 @@ public:
         return GESTURE_NONE;
     };
 
-    uint8_t readGestureLeftRight(bool blocking = false, uint64_t timeout_ms = 5000)
+    uint8_t readGestureLeftRight(bool blocking = false, uint32_t timeout_ms = 5000)
     {
         if (_sensor_started)
         {
@@ -619,7 +619,7 @@ private:
 
     void updateColourandProximity(bool blocking = false)
     {
-        uint64_t measurement_time_us =
+        uint32_t measurement_time_us =
             _proximity_measurement_time_us +
             _colour_measurement_time_us +
             _gesture_measurement_time_us;
@@ -656,7 +656,7 @@ private:
 
     void updateProximity(bool blocking = false)
     {
-        uint64_t measurement_time_us =
+        uint32_t measurement_time_us =
             _proximity_measurement_time_us +
             _colour_measurement_time_us +
             _gesture_measurement_time_us;
@@ -671,10 +671,10 @@ private:
         }
     };
 
-    void blockUntilGesture(uint64_t timeout_ms)
+    void blockUntilGesture(uint32_t timeout_ms)
     {
-        uint64_t start = millis();
-        uint64_t timeout_msc = timeout_ms;
+        uint32_t start = millis();
+        uint32_t timeout_msc = timeout_ms;
         if (timeout_ms == 0) timeout_msc = INT_MAX;
         while (millis() - start <= timeout_msc && !gestureDetected());
     };
@@ -799,11 +799,11 @@ private:
     uint8_t _gesture_ud;
     uint8_t _gesture_lr;
 
-    uint64_t _gesture_measurement_time_us;
-    uint64_t _colour_measurement_time_us;
-    uint64_t _proximity_measurement_time_us;
-    uint64_t _last_reading1_us;
-    uint64_t _last_reading2_us;
+    uint32_t _gesture_measurement_time_us;
+    uint32_t _colour_measurement_time_us;
+    uint32_t _proximity_measurement_time_us;
+    uint32_t _last_reading1_us;
+    uint32_t _last_reading2_us;
 
     uint8_t _gesture_fifo_up[64];
     uint8_t _gesture_fifo_down[64];
