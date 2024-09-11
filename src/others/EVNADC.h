@@ -305,10 +305,10 @@ private:
     };
 
     bool _continuous_enabled = false;
-    uint64_t _conversion_time_us;
-    uint64_t _power_up_time_us;
+    uint32_t _conversion_time_us;
+    uint32_t _power_up_time_us;
     float _uv_per_lsb;
-    uint64_t _last_request_us;
+    uint32_t _last_request_us;
     uint8_t _pin = 0;
     float _conversion = 0;
 };

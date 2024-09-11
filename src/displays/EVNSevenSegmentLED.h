@@ -300,7 +300,7 @@ public:
     {
         if (_sensor_started)
         {
-            uint64_t numberc = abs(number);
+            uint32_t numberc = abs(number);
             while (numberc > 9999) numberc /= 10;
 
             clearAll(false);

@@ -187,7 +187,7 @@ public:
 
     void setSamplingRate(sampling sampling_temp, sampling sampling_hum, sampling sampling_pres)
     {
-        uint64_t measurement_time_us = 1250;
+        uint32_t measurement_time_us = 1250;
 
         sampling sampling_tempc = sampling_temp;
 
@@ -404,7 +404,7 @@ private:
             if (blocking)
                 while (micros() - _last_reading_us < _measurement_time_us + _standby_time_us || this->isMeasuring());
 
-            if (micros() - _last_reading_us >= (uint64_t)_measurement_time_us + _standby_time_us && !this->isMeasuring())
+            if (micros() - _last_reading_us >= _measurement_time_us + _standby_time_us && !this->isMeasuring())
             {
                 _last_reading_us = micros();
 
@@ -489,9 +489,9 @@ private:
     bme280_calibration_data _calibration;
 
     uint8_t _buffer[8] = { 0 };
-    uint64_t _measurement_time_us;
-    uint64_t _standby_time_us;
-    uint64_t _last_reading_us;
+    uint32_t _measurement_time_us;
+    uint32_t _standby_time_us;
+    uint32_t _last_reading_us;
 
     mode _mode = mode::NORMAL;
     sampling _sampling_temp = sampling::X1;

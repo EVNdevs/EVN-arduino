@@ -25,7 +25,7 @@ typedef struct
     volatile float end_position;
     volatile float dps;
     volatile float max_dps;
-    volatile uint64_t last_loop;
+    volatile uint32_t last_loop;
 } servo_state_t;
 
 class EVNServo
@@ -75,8 +75,8 @@ protected:
 
     static void update(servo_state_t* arg)
     {
-        uint64_t now = micros();
-        float time_since_last_loop = ((float)now - (float)arg->last_loop) / 1000000;
+        uint32_t now = micros();
+        float time_since_last_loop = ((float)(now - arg->last_loop)) / 1000000;
         arg->last_loop = now;
 
         if (motors_enabled())
