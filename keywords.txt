@@ -25,28 +25,6 @@ PIDController	KEYWORD1
 # All
 begin	KEYWORD2
 
-# EVNAlpha
-buttonRead  KEYWORD2
-read  KEYWORD2
-ledWrite    KEYWORD2
-write    KEYWORD2
-getPort	KEYWORD2
-getWire0Port	KEYWORD2
-getWire1Port	KEYWORD2
-setPort	KEYWORD2
-printPorts	KEYWORD2
-getBatteryVoltage	KEYWORD2
-getCell1Voltage	KEYWORD2
-getCell2Voltage	KEYWORD2
-setMode	KEYWORD2
-setLinkLED	KEYWORD2
-setLinkMovement	KEYWORD2
-setButtonInvert	KEYWORD2
-getMode	KEYWORD2
-getLinkLED	KEYWORD2
-getLinkMovement	KEYWORD2
-getButtonInvert	KEYWORD2
-
 # Constants (LITERAL1)
 DIRECT	LITERAL1
 REVERSE	LITERAL1
