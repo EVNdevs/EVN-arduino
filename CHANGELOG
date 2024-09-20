@@ -1,3 +1,11 @@
+1.0.0 (21/09/24)
+
+Major update to several libraries, outlined below.
+
+-- Bugfixes --
+
+EVNAlpha, EVNMotor, EVNDrivebase, EVNServo, EVNContinuousServo: All classes that use timer-based interrupts now use memory barriers and the RP2040's hardware spinlocks for thread-safe operation. This should improve stability and address seemingly random crashes with undefined behaviour that are difficult to predictably reproduce.
+
 0.10.7 (11/09/24)
 
 Small update to fix a rather glaring issue with the motor/drivebase classes.
