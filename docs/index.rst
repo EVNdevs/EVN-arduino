@@ -50,6 +50,13 @@ To find out more about purchasing, visit our `product website`_.
   guides/motor-pid-cal
   guides/drivebase-pid-cal
 
+Community Projects
+------------------
+
+* `Lua-EVN`_ is a port of the Lua scripting language to EVN, with support for the EVN library classes and functionalities. As outlined in the repository's README, Lua has many interesting benefits over C++. Check it out!
+
+.. _Lua-EVN: https://github.com/donmeyer/lua-evn
+
 Licenses
 --------
 
