@@ -8,6 +8,9 @@
 #include "../evn_motor_defs.h"
 #include "../evn_pins_defs.h"
 
+// TODO: Add end function for classes
+// TODO: Wrap mutex & spinlock in helper class
+
 //INPUT PARAMETER MACROS
 #define DIRECT	1
 #define REVERSE	0
@@ -24,147 +27,213 @@
 //DPS MEASUREMENT (TIME BETWEEN PULSES)
 #define NO_OF_EDGES_STORED 3
 
+class EVNMotor;
+
+typedef struct
+{
+	//POSITION MEASUREMENT
+	uint8_t enca;
+	uint8_t encb;
+	bool enca_state;
+	bool encb_state;
+	int8_t dir;
+	uint8_t state;
+	float ppr;
+	float position;
+	float position_offset;
+
+	//DPS MEASUREMENT (TIME BETWEEN PULSES)
+	uint8_t last_edge_index;
+	uint32_t edge_times[NO_OF_EDGES_STORED];
+	bool dps_calculated;
+	bool obtained_one_pulse;
+	float avg_dps;
+	float avg_pulse_width;
+} encoder_state_t;
+
+typedef struct
+{
+	//MOTOR CHARACTERISTICS
+	uint8_t motor_type;
+	uint8_t motora;
+	uint8_t motorb;
+	float max_rpm;
+	float accel;
+	float decel;
+
+	//CONTROLLER
+	PIDController* pos_pid;
+
+	//USER-SET VARIABLES
+	bool run_pwm;
+	bool run_speed;
+	bool run_dir;
+	float target_dps;
+	bool run_pos;
+	float target_pos;
+	bool run_time;
+	uint32_t run_time_ms;
+	bool hold;
+	uint8_t stop_action;
+
+	//LOOP VARIABLES
+	uint32_t last_update;
+	float target_dps_end_decel;
+	float target_dps_constrained;
+	float x;
+	float error;
+	float output;
+	uint8_t counter;
+	uint32_t start_time_us;
+	bool stalled;
+} pid_control_t;
+
+typedef struct
+{
+	//DRIVEBASE CHARACTERISTICS
+	uint8_t motor_type;
+	float max_rpm;
+	float max_dps;
+	float max_turn_rate;
+	float max_speed;
+	float wheel_dia;
+	float axle_track;
+	EVNMotor* motor_left;
+	EVNMotor* motor_right;
+
+	float speed_accel;
+	float speed_decel;
+	float turn_rate_accel;
+	float turn_rate_decel;
+
+	//CONTROLLERS
+	PIDController* turn_rate_pid;
+	PIDController* speed_pid;
+
+	//LOOP
+	uint32_t last_update;
+	uint8_t stop_action;
+
+	//USER-SET
+	float target_speed;
+	float target_turn_rate;
+	float target_speed_constrained;
+	float target_turn_rate_constrained;
+	bool drive;
+	bool drive_position;
+
+	//DRIVE
+	float target_angle;
+	float target_distance;
+	// float target_position_x;
+	// float target_position_y;
+	float angle_to_target;
+	float angle_error;
+	float angle_output;
+	float speed_error;
+	float speed_output;
+	float target_motor_left_dps;
+	float target_motor_right_dps;
+
+	//DRIVE POSITION
+	float end_angle;
+	float end_distance;
+
+	//ODOMETRY
+	float current_distance;
+	float prev_distance;
+	float current_angle;
+	float position_x;
+	float position_y;
+	// float motor_left_x;
+	// float motor_left_y;
+	// float motor_right_x;
+	// float motor_right_y;
+	uint8_t counter;
+
+} drivebase_state_t;
+
 class EVNMotor
 {
-	struct encoder_state_t
-	{
-		//POSITION MEASUREMENT
-		volatile uint8_t enca;
-		volatile uint8_t encb;
-		volatile bool enca_state;
-		volatile bool encb_state;
-		volatile int8_t dir;
-		volatile uint8_t state;
-		volatile float ppr;
-		volatile float position;
-		volatile float position_offset;
-
-		//DPS MEASUREMENT (TIME BETWEEN PULSES)
-		volatile uint8_t last_edge_index;
-		volatile uint32_t edge_times[NO_OF_EDGES_STORED];
-		volatile bool dps_calculated;
-		volatile bool obtained_one_pulse;
-		volatile float avg_dps;
-		volatile float avg_pulse_width;
-	};
-
-	struct pid_control_t
-	{
-		//MOTOR CHARACTERISTICS
-		volatile uint8_t motor_type;
-		uint8_t motora;
-		uint8_t motorb;
-		volatile float max_rpm;
-		volatile float accel;
-		volatile float decel;
-
-		//CONTROLLER
-		PIDController* pos_pid;
-
-		//USER-SET VARIABLES
-		volatile bool stopAction_static_running;
-		volatile bool core0_writing;
-		volatile bool run_pwm;
-		volatile bool run_speed;
-		volatile bool run_dir;
-		volatile float target_dps;
-		volatile bool run_pos;
-		volatile float target_pos;
-		volatile bool run_time;
-		volatile uint32_t run_time_ms;
-		volatile bool hold;
-		volatile uint8_t stop_action;
-
-		//LOOP VARIABLES
-		volatile uint32_t last_update;
-		volatile float target_dps_end_decel;
-		volatile float target_dps_constrained;
-		volatile float x;
-		volatile float error;
-		volatile float output;
-
-		volatile uint8_t counter;
-		volatile uint32_t start_time_us;
-
-		volatile bool stalled;
-	};
-
 public:
 	static const uint32_t PWM_FREQ = 20000;
 	static const uint32_t PWM_MAX_VAL = 255;
-	static const uint16_t PID_TIMER_INTERVAL_US = 2000;
+	static const uint16_t PID_TIMER_INTERVAL_US = 2500;
 	static const uint32_t ENCODER_PULSE_TIMEOUT_US = 166667 * 2;
+	static const uint8_t MAX_MOTOR_OBJECTS = 4;
 
 	friend class EVNDrivebase;
 	friend class EVNOmniDrivebaseBasic;
 
 	EVNMotor(uint8_t port, uint8_t motortype = EV3_LARGE, uint8_t motor_dir = DIRECT, uint8_t enc_dir = DIRECT);
-	void begin();
-	float getPosition();
-	float getHeading();
-	void setPosition(float position);
-	void resetPosition();
-	float getSpeed();
+	void begin() volatile;
+	float getPosition() volatile;
+	float getHeading() volatile;
+	void setPosition(float position) volatile;
+	void resetPosition() volatile;
+	float getSpeed() volatile;
 
-	void runPWM(float duty_cycle_pct);
-	void runSpeed(float dps);
-	void runPosition(float dps, float position, uint8_t stop_action = STOP_BRAKE, bool wait = true);
-	void runAngle(float dps, float degrees, uint8_t stop_action = STOP_BRAKE, bool wait = true);
-	void runHeading(float dps, float heading, uint8_t stop_action = STOP_BRAKE, bool wait = true);
-	void runTime(float dps, uint32_t time_ms, uint8_t stop_action = STOP_BRAKE, bool wait = true);
+	void runPWM(float duty_cycle_pct) volatile;
+	void runSpeed(float dps) volatile;
+	void runPosition(float dps, float position, uint8_t stop_action = STOP_BRAKE, bool wait = true) volatile;
+	void runAngle(float dps, float degrees, uint8_t stop_action = STOP_BRAKE, bool wait = true) volatile;
+	void runHeading(float dps, float heading, uint8_t stop_action = STOP_BRAKE, bool wait = true) volatile;
+	void runTime(float dps, uint32_t time_ms, uint8_t stop_action = STOP_BRAKE, bool wait = true) volatile;
 
-	void stop();
-	void coast();
-	void hold();
+	void stop() volatile;
+	void coast() volatile;
+	void hold() volatile;
 
-	bool completed();
-	bool stalled();
+	bool completed() volatile;
+	bool stalled() volatile;
 
-	void setPID(float p, float i, float d);
-	void setAccel(float accel_dps_sq);
-	void setDecel(float decel_dps_sq);
-	void setMaxRPM(float max_rpm);
-	void setPPR(uint32_t ppr);
-
-	//TODO: add end function
+	void setPID(float p, float i, float d) volatile;
+	void setAccel(float accel_dps_sq) volatile;
+	void setDecel(float decel_dps_sq) volatile;
+	void setMaxRPM(float max_rpm) volatile;
+	void setPPR(uint32_t ppr) volatile;
 
 protected:
-	void runSpeedDB(float dps);
+	void ensure_isr_executed() volatile;
 
-	float clean_input_dps(float dps);
-	uint8_t clean_input_dir(float dps);
-	uint8_t clean_input_stop_action(uint8_t stop_action);
+	void runSpeed_unsafe(float dps) volatile;
+	void stop_unsafe() volatile;
+	void coast_unsafe() volatile;
+	void hold_unsafe() volatile;
+	bool stalled_unsafe() volatile;
 
-	pid_control_t _pid_control = {};
-	encoder_state_t _encoder = {};
+	float clean_input_dps(float dps) volatile;
+	uint8_t clean_input_dir(float dps) volatile;
+	uint8_t clean_input_stop_action(uint8_t stop_action) volatile;
 
-	static bool ports_started[4];
-	static encoder_state_t* encoderArgs[4]; // static list of pointers to each instances' structs
-	static pid_control_t* pidArgs[4];
+	volatile pid_control_t _pid_control = {};
+	volatile encoder_state_t _encoder = {};
 
-	static bool motors_enabled()
-	{
-		return ((EVNAlpha::sharedButtonLED().read() && EVNAlpha::sharedButtonLED().sharedState()->link_movement)
+	static volatile encoder_state_t* encoderArgs[MAX_MOTOR_OBJECTS];
+	static volatile pid_control_t* pidArgs[MAX_MOTOR_OBJECTS];
+	static volatile bool ports_started[MAX_MOTOR_OBJECTS];
+	static volatile bool timerisr_enabled;
+	static volatile bool timerisr_executed;
+	static volatile uint8_t core;
+	static mutex_t mutex;
+	static spin_lock_t* spin_lock;
 
-			|| !EVNAlpha::sharedButtonLED().sharedState()->link_movement);
-	}
-
-	static bool timed_control_enabled(pid_control_t* arg)
+	static bool timed_control_enabled(volatile pid_control_t* arg)
 	{
 		return arg->run_time;
 	}
 
-	static bool position_control_enabled(pid_control_t* arg)
+	static bool position_control_enabled(volatile pid_control_t* arg)
 	{
 		return arg->run_pos || arg->hold;
 	}
 
-	static bool loop_control_enabled(pid_control_t* arg)
+	static bool loop_control_enabled(volatile pid_control_t* arg)
 	{
 		return (arg->run_speed || arg->run_time || arg->run_pos || arg->hold);
 	}
 
-	static void velocity_update(encoder_state_t* arg, uint32_t now)
+	static void velocity_update(volatile encoder_state_t* arg, uint32_t now)
 	{
 		if (arg->enca_state)
 		{
@@ -179,7 +248,7 @@ protected:
 		}
 	}
 
-	static void pos_update(encoder_state_t* arg)
+	static void pos_update(volatile encoder_state_t* arg)
 	{
 		uint8_t state = arg->state & 3;
 
@@ -213,13 +282,11 @@ protected:
 		}
 	}
 
-	static void runPWM_static(pid_control_t* pidArg, float speed)
+	static void runPWM_static(volatile pid_control_t* pidArg, float speed)
 	{
-
 		float speedc = constrain(speed, -1, 1);
 
-		// if button is set to enable motors / button is unlinked from motors
-		if (motors_enabled()) {
+		if (EVNAlpha::motorsEnabled()) {
 			if (speedc == 0)
 			{
 				digitalWrite(pidArg->motora, LOW);
@@ -248,16 +315,13 @@ protected:
 		}
 	}
 
-	static void stopAction_static(pid_control_t* pidArg, encoder_state_t* encoderArg, uint32_t now, float pos, float dps)
+	static void stopAction_static(volatile pid_control_t* pidArg, volatile encoder_state_t* encoderArg, uint32_t now, float pos, float dps)
 	{
-		if (pidArg->core0_writing) return;
-		pidArg->stopAction_static_running = true;
-
 		//keep start_time and x at most recent states
 		pidArg->start_time_us = now;
 		pidArg->target_dps_constrained = dps;
 
-		//coast and brake stop functions are based on DRV8833 datasheet
+		//coast and brake stop functions based on DRV8833 datasheet
 		//hold uses position PID control, setting the current position as an endpoint
 		switch (pidArg->stop_action)
 		{
@@ -284,17 +348,15 @@ protected:
 		pidArg->run_speed = false;
 		pidArg->run_pos = false;
 		pidArg->run_time = false;
-
-		pidArg->stopAction_static_running = false;
 	}
 
-	static float getPosition_static(encoder_state_t* arg)
+	static float getPosition_static(volatile encoder_state_t* arg)
 	{
 		// resolution of encoder readout is in CPR (4 * PPR)
 		return ((float)arg->position * 90.0 / arg->ppr) - arg->position_offset;
 	}
 
-	static float getDPS_static(encoder_state_t* arg)
+	static float getDPS_static(volatile encoder_state_t* arg)
 	{
 		int64_t last_pulse_width = micros() - arg->edge_times[arg->last_edge_index];
 		int64_t last_full_pulse_width = 0;
@@ -345,7 +407,7 @@ protected:
 			return arg->avg_dps * (float)arg->dir;
 	}
 
-	static void pid_update(pid_control_t* pidArg, encoder_state_t* encoderArg)
+	static void pid_update(volatile pid_control_t* pidArg, volatile encoder_state_t* encoderArg)
 	{
 		uint32_t now = micros();
 		float pos = getPosition_static(encoderArg);
@@ -354,7 +416,10 @@ protected:
 		float time_since_last_loop = time_since_last_loop_scaled / 1000;					//seconds
 		pidArg->last_update = now;
 
-		if (motors_enabled() && loop_control_enabled(pidArg))
+		if (time_since_last_loop < 0)
+			return;
+
+		if (EVNAlpha::motorsEnabled() && loop_control_enabled(pidArg))
 		{
 			float decel_dps = pidArg->target_dps;
 
@@ -468,26 +533,17 @@ protected:
 			runPWM_static(pidArg, pidArg->output);
 		}
 
-		else if (!motors_enabled() || !pidArg->run_pwm)
+		else if (!EVNAlpha::motorsEnabled() || !pidArg->run_pwm)
 		{
 			pidArg->stop_action = STOP_BRAKE;
 			stopAction_static(pidArg, encoderArg, now, pos, dps);
 		}
 	}
 
-	//used to attach pin change interrupts to both encoder pins
-	//different ISR functions are attached depending on port (determined by pins)
-	//also adds one timer interrupt shared by all ports (if not already added)
-	static void attach_interrupts(encoder_state_t* encoderArg, pid_control_t* pidArg)
+	//different pin change interrupts attached depending on port (determined by pins)
+	//also adds timer interrupt shared by all ports (if not already added)
+	static void attach_interrupts(volatile encoder_state_t* encoderArg, volatile pid_control_t* pidArg)
 	{
-		if (!ports_started[0] && !ports_started[1] && !ports_started[2] && !ports_started[3])
-		{
-			if (rp2040.cpuid == 0)
-				alarm_pool_add_repeating_timer_us(EVNISRTimer0::sharedAlarmPool(), PID_TIMER_INTERVAL_US, timerisr, NULL, &EVNISRTimer0::sharedISRTimer(3));
-			else
-				alarm_pool_add_repeating_timer_us(EVNISRTimer1::sharedAlarmPool(), PID_TIMER_INTERVAL_US, timerisr, NULL, &EVNISRTimer1::sharedISRTimer(3));
-		}
-
 		switch (encoderArg->enca)
 		{
 		case PIN_MOTOR1_ENCA:
@@ -526,210 +582,260 @@ protected:
 			attachInterrupt(encoderArg->encb, isr7, CHANGE);
 			break;
 		}
+
+		if (!timerisr_enabled)
+		{
+			mutex_init(&mutex);
+			spin_lock = spin_lock_init(spin_lock_claim_unused(true));
+
+			core = rp2040.cpuid();
+			if (core == 0)
+				alarm_pool_add_repeating_timer_us(EVNISRTimer0::sharedAlarmPool(), PID_TIMER_INTERVAL_US, timerisr, NULL, &EVNISRTimer0::sharedISRTimer(3));
+			else
+				alarm_pool_add_repeating_timer_us(EVNISRTimer1::sharedAlarmPool(), PID_TIMER_INTERVAL_US, timerisr, NULL, &EVNISRTimer1::sharedISRTimer(3));
+
+			timerisr_enabled = true;
+		}
 	}
 
 	// pin change interrupt ISRs (calling generic functions)
 	// RPM measurement only uses pulses on one encoder wheel (more accurate, from our testing)
-	static void isr0() { uint32_t now = micros(); pos_update(encoderArgs[0]); velocity_update(encoderArgs[0], now); }
-	static void isr1() { pos_update(encoderArgs[0]); }
-	static void isr2() { uint32_t now = micros(); pos_update(encoderArgs[1]); velocity_update(encoderArgs[1], now); }
-	static void isr3() { pos_update(encoderArgs[1]); }
-	static void isr4() { uint32_t now = micros(); pos_update(encoderArgs[2]); velocity_update(encoderArgs[2], now); }
-	static void isr5() { pos_update(encoderArgs[2]); }
-	static void isr6() { uint32_t now = micros(); pos_update(encoderArgs[3]); velocity_update(encoderArgs[3], now); }
-	static void isr7() { pos_update(encoderArgs[3]); }
+	static void isr0()
+	{
+		uint32_t now = micros();
+		if (mutex_try_enter_block_until(&mutex, delayed_by_us(get_absolute_time(), 1000)))
+		{
+			pos_update(encoderArgs[0]);
+			velocity_update(encoderArgs[0], now);
+			mutex_exit(&mutex);
+		}
+	}
 
-	// timer interrupt ISR (calling generic functions for each port)
+	static void isr1()
+	{
+		if (mutex_try_enter_block_until(&mutex, delayed_by_us(get_absolute_time(), 1000)))
+		{
+			pos_update(encoderArgs[0]);
+			mutex_exit(&mutex);
+		}
+	}
+
+	static void isr2()
+	{
+		uint32_t now = micros();
+		if (mutex_try_enter_block_until(&mutex, delayed_by_us(get_absolute_time(), 1000)))
+		{
+			pos_update(encoderArgs[1]);
+			velocity_update(encoderArgs[1], now);
+			mutex_exit(&mutex);
+		}
+	}
+
+	static void isr3()
+	{
+		if (mutex_try_enter_block_until(&mutex, delayed_by_us(get_absolute_time(), 1000)))
+		{
+			pos_update(encoderArgs[1]);
+			mutex_exit(&mutex);
+		}
+	}
+
+	static void isr4()
+	{
+		uint32_t now = micros();
+		if (mutex_try_enter_block_until(&mutex, delayed_by_us(get_absolute_time(), 1000)))
+		{
+			pos_update(encoderArgs[2]); velocity_update(encoderArgs[2], now);mutex_exit(&mutex);
+		}
+	}
+
+	static void isr5()
+	{
+		if (mutex_try_enter_block_until(&mutex, delayed_by_us(get_absolute_time(), 1000)))
+		{
+			pos_update(encoderArgs[2]);
+			mutex_exit(&mutex);
+		}
+	}
+
+	static void isr6()
+	{
+		uint32_t now = micros();
+		if (mutex_try_enter_block_until(&mutex, delayed_by_us(get_absolute_time(), 1000)))
+		{
+			pos_update(encoderArgs[3]);
+			velocity_update(encoderArgs[3], now);
+			mutex_exit(&mutex);
+		}
+	}
+
+	static void isr7()
+	{
+		if (mutex_try_enter_block_until(&mutex, delayed_by_us(get_absolute_time(), 1000)))
+		{
+			pos_update(encoderArgs[3]);
+			mutex_exit(&mutex);
+		}
+	}
+
+	// timer interrupt ISR
 	static bool timerisr(struct repeating_timer* t)
 	{
-		for (int i = 0; i < 4; i++)
+		if (mutex_try_enter_block_until(&mutex, delayed_by_us(get_absolute_time(), 1000)))
 		{
-			if (ports_started[i])
-				pid_update(pidArgs[i], encoderArgs[i]);
+			spin_lock_unsafe_blocking(spin_lock);
+
+			for (int i = 0; i < MAX_MOTOR_OBJECTS; i++)
+			{
+				if (ports_started[i])
+					pid_update(pidArgs[i], encoderArgs[i]);
+			}
+
+			timerisr_executed = true;
+			spin_unlock_unsafe(spin_lock);
+			mutex_exit(&mutex);
 		}
+
 		return true;
 	}
 };
-
-typedef struct
-{
-	//DRIVEBASE CHARACTERISTICS
-	volatile uint8_t motor_type;
-
-	volatile float max_rpm;
-	volatile float max_dps;
-	volatile float max_turn_rate;
-	volatile float max_speed;
-	volatile float wheel_dia;
-	volatile float axle_track;
-	EVNMotor* motor_left;
-	EVNMotor* motor_right;
-
-	volatile float speed_accel;
-	volatile float speed_decel;
-	volatile float turn_rate_accel;
-	volatile float turn_rate_decel;
-
-	//CONTROLLERS
-	PIDController* turn_rate_pid;
-	PIDController* speed_pid;
-
-	//LOOP
-	volatile uint32_t last_update;
-	volatile uint8_t stop_action;
-
-	//USER-SET
-	volatile float target_speed;
-	volatile float target_turn_rate;
-	volatile float target_speed_constrained;
-	volatile float target_turn_rate_constrained;
-
-	volatile bool drive;
-	volatile bool drive_position;
-	volatile bool core0_writing;
-	volatile bool stopAction_static_running;
-
-	//DRIVE
-	volatile float target_angle;
-	volatile float target_distance;
-	// volatile float target_position_x;
-	// volatile float target_position_y;
-
-	volatile float angle_to_target;
-	volatile float angle_error;
-	volatile float angle_output;
-
-	volatile float speed_error;
-	volatile float speed_output;
-
-	volatile float target_motor_left_dps;
-	volatile float target_motor_right_dps;
-
-	//DRIVE POSITION
-	volatile float end_angle;
-	volatile float end_distance;
-
-	//ODOMETRY
-	volatile float current_distance;
-	volatile float prev_distance;
-	volatile float current_angle;
-	volatile float position_x;
-	volatile float position_y;
-	// volatile float motor_left_x;
-	// volatile float motor_left_y;
-	// volatile float motor_right_x;
-	// volatile float motor_right_y;
-	volatile uint8_t counter;
-}	drivebase_state_t;
 
 class EVNDrivebase
 {
 public:
 	static const uint8_t MAX_DB_OBJECTS = 2;
-	static const uint16_t PID_TIMER_INTERVAL_US = 2000;
+	static const uint16_t PID_TIMER_INTERVAL_US = 2500;
 
 	EVNDrivebase(float wheel_dia, float axle_track, EVNMotor* motor_left, EVNMotor* motor_right);
-	void begin();
+	void begin() volatile;
 
-	void drivePct(float speed_outer_pct, float turn_rate_pct);
-	void drive(float speed, float turn_rate);
-	void driveTurnRate(float speed, float turn_rate);
-	void driveRadius(float speed, float radius);
-	void straight(float speed, float distance, uint8_t stop_action = STOP_BRAKE, bool wait = true);
-	void curve(float speed, float radius, float angle, uint8_t stop_action = STOP_BRAKE, bool wait = true);
-	void curveRadius(float speed, float radius, float angle, uint8_t stop_action = STOP_BRAKE, bool wait = true);
-	void curveTurnRate(float speed, float turn_rate, float angle, uint8_t stop_action = STOP_BRAKE, bool wait = true);
-	void turn(float turn_rate, float degrees, uint8_t stop_action = STOP_BRAKE, bool wait = true);
-	void turnDegrees(float turn_rate, float degrees, uint8_t stop_action = STOP_BRAKE, bool wait = true);
-	void turnHeading(float turn_rate, float heading, uint8_t stop_action = STOP_BRAKE, bool wait = true);
-	void driveToXY(float speed, float turn_rate, float x, float y, uint8_t stop_action = STOP_BRAKE, bool restore_initial_heading = true);
+	void drivePct(float speed_outer_pct, float turn_rate_pct) volatile;
+	void drive(float speed, float turn_rate) volatile;
+	void driveTurnRate(float speed, float turn_rate) volatile;
+	void driveRadius(float speed, float radius) volatile;
+	void straight(float speed, float distance, uint8_t stop_action = STOP_BRAKE, bool wait = true) volatile;
+	void curve(float speed, float radius, float angle, uint8_t stop_action = STOP_BRAKE, bool wait = true) volatile;
+	void curveRadius(float speed, float radius, float angle, uint8_t stop_action = STOP_BRAKE, bool wait = true) volatile;
+	void curveTurnRate(float speed, float turn_rate, float angle, uint8_t stop_action = STOP_BRAKE, bool wait = true) volatile;
+	void turn(float turn_rate, float degrees, uint8_t stop_action = STOP_BRAKE, bool wait = true) volatile;
+	void turnDegrees(float turn_rate, float degrees, uint8_t stop_action = STOP_BRAKE, bool wait = true) volatile;
+	void turnHeading(float turn_rate, float heading, uint8_t stop_action = STOP_BRAKE, bool wait = true) volatile;
+	void driveToXY(float speed, float turn_rate, float x, float y, uint8_t stop_action = STOP_BRAKE, bool restore_initial_heading = true) volatile;
 
-	void stop();
-	void coast();
-	void hold();
+	void stop() volatile;
+	void coast() volatile;
+	void hold() volatile;
+	bool completed() volatile;
 
-	bool completed();
+	void setSpeedPID(float kp, float ki, float kd) volatile;
+	void setTurnRatePID(float kp, float ki, float kd) volatile;
+	void setSpeedAccel(float speed_accel) volatile;
+	void setSpeedDecel(float speed_decel) volatile;
+	void setTurnRateAccel(float turn_rate_accel) volatile;
+	void setTurnRateDecel(float turn_rate_decel) volatile;
 
-	void setSpeedPID(float kp, float ki, float kd);
-	void setTurnRatePID(float kp, float ki, float kd);
-	void setSpeedAccel(float speed_accel);
-	void setSpeedDecel(float speed_decel);
-	void setTurnRateAccel(float turn_rate_accel);
-	void setTurnRateDecel(float turn_rate_decel);
-
-	float getDistance();
-	float getAngle();
-	float getHeading();
-	float getX();
-	float getY();
-	void resetXY();
-	float getDistanceToPoint(float x, float y);
-	//TODO: add end function
+	float getDistance() volatile;
+	float getAngle() volatile;
+	float getHeading() volatile;
+	float getX() volatile;
+	float getY() volatile;
+	void resetXY() volatile;
+	float getDistanceToPoint(float x, float y) volatile;
 
 private:
-	float clean_input_turn_rate(float turn_rate);
-	float clean_input_speed(float speed, float turn_rate);
-	uint8_t clean_input_stop_action(uint8_t stop_action);
-	float scaling_factor_for_maintaining_radius(float speed, float turn_rate);
-	float radius_to_turn_rate(float speed, float radius);
-	void enable_drive_position(uint8_t stop_action, bool wait);
+	void ensure_isr_executed() volatile;
 
-	drivebase_state_t db = {};
-	static drivebase_state_t* dbArgs[MAX_DB_OBJECTS];
-	static bool dbs_enabled[MAX_DB_OBJECTS];
+	float clean_input_turn_rate(float turn_rate) volatile;
+	float clean_input_speed(float speed, float turn_rate) volatile;
+	uint8_t clean_input_stop_action(uint8_t stop_action) volatile;
+	float scaling_factor_for_maintaining_radius(float speed, float turn_rate) volatile;
+	float radius_to_turn_rate(float speed, float radius) volatile;
 
-	static void attach_db_interrupt(drivebase_state_t* arg)
+	volatile drivebase_state_t db = {};
+	static volatile drivebase_state_t* dbArgs[MAX_DB_OBJECTS];
+	static volatile bool dbs_started[MAX_DB_OBJECTS];
+	static volatile bool timerisr_enabled;
+	static volatile bool timerisr_executed;
+	static volatile uint8_t core;
+
+	static void attach_db_interrupt(volatile drivebase_state_t* arg)
 	{
-		bool timerisr_started = false;
 		for (int i = 0; i < MAX_DB_OBJECTS; i++)
 		{
-			if (!dbs_enabled[i])
+			if (!dbs_started[i])
 			{
 				dbArgs[i] = arg;
-				dbs_enabled[i] = true;
+				dbs_started[i] = true;
 				break;
 			}
-			else
-				timerisr_started = true;
 		}
 
-		if (!timerisr_started)
+		if (!timerisr_enabled)
 		{
-			if (rp2040.cpuid == 0)
+			if (EVNMotor::timerisr_enabled)
+			{
+				//remove timer interrupt added by EVNMotor (if added)
+				cancel_repeating_timer(&EVNISRTimer0::sharedISRTimer(3));
+				cancel_repeating_timer(&EVNISRTimer1::sharedISRTimer(3));
+			}
+			else
+			{
+				//initialize mutex & spin lock otherwise
+				mutex_init(&EVNMotor::mutex);
+				EVNMotor::spin_lock = spin_lock_init(spin_lock_claim_unused(true));
+			}
+
+			core = rp2040.cpuid();
+			if (core == 0)
 				alarm_pool_add_repeating_timer_us(EVNISRTimer0::sharedAlarmPool(), PID_TIMER_INTERVAL_US, timerisr, NULL, &EVNISRTimer0::sharedISRTimer(4));
 			else
 				alarm_pool_add_repeating_timer_us(EVNISRTimer1::sharedAlarmPool(), PID_TIMER_INTERVAL_US, timerisr, NULL, &EVNISRTimer1::sharedISRTimer(4));
+
+			EVNMotor::timerisr_enabled = true;
+			timerisr_enabled = true;
 		}
 	}
 
 	static bool timerisr(struct repeating_timer* t)
 	{
-		for (int i = 0; i < MAX_DB_OBJECTS; i++)
+		if (mutex_try_enter_block_until(&EVNMotor::mutex, delayed_by_us(get_absolute_time(), 1000)))
 		{
-			if (dbs_enabled[i])
-				pid_update(dbArgs[i]);
+			spin_lock_unsafe_blocking(EVNMotor::spin_lock);
+
+			for (int i = 0; i < MAX_DB_OBJECTS; i++)
+			{
+				if (dbs_started[i])
+					pid_update(dbArgs[i]);
+			}
+
+			for (int i = 0; i < EVNMotor::MAX_MOTOR_OBJECTS; i++)
+			{
+				if (EVNMotor::ports_started[i])
+					EVNMotor::pid_update(EVNMotor::pidArgs[i], EVNMotor::encoderArgs[i]);
+			}
+
+			timerisr_executed = true;
+			spin_unlock_unsafe(EVNMotor::spin_lock);
+			mutex_exit(&EVNMotor::mutex);
 		}
 		return true;
 	}
 
-	static void stopAction_static(drivebase_state_t* arg)
+	static void stopAction_static(volatile drivebase_state_t* arg)
 	{
-		if (arg->core0_writing) return;
-		arg->stopAction_static_running = true;
-
 		switch (arg->stop_action)
 		{
 		case STOP_BRAKE:
-			arg->motor_left->stop();
-			arg->motor_right->stop();
+			arg->motor_left->stop_unsafe();
+			arg->motor_right->stop_unsafe();
 			break;
 		case STOP_COAST:
-			arg->motor_left->coast();
-			arg->motor_right->coast();
+			arg->motor_left->coast_unsafe();
+			arg->motor_right->coast_unsafe();
 			break;
 		case STOP_HOLD:
-			arg->motor_left->hold();
-			arg->motor_right->hold();
+			arg->motor_left->hold_unsafe();
+			arg->motor_right->hold_unsafe();
 			break;
 		}
 
@@ -748,32 +854,27 @@ private:
 
 		arg->drive = false;
 		arg->drive_position = false;
-
-		arg->stopAction_static_running = false;
 	}
 
-	static float getDistance_static(drivebase_state_t* arg)
+	static float getDistance_static(volatile drivebase_state_t* arg)
 	{
-		return (arg->motor_right->getPosition() + arg->motor_left->getPosition()) * arg->wheel_dia / 2 / 360 * M_PI;
+		return (arg->motor_right->getPosition_static(&arg->motor_right->_encoder) + arg->motor_left->getPosition_static(&arg->motor_left->_encoder)) * arg->wheel_dia / 2 / 360 * M_PI;
 	}
 
-	static float getAngle_static(drivebase_state_t* arg)
+	static float getAngle_static(volatile drivebase_state_t* arg)
 	{
-		return (arg->motor_right->getPosition() - arg->motor_left->getPosition()) * arg->wheel_dia / (2 * arg->axle_track);
+		return (arg->motor_right->getPosition_static(&arg->motor_right->_encoder) - arg->motor_left->getPosition_static(&arg->motor_left->_encoder)) * arg->wheel_dia / (2 * arg->axle_track);
 	}
 
-	static bool motors_enabled()
-	{
-		return ((EVNAlpha::sharedButtonLED().read() && EVNAlpha::sharedButtonLED().sharedState()->link_movement)
-			|| !EVNAlpha::sharedButtonLED().sharedState()->link_movement);
-	}
-
-	static void pid_update(drivebase_state_t* arg)
+	static void pid_update(volatile drivebase_state_t* arg)
 	{
 		uint32_t now = micros();
 		float time_since_last_loop_scaled = ((float)now - (float)arg->last_update) / 1000;
 		float time_since_last_loop = time_since_last_loop_scaled / 1000;
 		arg->last_update = now;
+
+		if (time_since_last_loop < 0)
+			return;
 
 		arg->current_angle = getAngle_static(arg);
 		arg->current_distance = getDistance_static(arg);
@@ -787,7 +888,7 @@ private:
 		// arg->motor_right_x = arg->position_x + 0.5 * arg->axle_track * cos((arg->current_angle - 90) / 180 * M_PI);
 		// arg->motor_right_y = arg->position_y + 0.5 * arg->axle_track * sin((arg->current_angle - 90) / 180 * M_PI);
 
-		if (motors_enabled() && arg->drive)
+		if (EVNAlpha::motorsEnabled() && arg->drive)
 		{
 			float target_speed_after_decel = arg->target_speed;
 			float target_turn_rate_after_decel = arg->target_turn_rate;
@@ -895,8 +996,10 @@ private:
 			}
 
 			//write speeds to motors
-			arg->motor_left->runSpeedDB(arg->target_motor_left_dps);
-			arg->motor_right->runSpeedDB(arg->target_motor_right_dps);
+			//non-thread safe write is used here
+			//assumed safe because EVNDrivebase and EVNMotor should be run on same core
+			arg->motor_left->runSpeed_unsafe(arg->target_motor_left_dps);
+			arg->motor_right->runSpeed_unsafe(arg->target_motor_right_dps);
 
 			bool old_sign_from_target_dist;
 			bool old_sign_from_target_angle;
@@ -909,9 +1012,11 @@ private:
 
 			//increment target angle and XY position
 			//if output of speed or turn rate output is saturated or motors are stalled, stop incrementing (avoid excessive overshoot that PID cannot correct)
-			if (fabs(arg->speed_error * arg->speed_pid->getKp() + arg->speed_pid->getIntegral() * arg->speed_pid->getKi()) < arg->max_dps
+			if (
+				fabs(arg->speed_error * arg->speed_pid->getKp() + arg->speed_pid->getIntegral() * arg->speed_pid->getKi()) < arg->max_dps
 				&& fabs(arg->angle_error * arg->turn_rate_pid->getKp() + arg->turn_rate_pid->getIntegral() * arg->turn_rate_pid->getKi()) < arg->max_dps
-				&& !arg->motor_left->stalled() && !arg->motor_right->stalled()
+				&&
+				!arg->motor_left->stalled_unsafe() && !arg->motor_right->stalled_unsafe()
 				)
 			{
 
