@@ -7,6 +7,9 @@
 #include <Servo.h>
 #include "ws2812/ws2812.pio.h"
 
+//TODO: Maybe let user toggle the delay in update()? If there's a demand for it perhaps
+//TODO: Use timer interrupts to auto update RGB LED
+
 static PIOProgram _rgbLedPgm(&ws2812_program);
 
 class EVNRGBLED
@@ -140,7 +143,6 @@ public:
     {
         if (_buffer_changed)
         {
-            //TODO: Maybe let user toggle this? If there's a demand for it perhaps
             delay_for_new_frame();
 
             for (int i = 0; i < _led_count; i++)
