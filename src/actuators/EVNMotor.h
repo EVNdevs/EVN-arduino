@@ -441,7 +441,7 @@ protected:
 					decel_dps = sqrt(error / max_error_before_decel) * fabs(pidArg->target_dps);
 			}
 
-			if (pidArg->run_time)
+			if (timed_control_enabled(pidArg))
 			{
 				if ((now - pidArg->start_time_us) >= pidArg->run_time_ms * 1000)
 				{
@@ -463,7 +463,10 @@ protected:
 			float kd = pidArg->pos_pid->getKd();
 
 			if (!position_control_enabled(pidArg) || pidArg->stalled)
+			{
 				pidArg->pos_pid->setKi(0);
+				pidArg->pos_pid->resetIntegral();
+			}
 			else
 				pidArg->pos_pid->setKi(ki * time_since_last_loop_scaled);
 
@@ -493,18 +496,22 @@ protected:
 				}
 
 				bool old_sign_from_target_pos;
+				bool no_change_to_target_pos = false;
+
 				if (position_control_enabled(pidArg))
 				{
-					old_sign_from_target_pos = (pidArg->x - pidArg->target_pos > 0) ? true : false;
+					old_sign_from_target_pos = pidArg->x - pidArg->target_pos > 0;
+					no_change_to_target_pos = pidArg->x == pidArg->target_pos;
 				}
 
-				pidArg->x += time_since_last_loop * pidArg->target_dps_constrained;
+				if (!no_change_to_target_pos)
+					pidArg->x += time_since_last_loop * pidArg->target_dps_constrained;
 
 				if (position_control_enabled(pidArg))
 				{
-					bool new_sign_from_target_pos = (pidArg->x - pidArg->target_pos > 0) ? true : false;
+					bool new_sign_from_target_pos = pidArg->x - pidArg->target_pos > 0;
 
-					if (old_sign_from_target_pos != new_sign_from_target_pos)
+					if (old_sign_from_target_pos != new_sign_from_target_pos || no_change_to_target_pos)
 						pidArg->x = pidArg->target_pos;
 				}
 			}
@@ -640,7 +647,9 @@ protected:
 		uint32_t now = micros();
 		if (mutex_try_enter_block_until(&mutex, delayed_by_us(get_absolute_time(), 1000)))
 		{
-			pos_update(encoderArgs[2]); velocity_update(encoderArgs[2], now);mutex_exit(&mutex);
+			pos_update(encoderArgs[2]);
+			velocity_update(encoderArgs[2], now);
+			mutex_exit(&mutex);
 		}
 	}
 
@@ -933,7 +942,10 @@ private:
 			// float kd = arg->turn_rate_pid->getKd();
 
 			if (!arg->drive_position)
+			{
 				arg->turn_rate_pid->setKi(0);
+				arg->turn_rate_pid->resetIntegral();
+			}
 			else
 				arg->turn_rate_pid->setKi(ki * time_since_last_loop_scaled);
 
@@ -948,7 +960,10 @@ private:
 			// kd = arg->speed_pid->getKd();
 
 			if (!arg->drive_position)
+			{
 				arg->speed_pid->setKi(0);
+				arg->speed_pid->resetIntegral();
+			}
 			else
 				arg->speed_pid->setKi(ki * time_since_last_loop_scaled);
 
