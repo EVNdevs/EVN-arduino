@@ -323,6 +323,7 @@ void EVNMotor::runTime(float dps, uint32_t time_ms, uint8_t stop_action, bool wa
 	mutex_enter_blocking(&mutex);
 	_pid_control.target_dps = clean_input_dps(dps);
 	_pid_control.run_dir = clean_input_dir(dps);
+	_pid_control.start_time_us = micros();
 	_pid_control.run_time_ms = time_ms;
 	_pid_control.stop_action = clean_input_stop_action(stop_action);
 
@@ -339,13 +340,13 @@ void EVNMotor::runTime(float dps, uint32_t time_ms, uint8_t stop_action, bool wa
 void EVNMotor::stop_unsafe() volatile
 {
 	_pid_control.stop_action = STOP_BRAKE;
-	stopAction_static(&_pid_control, &_encoder, micros(), getPosition_static(&_encoder), getDPS_static(&_encoder));
+	stopAction_static(&_pid_control, &_encoder, getPosition_static(&_encoder), getDPS_static(&_encoder));
 }
 
 void EVNMotor::coast_unsafe() volatile
 {
 	_pid_control.stop_action = STOP_BRAKE;
-	stopAction_static(&_pid_control, &_encoder, micros(), getPosition_static(&_encoder), getDPS_static(&_encoder));
+	stopAction_static(&_pid_control, &_encoder, getPosition_static(&_encoder), getDPS_static(&_encoder));
 }
 
 void EVNMotor::hold_unsafe() volatile
@@ -353,7 +354,7 @@ void EVNMotor::hold_unsafe() volatile
 	_pid_control.target_pos = getPosition_static(&_encoder);
 	_pid_control.target_dps = _pid_control.max_rpm * 3;
 	_pid_control.stop_action = STOP_HOLD;
-	stopAction_static(&_pid_control, &_encoder, micros(), getPosition_static(&_encoder), getDPS_static(&_encoder));
+	stopAction_static(&_pid_control, &_encoder, getPosition_static(&_encoder), getDPS_static(&_encoder));
 }
 
 void EVNMotor::stop() volatile

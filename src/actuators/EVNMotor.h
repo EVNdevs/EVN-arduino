@@ -110,10 +110,6 @@ typedef struct
 	PIDController* turn_rate_pid;
 	PIDController* speed_pid;
 
-	//LOOP
-	uint32_t last_update;
-	uint8_t stop_action;
-
 	//USER-SET
 	float target_speed;
 	float target_turn_rate;
@@ -122,7 +118,9 @@ typedef struct
 	bool drive;
 	bool drive_position;
 
-	//DRIVE
+	//LOOP
+	uint32_t last_update;
+	uint8_t stop_action;
 	float target_angle;
 	float target_distance;
 	// float target_position_x;
@@ -134,12 +132,8 @@ typedef struct
 	float speed_output;
 	float target_motor_left_dps;
 	float target_motor_right_dps;
-
-	//DRIVE POSITION
 	float end_angle;
 	float end_distance;
-
-	//ODOMETRY
 	float current_distance;
 	float prev_distance;
 	float current_angle;
@@ -315,10 +309,9 @@ protected:
 		}
 	}
 
-	static void stopAction_static(volatile pid_control_t* pidArg, volatile encoder_state_t* encoderArg, uint32_t now, float pos, float dps)
+	static void stopAction_static(volatile pid_control_t* pidArg, volatile encoder_state_t* encoderArg, float pos, float dps)
 	{
-		//keep start_time and x at most recent states
-		pidArg->start_time_us = now;
+		//keep at most recent state
 		pidArg->target_dps_constrained = dps;
 
 		//coast and brake stop functions based on DRV8833 datasheet
@@ -434,7 +427,7 @@ protected:
 
 					if (pidArg->counter >= USER_RUN_DEGREES_MIN_LOOP_COUNT)
 					{
-						stopAction_static(pidArg, encoderArg, now, pos, dps);
+						stopAction_static(pidArg, encoderArg, pos, dps);
 						return;
 					}
 				}
@@ -452,12 +445,14 @@ protected:
 			{
 				if ((now - pidArg->start_time_us) >= pidArg->run_time_ms * 1000)
 				{
-					stopAction_static(pidArg, encoderArg, now, pos, dps);
+					stopAction_static(pidArg, encoderArg, pos, dps);
 					return;
 				}
 
-				if ((pidArg->target_dps / pidArg->decel) * 1000000 > ((float)pidArg->run_time_ms * 1000 + pidArg->start_time_us - now))
-					decel_dps = pidArg->decel * ((float)pidArg->run_time_ms * 1000 + (float)pidArg->start_time_us - (float)now) / 1000000;
+				float run_time_s = (float)pidArg->run_time_ms / 1000;
+				float elapsed_run_time_s = ((float)now - (float)pidArg->start_time_us) / 1000000;
+				if (pidArg->target_dps / pidArg->decel > run_time_s - elapsed_run_time_s)
+					decel_dps = pidArg->decel * (run_time_s - elapsed_run_time_s);
 			}
 
 			pidArg->target_dps_end_decel = decel_dps;
@@ -536,7 +531,7 @@ protected:
 		else if (!EVNAlpha::motorsEnabled() || !pidArg->run_pwm)
 		{
 			pidArg->stop_action = STOP_BRAKE;
-			stopAction_static(pidArg, encoderArg, now, pos, dps);
+			stopAction_static(pidArg, encoderArg, pos, dps);
 		}
 	}
 
@@ -868,6 +863,7 @@ private:
 
 	static void pid_update(volatile drivebase_state_t* arg)
 	{
+		//update time between loops
 		uint32_t now = micros();
 		float time_since_last_loop_scaled = ((float)now - (float)arg->last_update) / 1000;
 		float time_since_last_loop = time_since_last_loop_scaled / 1000;
@@ -876,6 +872,7 @@ private:
 		if (time_since_last_loop < 0)
 			return;
 
+		//update angle and linear distance travelled
 		arg->current_angle = getAngle_static(arg);
 		arg->current_distance = getDistance_static(arg);
 		float distance_travelled_in_last_loop = arg->current_distance - arg->prev_distance;
@@ -893,7 +890,7 @@ private:
 			float target_speed_after_decel = arg->target_speed;
 			float target_turn_rate_after_decel = arg->target_turn_rate;
 
-			//calculation of speed & turn rate when motor is coming to a pause
+			//calculate speed & turn rate when motor is coming to a pause
 			if (arg->drive_position)
 			{
 				float stop_speed_decel = arg->speed_decel;
@@ -901,7 +898,7 @@ private:
 				float stop_time_to_decel_speed = fabs(arg->target_speed) / arg->speed_decel;
 				float stop_time_to_decel_turn_rate = fabs(arg->target_turn_rate) / arg->turn_rate_decel;
 
-				//stretch either decel to match the slower one
+				//slow down either decel to match each each other
 				if (stop_time_to_decel_speed != 0 && stop_time_to_decel_turn_rate != 0)
 				{
 					if (stop_time_to_decel_speed > stop_time_to_decel_turn_rate)
@@ -910,7 +907,7 @@ private:
 						stop_speed_decel *= stop_time_to_decel_speed / stop_time_to_decel_turn_rate;
 				}
 
-				//calculate what the current speed & turn rate should be, based on respective error
+				//calculate what the current max speed & turn rate should be, based on respective errors
 				float error_to_start_decel_speed = pow(arg->target_speed, 2) / 2 / stop_speed_decel;
 				float error_to_start_decel_turn_rate = pow(arg->target_turn_rate, 2) / 2 / stop_turn_rate_decel;
 				float current_distance_error = fabs(arg->end_distance - arg->current_distance);
@@ -923,7 +920,7 @@ private:
 					target_turn_rate_after_decel = arg->target_turn_rate * sqrt(current_angle_error / error_to_start_decel_turn_rate);
 			}
 
-			//angle error = the difference between the robot's current angle and the angle it should travel at
+			//angle error -> difference between the robot's current angle and the angle it should travel at
 			arg->angle_error = arg->target_angle - arg->current_angle;
 			if (arg->angle_error > 180)
 				arg->angle_error -= 360;
@@ -940,7 +937,6 @@ private:
 			else
 				arg->turn_rate_pid->setKi(ki * time_since_last_loop_scaled);
 
-			// arg->angle_error = constrain(arg->angle_error, -1, 1);
 			arg->angle_output = arg->turn_rate_pid->compute(arg->angle_error);
 
 			// arg->turn_rate_pid->setKp(kp);
@@ -956,7 +952,7 @@ private:
 			else
 				arg->speed_pid->setKi(ki * time_since_last_loop_scaled);
 
-			//speed error is the distance between the db position and its target (converted to motor degrees)
+			//speed error -> distance between the db position and its target (converted to motor degrees)
 			arg->speed_error = arg->target_distance - arg->current_distance;
 			arg->speed_error = arg->speed_error / M_PI / arg->wheel_dia * 360;
 			arg->speed_output = arg->speed_pid->compute(arg->speed_error);
@@ -966,12 +962,12 @@ private:
 			// arg->speed_pid->setKd(kd);
 
 			//calculate motor speeds
-			//speed output   -> average speed
-			//heading output -> difference between speeds
+			//speed PID output   -> average speed
+			//angle PID output -> difference between speeds
 			arg->target_motor_left_dps = arg->speed_output - arg->angle_output;
 			arg->target_motor_right_dps = arg->speed_output + arg->angle_output;
 
-			//maintain ratio between speeds when either speed exceeds motor limits
+			//maintain ratio between speeds when either exceeds motor limits
 			if (arg->target_motor_left_dps != 0 && arg->target_motor_right_dps != 0)
 			{
 				if (fabs(arg->target_motor_left_dps) > arg->max_dps)
@@ -1001,23 +997,25 @@ private:
 			arg->motor_left->runSpeed_unsafe(arg->target_motor_left_dps);
 			arg->motor_right->runSpeed_unsafe(arg->target_motor_right_dps);
 
-			bool old_sign_from_target_dist;
+			//preserve sign of error between target and end distance/angle
+			bool old_sign_from_target_distance;
 			bool old_sign_from_target_angle;
+			bool no_change_to_target_distance = false;
+			bool no_change_to_target_angle = false;
 
 			if (arg->drive_position)
 			{
-				old_sign_from_target_dist = (arg->target_distance - arg->end_distance > 0) ? true : false;
-				old_sign_from_target_angle = (arg->target_angle - arg->end_angle > 0) ? true : false;
+				old_sign_from_target_distance = arg->target_distance - arg->end_distance > 0;
+				old_sign_from_target_angle = arg->target_angle - arg->end_angle > 0;
+				no_change_to_target_distance = arg->target_distance == arg->end_distance;
+				no_change_to_target_angle = arg->target_angle == arg->end_angle;
 			}
 
 			//increment target angle and XY position
-			//if output of speed or turn rate output is saturated or motors are stalled, stop incrementing (avoid excessive overshoot that PID cannot correct)
-			if (
-				fabs(arg->speed_error * arg->speed_pid->getKp() + arg->speed_pid->getIntegral() * arg->speed_pid->getKi()) < arg->max_dps
+			//if speed or turn rate output is saturated or motors are stalled, stop incrementing (avoid excessive overshoot that PID cannot correct)
+			if (fabs(arg->speed_error * arg->speed_pid->getKp() + arg->speed_pid->getIntegral() * arg->speed_pid->getKi()) < arg->max_dps
 				&& fabs(arg->angle_error * arg->turn_rate_pid->getKp() + arg->turn_rate_pid->getIntegral() * arg->turn_rate_pid->getKi()) < arg->max_dps
-				&&
-				!arg->motor_left->stalled_unsafe() && !arg->motor_right->stalled_unsafe()
-				)
+				&& !arg->motor_left->stalled_unsafe() && !arg->motor_right->stalled_unsafe())
 			{
 
 				//calculating time taken to decel/accel to target speed & turn rate
@@ -1072,7 +1070,7 @@ private:
 						time_to_hit_turn_rate = fabs(arg->target_turn_rate_constrained) / arg->turn_rate_decel +
 						fabs(target_turn_rate_after_decel) / arg->turn_rate_accel;
 
-					//stretch the accel/decel trajectories for turn rate and speed to match each other
+					//stretch the accel/decel for turn rate and speed to match each other
 					if (time_to_hit_speed != 0 && time_to_hit_turn_rate != 0)
 					{
 						if (time_to_hit_speed > time_to_hit_turn_rate)
@@ -1090,7 +1088,7 @@ private:
 					}
 				}
 
-				//apply accel/decel to hit target speed
+				//update target speed using updated accel/decel values
 				if (arg->target_speed_constrained < target_speed_after_decel)
 				{
 					if (arg->target_speed_constrained > 0)
@@ -1112,7 +1110,7 @@ private:
 						arg->target_speed_constrained = target_speed_after_decel;
 				}
 
-				//apply accel/decel to hit target turn rate
+				//update target turn rate using updated accel/decel values
 				if (arg->target_turn_rate_constrained < target_turn_rate_after_decel)
 				{
 					if (arg->target_turn_rate_constrained > 0)
@@ -1134,22 +1132,27 @@ private:
 						arg->target_turn_rate_constrained = target_turn_rate_after_decel;
 				}
 
-				//increment target angle and distance
-				arg->target_angle += time_since_last_loop * arg->target_turn_rate_constrained;
-				arg->target_distance += time_since_last_loop * arg->target_speed_constrained;
+				//increment/decrement target angle and distance with updated target speed/turn rate values
+				if (!no_change_to_target_angle)
+					arg->target_angle += time_since_last_loop * arg->target_turn_rate_constrained;
+				if (!no_change_to_target_distance)
+					arg->target_distance += time_since_last_loop * arg->target_speed_constrained;
+
 				// arg->target_position_x += time_since_last_loop * arg->target_speed * cos(arg->target_angle / 180 * M_PI) * (1 - fabs(arg->angle_output));
 				// arg->target_position_y += time_since_last_loop * arg->target_speed * sin(arg->target_angle / 180 * M_PI) * (1 - fabs(arg->angle_output));
 			}
 
 			if (arg->drive_position)
 			{
-				bool new_sign_from_target_dist = (arg->target_distance - arg->end_distance > 0) ? true : false;
-				bool new_sign_from_target_angle = (arg->target_angle - arg->end_angle > 0) ? true : false;
+				//compare new sign of error between target and end distance/angle
+				//change in sign means end point has been exceeded (so it should be capped)
+				bool new_sign_from_target_distance = arg->target_distance - arg->end_distance > 0;
+				bool new_sign_from_target_angle = arg->target_angle - arg->end_angle > 0;
 
-				if (old_sign_from_target_dist != new_sign_from_target_dist)
+				if ((old_sign_from_target_distance != new_sign_from_target_distance) || no_change_to_target_distance)
 					arg->target_distance = arg->end_distance;
 
-				if (old_sign_from_target_angle != new_sign_from_target_angle)
+				if ((old_sign_from_target_angle != new_sign_from_target_angle) || no_change_to_target_angle)
 					arg->target_angle = arg->end_angle;
 
 				if (fabs(arg->end_angle - arg->current_angle) <= USER_DRIVE_POS_MIN_ERROR_DEG
