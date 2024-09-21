@@ -134,9 +134,11 @@ void EVNMotor::setPID(float p, float i, float d) volatile
 	if (!timerisr_enabled) return;
 	ensure_isr_executed();
 	mutex_enter_blocking(&mutex);
+
 	_pid_control.pos_pid->setKp(p);
 	_pid_control.pos_pid->setKi(i);
 	_pid_control.pos_pid->setKd(d);
+
 	mutex_exit(&mutex);
 }
 
@@ -145,7 +147,9 @@ void EVNMotor::setAccel(float accel_dps_sq) volatile
 	if (!timerisr_enabled) return;
 	ensure_isr_executed();
 	mutex_enter_blocking(&mutex);
+
 	_pid_control.accel = fabs(accel_dps_sq);
+
 	mutex_exit(&mutex);
 }
 
@@ -154,7 +158,9 @@ void EVNMotor::setDecel(float decel_dps_sq) volatile
 	if (!timerisr_enabled) return;
 	ensure_isr_executed();
 	mutex_enter_blocking(&mutex);
+
 	_pid_control.decel = fabs(decel_dps_sq);
+
 	mutex_exit(&mutex);
 }
 
@@ -163,7 +169,9 @@ void EVNMotor::setMaxRPM(float max_rpm) volatile
 	if (!timerisr_enabled) return;
 	ensure_isr_executed();
 	mutex_enter_blocking(&mutex);
+
 	_pid_control.max_rpm = fabs(max_rpm);
+
 	mutex_exit(&mutex);
 }
 
@@ -172,7 +180,9 @@ void EVNMotor::setPPR(uint32_t ppr) volatile
 	if (!timerisr_enabled) return;
 	ensure_isr_executed();
 	mutex_enter_blocking(&mutex);
+
 	_encoder.ppr = ppr;
+
 	mutex_exit(&mutex);
 }
 
@@ -181,7 +191,9 @@ float EVNMotor::getPosition() volatile
 	if (!timerisr_enabled) return 0;
 	ensure_isr_executed();
 	mutex_enter_blocking(&mutex);
+
 	float output = getPosition_static(&_encoder);
+
 	mutex_exit(&mutex);
 
 	return output;
@@ -197,7 +209,9 @@ void EVNMotor::setPosition(float position) volatile
 	if (!timerisr_enabled) return;
 	ensure_isr_executed();
 	mutex_enter_blocking(&mutex);
+
 	_encoder.position_offset = ((float)_encoder.position * 90.0 / _encoder.ppr) - position;
+
 	mutex_exit(&mutex);
 }
 
@@ -211,7 +225,9 @@ float EVNMotor::getSpeed() volatile
 	if (!timerisr_enabled) return 0;
 	ensure_isr_executed();
 	mutex_enter_blocking(&mutex);
+
 	float output = getDPS_static(&_encoder);
+
 	mutex_exit(&mutex);
 
 	return output;
@@ -237,6 +253,7 @@ void EVNMotor::runPWM(float duty_cycle_pct) volatile
 	if (!timerisr_enabled) return;
 	ensure_isr_executed();
 	mutex_enter_blocking(&mutex);
+
 	_pid_control.run_pwm = true;
 	_pid_control.run_speed = false;
 	_pid_control.run_time = false;
@@ -244,6 +261,7 @@ void EVNMotor::runPWM(float duty_cycle_pct) volatile
 	_pid_control.hold = false;
 
 	runPWM_static(&_pid_control, constrain(duty_cycle_pct, -100, 100) * 0.01);
+
 	mutex_exit(&mutex);
 }
 
@@ -252,14 +270,9 @@ void EVNMotor::runSpeed(float dps) volatile
 	if (!timerisr_enabled) return;
 	ensure_isr_executed();
 	mutex_enter_blocking(&mutex);
-	_pid_control.target_dps = clean_input_dps(dps);
-	_pid_control.run_dir = clean_input_dir(dps);
 
-	_pid_control.run_pwm = false;
-	_pid_control.run_pos = false;
-	_pid_control.run_time = false;
-	_pid_control.run_speed = true;
-	_pid_control.hold = false;
+	runSpeed_unsafe(dps);
+
 	mutex_exit(&mutex);
 }
 
@@ -280,6 +293,7 @@ void EVNMotor::runPosition(float dps, float position, uint8_t stop_action, bool 
 	if (!timerisr_enabled) return;
 	ensure_isr_executed();
 	mutex_enter_blocking(&mutex);
+
 	_pid_control.target_dps = clean_input_dps(dps);
 	_pid_control.target_pos = position;
 	_pid_control.stop_action = clean_input_stop_action(stop_action);
@@ -289,6 +303,7 @@ void EVNMotor::runPosition(float dps, float position, uint8_t stop_action, bool 
 	_pid_control.run_time = false;
 	_pid_control.run_speed = false;
 	_pid_control.hold = false;
+
 	mutex_exit(&mutex);
 
 	if (wait) while (!this->completed());
@@ -321,6 +336,7 @@ void EVNMotor::runTime(float dps, uint32_t time_ms, uint8_t stop_action, bool wa
 	if (!timerisr_enabled) return;
 	ensure_isr_executed();
 	mutex_enter_blocking(&mutex);
+
 	_pid_control.target_dps = clean_input_dps(dps);
 	_pid_control.run_dir = clean_input_dir(dps);
 	_pid_control.start_time_us = micros();
@@ -332,6 +348,7 @@ void EVNMotor::runTime(float dps, uint32_t time_ms, uint8_t stop_action, bool wa
 	_pid_control.run_time = true;
 	_pid_control.run_speed = false;
 	_pid_control.hold = false;
+
 	mutex_exit(&mutex);
 
 	if (wait) while (!this->completed());
@@ -362,7 +379,9 @@ void EVNMotor::stop() volatile
 	if (!timerisr_enabled) return;
 	ensure_isr_executed();
 	mutex_enter_blocking(&mutex);
+
 	stop_unsafe();
+
 	mutex_exit(&mutex);
 }
 
@@ -371,7 +390,9 @@ void EVNMotor::coast() volatile
 	if (!timerisr_enabled) return;
 	ensure_isr_executed();
 	mutex_enter_blocking(&mutex);
+
 	coast_unsafe();
+
 	mutex_exit(&mutex);
 }
 
@@ -380,7 +401,9 @@ void EVNMotor::hold() volatile
 	if (!timerisr_enabled) return;
 	ensure_isr_executed();
 	mutex_enter_blocking(&mutex);
+
 	hold_unsafe();
+
 	mutex_exit(&mutex);
 }
 
@@ -389,8 +412,11 @@ bool EVNMotor::completed() volatile
 	if (!timerisr_enabled) return 0;
 	ensure_isr_executed();
 	mutex_enter_blocking(&mutex);
+
 	bool output = !_pid_control.run_time && !_pid_control.run_pos;
+
 	mutex_exit(&mutex);
+
 	return output;
 }
 
@@ -404,8 +430,11 @@ bool EVNMotor::stalled() volatile
 	if (!timerisr_enabled) return 0;
 	ensure_isr_executed();
 	mutex_enter_blocking(&mutex);
+
 	bool output = _pid_control.stalled && loop_control_enabled(&_pid_control);
+
 	mutex_exit(&mutex);
+
 	return output;
 }
 
@@ -460,9 +489,11 @@ void EVNDrivebase::setSpeedPID(float kp, float ki, float kd) volatile
 	if (!timerisr_enabled) return;
 	ensure_isr_executed();
 	mutex_enter_blocking(&EVNMotor::mutex);
+
 	db.speed_pid->setKp(kp);
 	db.speed_pid->setKi(ki);
 	db.speed_pid->setKd(kd);
+
 	mutex_exit(&EVNMotor::mutex);
 }
 
@@ -471,9 +502,11 @@ void EVNDrivebase::setTurnRatePID(float kp, float ki, float kd) volatile
 	if (!timerisr_enabled) return;
 	ensure_isr_executed();
 	mutex_enter_blocking(&EVNMotor::mutex);
+
 	db.turn_rate_pid->setKp(kp);
 	db.turn_rate_pid->setKi(ki);
 	db.turn_rate_pid->setKd(kd);
+
 	mutex_exit(&EVNMotor::mutex);
 }
 
@@ -482,7 +515,9 @@ void EVNDrivebase::setSpeedAccel(float speed_accel) volatile
 	if (!timerisr_enabled) return;
 	ensure_isr_executed();
 	mutex_enter_blocking(&EVNMotor::mutex);
+
 	db.speed_accel = fabs(speed_accel);
+
 	mutex_exit(&EVNMotor::mutex);
 }
 
@@ -491,7 +526,9 @@ void EVNDrivebase::setSpeedDecel(float speed_decel) volatile
 	if (!timerisr_enabled) return;
 	ensure_isr_executed();
 	mutex_enter_blocking(&EVNMotor::mutex);
+
 	db.speed_decel = fabs(speed_decel);
+
 	mutex_exit(&EVNMotor::mutex);
 }
 
@@ -500,7 +537,9 @@ void EVNDrivebase::setTurnRateAccel(float turn_rate_accel) volatile
 	if (!timerisr_enabled) return;
 	ensure_isr_executed();
 	mutex_enter_blocking(&EVNMotor::mutex);
+
 	db.turn_rate_accel = fabs(turn_rate_accel);
+
 	mutex_exit(&EVNMotor::mutex);
 }
 
@@ -509,7 +548,9 @@ void EVNDrivebase::setTurnRateDecel(float turn_rate_decel) volatile
 	if (!timerisr_enabled) return;
 	ensure_isr_executed();
 	mutex_enter_blocking(&EVNMotor::mutex);
+
 	db.turn_rate_decel = fabs(turn_rate_decel);
+
 	mutex_exit(&EVNMotor::mutex);
 }
 
@@ -523,7 +564,9 @@ float EVNDrivebase::getDistance() volatile
 	if (!timerisr_enabled) return 0;
 	ensure_isr_executed();
 	mutex_enter_blocking(&EVNMotor::mutex);
+
 	float output = getDistance_static(&db);
+
 	mutex_exit(&EVNMotor::mutex);
 
 	return output;
@@ -534,7 +577,9 @@ float EVNDrivebase::getAngle() volatile
 	if (!timerisr_enabled) return 0;
 	ensure_isr_executed();
 	mutex_enter_blocking(&EVNMotor::mutex);
+
 	float output = getAngle_static(&db);
+
 	mutex_exit(&EVNMotor::mutex);
 
 	return output;
@@ -550,8 +595,11 @@ float EVNDrivebase::getX() volatile
 	if (!timerisr_enabled) return 0;
 	ensure_isr_executed();
 	mutex_enter_blocking(&EVNMotor::mutex);
+
 	float output = db.position_x;
+
 	mutex_exit(&EVNMotor::mutex);
+
 	return output;
 }
 
@@ -560,8 +608,11 @@ float EVNDrivebase::getY() volatile
 	if (!timerisr_enabled) return 0;
 	ensure_isr_executed();
 	mutex_enter_blocking(&EVNMotor::mutex);
+
 	float output = db.position_y;
+
 	mutex_exit(&EVNMotor::mutex);
+
 	return output;
 }
 
@@ -570,8 +621,10 @@ void EVNDrivebase::resetXY() volatile
 	if (!timerisr_enabled) return;
 	ensure_isr_executed();
 	mutex_enter_blocking(&EVNMotor::mutex);
+
 	db.position_x = 0;
 	db.position_y = 0;
+
 	mutex_exit(&EVNMotor::mutex);
 }
 
@@ -580,8 +633,10 @@ float EVNDrivebase::getDistanceToPoint(float x, float y) volatile
 	if (!timerisr_enabled) return 0;
 	ensure_isr_executed();
 	mutex_enter_blocking(&EVNMotor::mutex);
+
 	float px = db.position_x;
 	float py = db.position_y;
+
 	mutex_exit(&EVNMotor::mutex);
 
 	if (py == 0 && px == 0)
@@ -663,10 +718,13 @@ void EVNDrivebase::driveTurnRate(float speed, float turn_rate) volatile
 	if (!timerisr_enabled) return;
 	ensure_isr_executed();
 	mutex_enter_blocking(&EVNMotor::mutex);
+
 	db.target_speed = speedc;
 	db.target_turn_rate = turn_ratec;
+
 	db.drive = true;
 	db.drive_position = false;
+
 	mutex_exit(&EVNMotor::mutex);
 }
 
@@ -699,6 +757,7 @@ void EVNDrivebase::straight(float speed, float distance, uint8_t stop_action, bo
 	if (!timerisr_enabled) return;
 	ensure_isr_executed();
 	mutex_enter_blocking(&EVNMotor::mutex);
+
 	db.target_speed = speedc;
 	db.target_turn_rate = 0;
 	db.end_distance = db.current_distance + distancec;
@@ -707,6 +766,7 @@ void EVNDrivebase::straight(float speed, float distance, uint8_t stop_action, bo
 	db.stop_action = clean_input_stop_action(stop_action);
 	db.drive = true;
 	db.drive_position = true;
+
 	mutex_exit(&EVNMotor::mutex);
 
 	if (wait) while (!this->completed());
@@ -745,14 +805,16 @@ void EVNDrivebase::curveTurnRate(float speed, float turn_rate, float angle, uint
 	if (!timerisr_enabled) return;
 	ensure_isr_executed();
 	mutex_enter_blocking(&EVNMotor::mutex);
+
 	db.target_speed = speedc;
 	db.target_turn_rate = turn_ratec;
 	db.end_distance = db.current_distance + distance;
 	db.end_angle = db.current_angle + angle;
-
 	db.stop_action = clean_input_stop_action(stop_action);
+
 	db.drive = true;
 	db.drive_position = true;
+
 	mutex_exit(&EVNMotor::mutex);
 
 	if (wait) while (!this->completed());
@@ -800,8 +862,10 @@ void EVNDrivebase::stop() volatile
 	if (!timerisr_enabled) return;
 	ensure_isr_executed();
 	mutex_enter_blocking(&EVNMotor::mutex);
+
 	db.stop_action = STOP_BRAKE;
 	stopAction_static(&db);
+
 	mutex_exit(&EVNMotor::mutex);
 }
 
@@ -810,8 +874,10 @@ void EVNDrivebase::coast() volatile
 	if (!timerisr_enabled) return;
 	ensure_isr_executed();
 	mutex_enter_blocking(&EVNMotor::mutex);
+
 	db.stop_action = STOP_COAST;
 	stopAction_static(&db);
+
 	mutex_exit(&EVNMotor::mutex);
 }
 
@@ -820,8 +886,10 @@ void EVNDrivebase::hold() volatile
 	if (!timerisr_enabled) return;
 	ensure_isr_executed();
 	mutex_enter_blocking(&EVNMotor::mutex);
+
 	db.stop_action = STOP_HOLD;
 	stopAction_static(&db);
+
 	mutex_exit(&EVNMotor::mutex);
 }
 
@@ -830,7 +898,10 @@ bool EVNDrivebase::completed() volatile
 	if (!timerisr_enabled) return 0;
 	ensure_isr_executed();
 	mutex_enter_blocking(&EVNMotor::mutex);
+
 	bool output = !db.drive_position;
+
 	mutex_exit(&EVNMotor::mutex);
+
 	return output;
 }
