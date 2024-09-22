@@ -1,3 +1,9 @@
+1.0.2 (22/09/24)
+
+-- Bugfixes --
+
+EVNMotor, EVNDrivebase: Fix important bug where encoder pulses were skipped, leading to inaccurate encoder readings and sudden changes in motor direction when running, especially when using EVNDrivebase
+
 1.0.1 (22/09/24)
 
 Bugfix update for the recent major release
