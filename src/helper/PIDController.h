@@ -24,7 +24,7 @@ public:
 
 private:
 	volatile float _kp, _ki, _kd, _dir;
-	volatile float _error, _summederror, _preverror, _output;
+	volatile float _error = 0, _summederror = 0, _preverror = 0, _output = 0;
 };
 
 #endif

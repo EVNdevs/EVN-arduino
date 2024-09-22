@@ -1,13 +1,19 @@
 #include "EVNMotor.h"
 
-volatile encoder_state_t* EVNMotor::encoderArgs[];
-volatile pid_control_t* EVNMotor::pidArgs[];
+volatile encoder_state_t* EVNMotor::encoderArgs[] = {};
+volatile pid_control_t* EVNMotor::pidArgs[] = {};
 volatile bool EVNMotor::ports_started[] = { false, false, false, false };
 volatile bool EVNMotor::timerisr_enabled = false;
 volatile bool EVNMotor::timerisr_executed = false;
 volatile uint8_t EVNMotor::core;
 mutex_t EVNMotor::mutex;
 spin_lock_t* EVNMotor::spin_lock;
+
+volatile drivebase_state_t* EVNDrivebase::dbArgs[] = {};
+volatile bool EVNDrivebase::dbs_started[] = { false, false };
+volatile bool EVNDrivebase::timerisr_enabled = false;
+volatile bool EVNDrivebase::timerisr_executed = false;
+volatile uint8_t EVNDrivebase::core;
 
 EVNMotor::EVNMotor(uint8_t port, uint8_t motortype, uint8_t motor_dir, uint8_t enc_dir)
 {
@@ -47,7 +53,8 @@ EVNMotor::EVNMotor(uint8_t port, uint8_t motortype, uint8_t motor_dir, uint8_t e
 	}
 
 	// swap pins if needed
-	uint8_t pin;
+	uint8_t pin = 0;
+
 	if (motor_dirc == REVERSE)
 	{
 		pin = _pid_control.motora;
@@ -120,10 +127,10 @@ void EVNMotor::begin() volatile
 	//configure pins
 	analogWriteFreq(PWM_FREQ);
 	analogWriteRange(PWM_MAX_VAL);
-	pinMode(_pid_control.motora, OUTPUT_8MA);
-	pinMode(_pid_control.motorb, OUTPUT_8MA);
-	pinMode(_encoder.enca, INPUT);
-	pinMode(_encoder.encb, INPUT);
+	pinMode(_pid_control.motora, OUTPUT);
+	pinMode(_pid_control.motorb, OUTPUT);
+	pinMode(_encoder.enca, INPUT_PULLUP);
+	pinMode(_encoder.encb, INPUT_PULLUP);
 
 	//attach pin change interrupts (encoder) and timer interrupt (PID control)
 	attach_interrupts(&_encoder, &_pid_control);
@@ -438,22 +445,24 @@ bool EVNMotor::stalled() volatile
 	return output;
 }
 
-volatile drivebase_state_t* EVNDrivebase::dbArgs[];
-volatile bool EVNDrivebase::dbs_started[] = { false, false };
-volatile bool EVNDrivebase::timerisr_enabled = false;
-volatile bool EVNDrivebase::timerisr_executed = false;
-volatile uint8_t EVNDrivebase::core;
-
 EVNDrivebase::EVNDrivebase(float wheel_dia, float axle_track, EVNMotor* motor_left, EVNMotor* motor_right)
 {
-	if (motor_left->_pid_control.motor_type == motor_right->_pid_control.motor_type)
-		db.motor_type = motor_left->_pid_control.motor_type;
+	db.motor_left = motor_left;
+	db.motor_right = motor_right;
+
+	db.axle_track = fabs(axle_track);
+	db.wheel_dia = fabs(wheel_dia);
+
+
+	if (db.motor_left->_pid_control.motor_type == db.motor_right->_pid_control.motor_type)
+		db.motor_type = db.motor_left->_pid_control.motor_type;
 	else
 		db.motor_type = CUSTOM_MOTOR;
 
-	db.motor_left = motor_left;
-	db.motor_right = motor_right;
-	db.max_rpm = min(motor_left->_pid_control.max_rpm, motor_right->_pid_control.max_rpm);
+	db.max_rpm = min(db.motor_left->_pid_control.max_rpm, db.motor_right->_pid_control.max_rpm);
+	db.max_speed = db.max_rpm / 60 * db.wheel_dia * M_PI;
+	db.max_turn_rate = db.max_rpm * 6 * db.wheel_dia / db.axle_track;
+	db.max_dps = db.max_rpm * 6;
 
 	db.turn_rate_pid = new PIDController(DRIVEBASE_KP_TURN_RATE, DRIVEBASE_KI_TURN_RATE, DRIVEBASE_KD_TURN_RATE, DIRECT);
 	db.speed_pid = new PIDController(DRIVEBASE_KP_SPEED, DRIVEBASE_KI_SPEED, DRIVEBASE_KD_SPEED, DIRECT);
@@ -463,12 +472,6 @@ EVNDrivebase::EVNDrivebase(float wheel_dia, float axle_track, EVNMotor* motor_le
 	db.turn_rate_accel = fabs(USER_TURN_RATE_ACCEL);
 	db.turn_rate_decel = fabs(USER_TURN_RATE_DECEL);
 
-	db.axle_track = fabs(axle_track);
-	db.wheel_dia = fabs(wheel_dia);
-
-	db.max_speed = db.max_rpm / 60 * db.wheel_dia * M_PI;
-	db.max_turn_rate = db.max_rpm * 6 * db.wheel_dia / axle_track;
-	db.max_dps = db.max_rpm * 6;
 }
 
 void EVNDrivebase::ensure_isr_executed() volatile

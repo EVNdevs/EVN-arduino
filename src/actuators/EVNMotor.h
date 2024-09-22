@@ -244,10 +244,10 @@ protected:
 
 	static void pos_update(volatile encoder_state_t* arg)
 	{
-		uint8_t state = arg->state & 3;
-
 		arg->enca_state = digitalRead(arg->enca);
 		arg->encb_state = digitalRead(arg->encb);
+
+		uint8_t state = arg->state & 3;
 
 		if (arg->enca_state)
 			state |= 4;
@@ -281,22 +281,7 @@ protected:
 		float speedc = constrain(speed, -1, 1);
 
 		if (EVNAlpha::motorsEnabled()) {
-			if (speedc == 0)
-			{
-				digitalWrite(pidArg->motora, LOW);
-				digitalWrite(pidArg->motorb, LOW);
-			}
-			else if (speedc == 1)
-			{
-				digitalWrite(pidArg->motora, HIGH);
-				digitalWrite(pidArg->motorb, LOW);
-			}
-			else if (speedc == -1)
-			{
-				digitalWrite(pidArg->motora, LOW);
-				digitalWrite(pidArg->motorb, HIGH);
-			}
-			else if (speedc > 0)
+			if (speedc > 0)
 			{
 				digitalWrite(pidArg->motorb, LOW);
 				analogWrite(pidArg->motora, speedc * PWM_MAX_VAL);
@@ -550,38 +535,50 @@ protected:
 		{
 		case PIN_MOTOR1_ENCA:
 		case PIN_MOTOR1_ENCB:
-			encoderArgs[0] = encoderArg;
-			pidArgs[0] = pidArg;
-			ports_started[0] = true;
-			attachInterrupt(encoderArg->enca, isr0, CHANGE);
-			attachInterrupt(encoderArg->encb, isr1, CHANGE);
+			if (!ports_started[0])
+			{
+				encoderArgs[0] = encoderArg;
+				pidArgs[0] = pidArg;
+				ports_started[0] = true;
+				attachInterrupt(encoderArg->enca, isr0, CHANGE);
+				attachInterrupt(encoderArg->encb, isr1, CHANGE);
+			}
 			break;
 
 		case PIN_MOTOR2_ENCA:
 		case PIN_MOTOR2_ENCB:
-			encoderArgs[1] = encoderArg;
-			pidArgs[1] = pidArg;
-			ports_started[1] = true;
-			attachInterrupt(encoderArg->enca, isr2, CHANGE);
-			attachInterrupt(encoderArg->encb, isr3, CHANGE);
+			if (!ports_started[1])
+			{
+				encoderArgs[1] = encoderArg;
+				pidArgs[1] = pidArg;
+				ports_started[1] = true;
+				attachInterrupt(encoderArg->enca, isr2, CHANGE);
+				attachInterrupt(encoderArg->encb, isr3, CHANGE);
+			}
 			break;
 
 		case PIN_MOTOR3_ENCA:
 		case PIN_MOTOR3_ENCB:
-			encoderArgs[2] = encoderArg;
-			pidArgs[2] = pidArg;
-			ports_started[2] = true;
-			attachInterrupt(encoderArg->enca, isr4, CHANGE);
-			attachInterrupt(encoderArg->encb, isr5, CHANGE);
+			if (!ports_started[2])
+			{
+				encoderArgs[2] = encoderArg;
+				pidArgs[2] = pidArg;
+				ports_started[2] = true;
+				attachInterrupt(encoderArg->enca, isr4, CHANGE);
+				attachInterrupt(encoderArg->encb, isr5, CHANGE);
+			}
 			break;
 
 		case PIN_MOTOR4_ENCA:
 		case PIN_MOTOR4_ENCB:
-			encoderArgs[3] = encoderArg;
-			pidArgs[3] = pidArg;
-			ports_started[3] = true;
-			attachInterrupt(encoderArg->enca, isr6, CHANGE);
-			attachInterrupt(encoderArg->encb, isr7, CHANGE);
+			if (!ports_started[3])
+			{
+				encoderArgs[3] = encoderArg;
+				pidArgs[3] = pidArg;
+				ports_started[3] = true;
+				attachInterrupt(encoderArg->enca, isr6, CHANGE);
+				attachInterrupt(encoderArg->encb, isr7, CHANGE);
+			}
 			break;
 		}
 
@@ -1032,7 +1029,6 @@ private:
 				&& fabs(arg->angle_error * arg->turn_rate_pid->getKp() + arg->turn_rate_pid->getIntegral() * arg->turn_rate_pid->getKi()) < arg->max_dps
 				&& !arg->motor_left->stalled_unsafe() && !arg->motor_right->stalled_unsafe())
 			{
-
 				//calculating time taken to decel/accel to target speed & turn rate
 				float new_speed_accel = arg->speed_accel;
 				float new_speed_decel = arg->speed_decel;
@@ -1170,8 +1166,12 @@ private:
 				if ((old_sign_from_target_angle != new_sign_from_target_angle) || no_change_to_target_angle)
 					arg->target_angle = arg->end_angle;
 
-				if (fabs(arg->end_angle - arg->current_angle) <= USER_DRIVE_POS_MIN_ERROR_DEG
-					&& fabs(arg->end_distance - arg->current_distance) <= USER_DRIVE_POS_MIN_ERROR_MM)
+				//in an ideal world, the counter should only increment when both errors are in acceptable range
+				//however, our control scheme is only capable of hitting both targets SOME of the time
+				//so we count it as complete when the motor is already targeting the angle and distance endpoints, and either error is acceptable
+				if (arg->target_angle == arg->end_angle && arg->target_distance == arg->end_distance
+					&& (fabs(arg->end_angle - arg->current_angle) <= USER_DRIVE_POS_MIN_ERROR_DEG
+						|| fabs(arg->end_distance - arg->current_distance) <= USER_DRIVE_POS_MIN_ERROR_MM))
 					arg->counter++;
 				else
 					arg->counter = 0;
