@@ -1,3 +1,15 @@
+1.0.1 (22/09/24)
+
+Bugfix update for the recent major release
+
+- Drivebase example added
+
+-- Bugfixes --
+
+EVNMotor: runTime bug where function completes instantly is fixed, runPosition bug where motor runs but jitters is fixed
+
+EVNDrivebase: fixed bug where run to endpoint functions sometimes never complete
+
 1.0.0 (21/09/24)
 
 Major update to several libraries, outlined below.
