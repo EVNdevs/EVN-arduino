@@ -34,8 +34,8 @@ Our calibration aims to remove the distortions caused by hard-iron and soft-iron
 However, these distortions change when the distance and differences in orientation between the sensor and sources change. For example, 
 the distortion created by a strong magnet 10cm away can differ greatly in magnitude from that of a strong magnet 20cm away.
 
-So our calibration can only really compensate for **internal** sources of interference, that always remain at the same position and orientation relative to the sensor. 
-For instance, a robot's motors usually remain in the same distance and orientation relative to the sensor, so its interference can be accounted for.
+So our calibration can only really compensate for **internal** sources of hard iron interference that always remain at the same position and orientation relative to the sensor. 
+For instance, the permanent magnets in a robot's motors usually remain at the same distance and orientation relative to the sensor, so its interference can be accounted for.
 
 But this isn't to say calibration is useless. Usually it can make the difference between "useful" and "unusable" readings. 
 Just keep in mind that the more your robot's environment/location changes, the less valid your calibration values may be.

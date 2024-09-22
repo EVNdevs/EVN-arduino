@@ -11,17 +11,19 @@
 
 typedef struct
 {
-	volatile bool started;
-	volatile bool state;
-	volatile bool substate;
-	volatile uint32_t last_change;
+	bool started;
+	bool state;
+	bool substate;
+	uint32_t last_change;
 
-	volatile uint8_t mode;
-	volatile bool link_led;
-	volatile bool link_movement;
-	volatile bool button_invert;
+	uint8_t mode;
+	bool link_led;
+	bool link_movement;
+	bool button_invert;
 
-	volatile bool flash;
+	bool flash;
+	spin_lock_t* spin_lock;
+
 } button_led_state_t;
 
 class EVNButtonLED
@@ -48,10 +50,10 @@ public:
 	bool getFlash();
 
 	//singleton for state struct
-	button_led_state_t* sharedState() { return &button; }
+	volatile button_led_state_t* sharedState() volatile { return &button; }
 
 private:
-	static button_led_state_t button;
+	static volatile button_led_state_t button;
 	static void isr()
 	{
 		if (millis() - button.last_change > DEBOUNCE_TIMING_MS)
@@ -75,6 +77,13 @@ private:
 
 				button.substate = !reading;
 			}
+
+			//spin lock is used here as an atomic boolean variable
+			if (button.state && !is_spin_locked(button.spin_lock))
+				spin_lock_unsafe_blocking(button.spin_lock);
+			else if (!button.state && is_spin_locked(button.spin_lock))
+				spin_unlock_unsafe(button.spin_lock);
+
 			button.last_change = millis();
 		}
 

@@ -1,6 +1,6 @@
 #include "EVNButtonLED.h"
 
-button_led_state_t EVNButtonLED::button;
+volatile button_led_state_t EVNButtonLED::button;
 
 EVNButtonLED::EVNButtonLED(uint8_t mode, bool link_led, bool link_movement, bool button_invert)
 {
@@ -28,15 +28,23 @@ void EVNButtonLED::begin()
 
 		//led timer interrupt
 		pinMode(PIN_LED, OUTPUT_8MA);
-		if (rp2040.cpuid == 0)
+		button.spin_lock = spin_lock_init(spin_lock_claim_unused(true));
+		if (rp2040.cpuid() == 0)
 			alarm_pool_add_repeating_timer_ms(EVNISRTimer0::sharedAlarmPool(), UPDATE_INTERVAL_MS, update, NULL, &EVNISRTimer0::sharedISRTimer(2));
 		else
 			alarm_pool_add_repeating_timer_ms(EVNISRTimer1::sharedAlarmPool(), UPDATE_INTERVAL_MS, update, NULL, &EVNISRTimer1::sharedISRTimer(2));
+
 		button.started = true;
 	}
 }
 
-bool EVNButtonLED::read() { return (button.mode == BUTTON_DISABLE) ? true : button.state; }
+bool EVNButtonLED::read() {
+
+	if (button.mode == BUTTON_DISABLE || !button.started)
+		return true;
+	else
+		return is_spin_locked(button.spin_lock);
+}
 
 void EVNButtonLED::setMode(uint8_t mode) { button.mode = constrain(mode, 0, 2); }
 uint8_t EVNButtonLED::getMode() { return button.mode; }

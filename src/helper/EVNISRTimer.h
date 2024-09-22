@@ -8,7 +8,7 @@
 class EVNISRTimer0
 {
 public:
-    static const uint8_t  CORE0_TIMER_NUM = 1;
+    static const uint8_t CORE0_TIMER_NUM = 1;
     EVNISRTimer0() {};
 
     void begin()
@@ -20,12 +20,12 @@ public:
         }
     };
 
-    static repeating_timer& sharedISRTimer(uint8_t timer_no) { static EVNISRTimer0 shared; shared.begin(); return shared.timers[timer_no]; }
-    static alarm_pool* sharedAlarmPool() { static EVNISRTimer0 shared; shared.begin(); return shared.pool; }
+    static repeating_timer_t& sharedISRTimer(uint8_t timer_no) { static EVNISRTimer0 shared; shared.begin(); return shared.timers[timer_no]; }
+    static alarm_pool_t* sharedAlarmPool() { static EVNISRTimer0 shared; shared.begin(); return shared.pool; }
 
 private:
-    static struct alarm_pool* pool;
-    static struct repeating_timer timers[16];
+    static alarm_pool_t* pool;
+    static repeating_timer_t timers[16];
     static bool _started;
 };
 
@@ -44,12 +44,12 @@ public:
         }
     };
 
-    static repeating_timer& sharedISRTimer(uint8_t timer_no) { static EVNISRTimer1 shared; shared.begin(); return shared.timers[timer_no]; }
-    static alarm_pool* sharedAlarmPool() { static EVNISRTimer1 shared; shared.begin(); return shared.pool; }
+    static repeating_timer_t& sharedISRTimer(uint8_t timer_no) { static EVNISRTimer1 shared; shared.begin(); return shared.timers[timer_no]; }
+    static alarm_pool_t* sharedAlarmPool() { static EVNISRTimer1 shared; shared.begin(); return shared.pool; }
 
 private:
-    static struct alarm_pool* pool;
-    static struct repeating_timer timers[16];
+    static alarm_pool_t* pool;
+    static repeating_timer_t timers[16];
     static bool _started;
 };
 

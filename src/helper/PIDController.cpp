@@ -8,14 +8,14 @@ PIDController::PIDController(float kp, float ki, float kd, uint8_t dir)
 	_dir = dir;
 }
 
-void PIDController::setKp(float kp) { _kp = kp; }
-float PIDController::getKp() { return _kp; }
-void PIDController::setKi(float ki) { _ki = ki; }
-float PIDController::getKi() { return _ki; }
-void PIDController::setKd(float kd) { _kd = kd; }
-float PIDController::getKd() { return _kd; }
+void PIDController::setKp(float kp) volatile { _kp = kp; }
+float PIDController::getKp() volatile { return _kp; }
+void PIDController::setKi(float ki) volatile { _ki = ki; }
+float PIDController::getKi() volatile { return _ki; }
+void PIDController::setKd(float kd) volatile { _kd = kd; }
+float PIDController::getKd() volatile { return _kd; }
 
-float PIDController::compute(float error, bool constrain_integral, bool constrain_input, bool constrain_output)
+float PIDController::compute(float error, bool constrain_integral, bool constrain_input, bool constrain_output) volatile
 {
 	float errorc = error;
 	if (constrain_input)
@@ -41,24 +41,24 @@ float PIDController::compute(float error, bool constrain_integral, bool constrai
 	return _output;
 }
 
-void PIDController::reset()
+void PIDController::reset() volatile
 {
 	_error = 0;
 	_preverror = 0;
 	_summederror = 0;
 }
 
-float PIDController::getIntegral()
+float PIDController::getIntegral() volatile
 {
 	return _summederror;
 }
 
-void PIDController::constrainIntegral(float low, float high)
+void PIDController::constrainIntegral(float low, float high) volatile
 {
 	_summederror = constrain(_summederror, low, high);
 }
 
-void PIDController::resetIntegral()
+void PIDController::resetIntegral() volatile
 {
 	_summederror = 0;
 }

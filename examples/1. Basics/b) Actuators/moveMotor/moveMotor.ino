@@ -35,10 +35,10 @@ void loop()
 	{
 		//for quick reference, 1 RPM (revolution per minute) = 6 DPS (degrees per second)
 
-		motor.runTime(300, 3000); 	//run motor at 300DPS for 3s
-		motor.runAngle(400, -360);	//run motor at 400DPS for -360deg (runAngle(-100, 360) produces the same effect)
+		motor.runTime(300, 2000); 	//run motor at 300DPS for 2s
+		motor.runAngle(400, -360);	//run motor at 400DPS for -360deg (runAngle(-400, 360) produces the same effect)
 		motor.runSpeed(-600);    	//run motor at -600DPS until new command is given
-		delay(10000);           	//continue running for 10 seconds
+		delay(6000);           	//continue running for 6 seconds
 	}
 	else
 	{

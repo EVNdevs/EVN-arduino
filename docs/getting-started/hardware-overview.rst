@@ -210,3 +210,31 @@ ADC
 """"
 The RP2040 has 4 pins with built-in ADC support (GP26-29), but these functions are not supported on EVN Alpha, as those 4 pins are internally connected to the motor drivers and cannot be repurposed.
 However, analog values can still be measured using our Analog Multiplexer Standard Peripheral.
+
+Second Core
+"""""""""""
+
+At present, the following classes use the second core and are tested under the assumption that nothing else is running on the second core:
+
+* EVNMotor
+* EVNDrivebase
+* EVNServo
+* EVNContinuousServo
+
+You may be able to use the second core, but perfect operation of these classes will not be guaranteed (although we hope to achieve this one day).
+
+Hardware Spinlocks
+""""""""""""""""""
+Spinlocks are a hardware mechanism used to communicate and protect memory access between cores.
+
+On the RP2040, these are particularly valuable for multicore communication as it does not support atomic operations on variables (another common mechanism for core synchronization).
+
+The RP2040 has 32 spinlocks, but 8 of them have been reserved exclusively for libraries/end-user code.
+
+The following classes use part of these 8 spinlocks:
+
+* EVNMotor and EVNDrivebase (shared): 2
+* EVNServo and EVNContinuousServo (shared): 2
+* EVNAlpha: 1
+
+The spinlocks are shared across all instances of the given class(es).

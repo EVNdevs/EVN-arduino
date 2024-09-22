@@ -90,7 +90,7 @@ public:
         HZ_5 = 6
     };
 
-    //TODO: Maybe explore low power mode and sample rate divider in future
+    //TODO: MAYBE explore low power mode and sample rate dividers
 
     EVNIMUSensor(uint8_t port,
         float gx_offset = 0, float gy_offset = 0, float gz_offset = 0,

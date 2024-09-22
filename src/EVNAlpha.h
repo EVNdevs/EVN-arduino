@@ -41,7 +41,9 @@ public:
     bool getLinkMovement() { return button_led.getLinkMovement(); };
     bool getButtonInvert() { return button_led.getButtonInvert(); };
 
-    // not exposed to the user, since flash is used for battery alerts
+    static bool motorsEnabled() { return (sharedButtonLED().read() || !sharedButtonLED().sharedState()->link_movement); };
+
+    // disabled, since flash is used for battery alerts
     // void setFlash(bool enable) { button_led.setFlash(enable); };
     // bool getFlash() { return button_led.getFlash(); };
 
