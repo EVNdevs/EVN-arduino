@@ -17,6 +17,7 @@ public:
         {
             _started = true;
             pool = alarm_pool_create(CORE0_TIMER_NUM, 16);
+            irq_set_priority(TIMER_IRQ_1, 0xC0);
         }
     };
 
@@ -32,7 +33,7 @@ private:
 class EVNISRTimer1
 {
 public:
-    static const uint8_t  CORE1_TIMER_NUM = 2;
+    static const uint8_t CORE1_TIMER_NUM = 2;
 
     EVNISRTimer1() {};
     void begin()
@@ -41,6 +42,7 @@ public:
         {
             _started = true;
             pool = alarm_pool_create(CORE1_TIMER_NUM, 16);
+            irq_set_priority(TIMER_IRQ_2, 0xC0);
         }
     };
 

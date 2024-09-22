@@ -242,11 +242,14 @@ protected:
 		}
 	}
 
-	static void pos_update(volatile encoder_state_t* arg)
+	static void pos_read(volatile encoder_state_t* arg)
 	{
 		arg->enca_state = digitalRead(arg->enca);
 		arg->encb_state = digitalRead(arg->encb);
+	}
 
+	static void pos_update(volatile encoder_state_t* arg)
+	{
 		uint8_t state = arg->state & 3;
 
 		if (arg->enca_state)
@@ -265,13 +268,23 @@ protected:
 			arg->position--;
 			arg->dir = -1;
 			return;
+
+			// previous implemention (in comments) set direction for skipped pulses in encoder
+			// this happens when the ISR is delayed by too long, thereby "missing" the signal
+			// but testing showed that this causes drivebase/motor to be jumpy when running
+			// so now, the function assumes that direction is the same when there are skipped pulses
+
+			// additionally, since timer interrupts are lower priority than pin change (set in EVNISRTimer)
+			// these cases should rarely (if not NEVER) appear
 		case 3: case 12:
-			arg->position += 2;
-			arg->dir = 1;
+			arg->position += 2 * arg->dir;
+			// arg->position += 2;
+			// arg->dir = 1;
 			return;
 		case 6: case 9:
-			arg->position -= 2;
-			arg->dir = -1;
+			arg->position += 2 * arg->dir;
+			// arg->position -= 2;
+			// arg->dir = -1;
 			return;
 		}
 	}
@@ -601,82 +614,146 @@ protected:
 	// RPM measurement only uses pulses on one encoder wheel (more accurate, from our testing)
 	static void isr0()
 	{
+		pos_read(encoderArgs[0]);
+
 		uint32_t now = micros();
-		if (mutex_try_enter_block_until(&mutex, delayed_by_us(get_absolute_time(), 1000)))
+		uint32_t owner;
+		bool acquire = mutex_try_enter(&mutex, &owner);
+		if (!acquire && owner != core)
+			acquire = mutex_try_enter_block_until(&mutex, delayed_by_us(get_absolute_time(), 1000));
+
+		if (acquire || owner == core)
 		{
 			pos_update(encoderArgs[0]);
 			velocity_update(encoderArgs[0], now);
-			mutex_exit(&mutex);
 		}
+
+		if (acquire)
+			mutex_exit(&mutex);
 	}
 
 	static void isr1()
 	{
-		if (mutex_try_enter_block_until(&mutex, delayed_by_us(get_absolute_time(), 1000)))
-		{
+		pos_read(encoderArgs[0]);
+
+		uint32_t owner;
+		bool acquire = mutex_try_enter(&mutex, &owner);
+		if (!acquire && owner != core)
+			acquire = mutex_try_enter_block_until(&mutex, delayed_by_us(get_absolute_time(), 1000));
+
+		if (acquire || owner == core)
 			pos_update(encoderArgs[0]);
+
+		if (acquire)
 			mutex_exit(&mutex);
-		}
 	}
 
 	static void isr2()
 	{
+		pos_read(encoderArgs[1]);
+
 		uint32_t now = micros();
-		if (mutex_try_enter_block_until(&mutex, delayed_by_us(get_absolute_time(), 1000)))
+		uint32_t owner;
+		bool acquire = mutex_try_enter(&mutex, &owner);
+		if (!acquire && owner != core)
+			acquire = mutex_try_enter_block_until(&mutex, delayed_by_us(get_absolute_time(), 1000));
+
+		if (acquire || owner == core)
 		{
 			pos_update(encoderArgs[1]);
 			velocity_update(encoderArgs[1], now);
-			mutex_exit(&mutex);
 		}
+
+		if (acquire)
+			mutex_exit(&mutex);
 	}
 
 	static void isr3()
 	{
-		if (mutex_try_enter_block_until(&mutex, delayed_by_us(get_absolute_time(), 1000)))
-		{
+		pos_read(encoderArgs[1]);
+
+		uint32_t owner;
+		bool acquire = mutex_try_enter(&mutex, &owner);
+		if (!acquire && owner != core)
+			acquire = mutex_try_enter_block_until(&mutex, delayed_by_us(get_absolute_time(), 1000));
+
+		if (acquire || owner == core)
 			pos_update(encoderArgs[1]);
+
+		if (acquire)
 			mutex_exit(&mutex);
-		}
 	}
 
 	static void isr4()
 	{
+		pos_read(encoderArgs[2]);
+
 		uint32_t now = micros();
-		if (mutex_try_enter_block_until(&mutex, delayed_by_us(get_absolute_time(), 1000)))
+		uint32_t owner;
+		bool acquire = mutex_try_enter(&mutex, &owner);
+		if (!acquire && owner != core)
+			acquire = mutex_try_enter_block_until(&mutex, delayed_by_us(get_absolute_time(), 1000));
+
+		if (acquire || owner == core)
 		{
 			pos_update(encoderArgs[2]);
 			velocity_update(encoderArgs[2], now);
-			mutex_exit(&mutex);
 		}
+
+		if (acquire)
+			mutex_exit(&mutex);
 	}
 
 	static void isr5()
 	{
-		if (mutex_try_enter_block_until(&mutex, delayed_by_us(get_absolute_time(), 1000)))
-		{
+		pos_read(encoderArgs[2]);
+
+		uint32_t owner;
+		bool acquire = mutex_try_enter(&mutex, &owner);
+		if (!acquire && owner != core)
+			acquire = mutex_try_enter_block_until(&mutex, delayed_by_us(get_absolute_time(), 1000));
+
+		if (acquire || owner == core)
 			pos_update(encoderArgs[2]);
+
+		if (acquire)
 			mutex_exit(&mutex);
-		}
 	}
 
 	static void isr6()
 	{
+		pos_read(encoderArgs[3]);
+
 		uint32_t now = micros();
-		if (mutex_try_enter_block_until(&mutex, delayed_by_us(get_absolute_time(), 1000)))
+		uint32_t owner;
+		bool acquire = mutex_try_enter(&mutex, &owner);
+		if (!acquire && owner != core)
+			acquire = mutex_try_enter_block_until(&mutex, delayed_by_us(get_absolute_time(), 1000));
+
+		if (acquire || owner == core)
 		{
 			pos_update(encoderArgs[3]);
 			velocity_update(encoderArgs[3], now);
-			mutex_exit(&mutex);
 		}
+
+		if (acquire)
+			mutex_exit(&mutex);
 	}
 
 	static void isr7()
 	{
-		if (mutex_try_enter_block_until(&mutex, delayed_by_us(get_absolute_time(), 1000)))
-		{
+		pos_read(encoderArgs[3]);
+
+		uint32_t owner;
+		bool acquire = mutex_try_enter(&mutex, &owner);
+		if (!acquire && owner != core)
+			acquire = mutex_try_enter_block_until(&mutex, delayed_by_us(get_absolute_time(), 1000));
+
+		if (acquire || owner == core)
 			pos_update(encoderArgs[3]);
+
+		if (acquire)
 			mutex_exit(&mutex);
-		}
 	}
 
 	// timer interrupt ISR
