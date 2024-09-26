@@ -229,12 +229,16 @@ Spinlocks are a hardware mechanism used to communicate and protect memory access
 
 On the RP2040, these are particularly valuable for multicore communication as it does not support atomic operations on variables (another common mechanism for core synchronization).
 
-The RP2040 has 32 spinlocks, but 8 of them have been reserved exclusively for libraries/end-user code.
+The RP2040 has 32 spinlocks, 16 of which have been reserved for the user.
 
-The following classes use part of these 8 spinlocks:
+8 of these spinlocks are a striped range which can be shared by multiple classes, suitable for implementing memory barriers between the 2 cores.
 
-* EVNMotor and EVNDrivebase (shared): 2
-* EVNServo and EVNContinuousServo (shared): 2
-* EVNAlpha: 1
+The other 8 are available for exclusive non-shared use by classes/end-user code. For the EVN libraries, we use these to do basic scheduling of certain tasks between the cores.
+
+The following classes use some of these 16 spinlocks:
+
+* EVNMotor and EVNDrivebase (shared): 1 striped, 1 exclusive
+* EVNServo and EVNContinuousServo (shared): 1 striped, 1 exclusive
+* EVNAlpha: 1 exclusive
 
 The spinlocks are shared across all instances of the given class(es).

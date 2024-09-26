@@ -43,7 +43,7 @@ bool EVNBluetooth::begin(bool exit_program_mode)
         {
             this->setBaudRate(_baud_rate);
             this->setName(_name);
-            if (_mode == BT_HOST && _addr != NULL)
+            if (_mode == BT_HOST && _addr != nullptr)
                 this->setHostMode(_addr);
             else
                 this->setRemoteMode();

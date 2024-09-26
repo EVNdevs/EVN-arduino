@@ -7,9 +7,9 @@
 #include "../helper/PIDController.h"
 #include "../evn_motor_defs.h"
 #include "../evn_pins_defs.h"
+#include "../helper/EVNCoreSync.h"
 
 // TODO: Add end function for classes
-// TODO: Wrap mutex & spinlock in helper class
 
 //INPUT PARAMETER MACROS
 #define DIRECT	1
@@ -188,8 +188,6 @@ public:
 	void setPPR(uint32_t ppr) volatile;
 
 protected:
-	void ensure_isr_executed() volatile;
-
 	void runSpeed_unsafe(float dps) volatile;
 	void stop_unsafe() volatile;
 	void coast_unsafe() volatile;
@@ -207,10 +205,6 @@ protected:
 	static volatile pid_control_t* pidArgs[MAX_MOTOR_OBJECTS];
 	static volatile bool ports_started[MAX_MOTOR_OBJECTS];
 	static volatile bool timerisr_enabled;
-	static volatile bool timerisr_executed;
-	static volatile uint8_t core;
-	static mutex_t mutex;
-	static spin_lock_t* spin_lock;
 
 	static bool timed_control_enabled(volatile pid_control_t* arg)
 	{
@@ -268,23 +262,12 @@ protected:
 			arg->position--;
 			arg->dir = -1;
 			return;
-
-			// previous implemention (in comments) set direction for skipped pulses in encoder
-			// this happens when the ISR is delayed by too long, thereby "missing" the signal
-			// but testing showed that this causes drivebase/motor to be jumpy when running
-			// so now, the function assumes that direction is the same when there are skipped pulses
-
-			// additionally, since timer interrupts are lower priority than pin change (set in EVNISRTimer)
-			// these cases should rarely (if not NEVER) appear
-		case 3: case 12:
+			// below case occurs due to skipped pulse, which can occur when the ISR is delayed for too long
+			// when this happens, we assume that direction is the same and increment by 2
+			// however, since timer interrupts are lower priority than pin change (set in EVNISRTimer)
+			// these cases should rarely (hopefully NEVER) happen
+		case 3: case 12: case 6: case 9:
 			arg->position += 2 * arg->dir;
-			// arg->position += 2;
-			// arg->dir = 1;
-			return;
-		case 6: case 9:
-			arg->position += 2 * arg->dir;
-			// arg->position -= 2;
-			// arg->dir = -1;
 			return;
 		}
 	}
@@ -597,14 +580,12 @@ protected:
 
 		if (!timerisr_enabled)
 		{
-			mutex_init(&mutex);
-			spin_lock = spin_lock_init(spin_lock_claim_unused(true));
+			EVNCoreSync0.begin();
 
-			core = rp2040.cpuid();
-			if (core == 0)
-				alarm_pool_add_repeating_timer_us(EVNISRTimer0::sharedAlarmPool(), PID_TIMER_INTERVAL_US, timerisr, NULL, &EVNISRTimer0::sharedISRTimer(3));
+			if (rp2040.cpuid() == 0)
+				alarm_pool_add_repeating_timer_us(EVNISRTimer0.sharedAlarmPool(), PID_TIMER_INTERVAL_US, timerisr, nullptr, &EVNISRTimer0.sharedISRTimer(3));
 			else
-				alarm_pool_add_repeating_timer_us(EVNISRTimer1::sharedAlarmPool(), PID_TIMER_INTERVAL_US, timerisr, NULL, &EVNISRTimer1::sharedISRTimer(3));
+				alarm_pool_add_repeating_timer_us(EVNISRTimer1.sharedAlarmPool(), PID_TIMER_INTERVAL_US, timerisr, nullptr, &EVNISRTimer1.sharedISRTimer(3));
 
 			timerisr_enabled = true;
 		}
@@ -617,35 +598,23 @@ protected:
 		pos_read(encoderArgs[0]);
 
 		uint32_t now = micros();
-		uint32_t owner;
-		bool acquire = mutex_try_enter(&mutex, &owner);
-		if (!acquire && owner != core)
-			acquire = mutex_try_enter_block_until(&mutex, delayed_by_us(get_absolute_time(), 1000));
-
-		if (acquire || owner == core)
+		if (EVNCoreSync0.core1_pin_isr_enter())
 		{
 			pos_update(encoderArgs[0]);
 			velocity_update(encoderArgs[0], now);
+			EVNCoreSync0.core1_pin_isr_exit();
 		}
-
-		if (acquire)
-			mutex_exit(&mutex);
 	}
 
 	static void isr1()
 	{
 		pos_read(encoderArgs[0]);
 
-		uint32_t owner;
-		bool acquire = mutex_try_enter(&mutex, &owner);
-		if (!acquire && owner != core)
-			acquire = mutex_try_enter_block_until(&mutex, delayed_by_us(get_absolute_time(), 1000));
-
-		if (acquire || owner == core)
+		if (EVNCoreSync0.core1_pin_isr_enter())
+		{
 			pos_update(encoderArgs[0]);
-
-		if (acquire)
-			mutex_exit(&mutex);
+			EVNCoreSync0.core1_pin_isr_exit();
+		}
 	}
 
 	static void isr2()
@@ -653,35 +622,23 @@ protected:
 		pos_read(encoderArgs[1]);
 
 		uint32_t now = micros();
-		uint32_t owner;
-		bool acquire = mutex_try_enter(&mutex, &owner);
-		if (!acquire && owner != core)
-			acquire = mutex_try_enter_block_until(&mutex, delayed_by_us(get_absolute_time(), 1000));
-
-		if (acquire || owner == core)
+		if (EVNCoreSync0.core1_pin_isr_enter())
 		{
 			pos_update(encoderArgs[1]);
 			velocity_update(encoderArgs[1], now);
+			EVNCoreSync0.core1_pin_isr_exit();
 		}
-
-		if (acquire)
-			mutex_exit(&mutex);
 	}
 
 	static void isr3()
 	{
 		pos_read(encoderArgs[1]);
 
-		uint32_t owner;
-		bool acquire = mutex_try_enter(&mutex, &owner);
-		if (!acquire && owner != core)
-			acquire = mutex_try_enter_block_until(&mutex, delayed_by_us(get_absolute_time(), 1000));
-
-		if (acquire || owner == core)
+		if (EVNCoreSync0.core1_pin_isr_enter())
+		{
 			pos_update(encoderArgs[1]);
-
-		if (acquire)
-			mutex_exit(&mutex);
+			EVNCoreSync0.core1_pin_isr_exit();
+		}
 	}
 
 	static void isr4()
@@ -689,35 +646,23 @@ protected:
 		pos_read(encoderArgs[2]);
 
 		uint32_t now = micros();
-		uint32_t owner;
-		bool acquire = mutex_try_enter(&mutex, &owner);
-		if (!acquire && owner != core)
-			acquire = mutex_try_enter_block_until(&mutex, delayed_by_us(get_absolute_time(), 1000));
-
-		if (acquire || owner == core)
+		if (EVNCoreSync0.core1_pin_isr_enter())
 		{
 			pos_update(encoderArgs[2]);
 			velocity_update(encoderArgs[2], now);
+			EVNCoreSync0.core1_pin_isr_exit();
 		}
-
-		if (acquire)
-			mutex_exit(&mutex);
 	}
 
 	static void isr5()
 	{
 		pos_read(encoderArgs[2]);
 
-		uint32_t owner;
-		bool acquire = mutex_try_enter(&mutex, &owner);
-		if (!acquire && owner != core)
-			acquire = mutex_try_enter_block_until(&mutex, delayed_by_us(get_absolute_time(), 1000));
-
-		if (acquire || owner == core)
+		if (EVNCoreSync0.core1_pin_isr_enter())
+		{
 			pos_update(encoderArgs[2]);
-
-		if (acquire)
-			mutex_exit(&mutex);
+			EVNCoreSync0.core1_pin_isr_exit();
+		}
 	}
 
 	static void isr6()
@@ -725,53 +670,37 @@ protected:
 		pos_read(encoderArgs[3]);
 
 		uint32_t now = micros();
-		uint32_t owner;
-		bool acquire = mutex_try_enter(&mutex, &owner);
-		if (!acquire && owner != core)
-			acquire = mutex_try_enter_block_until(&mutex, delayed_by_us(get_absolute_time(), 1000));
-
-		if (acquire || owner == core)
+		if (EVNCoreSync0.core1_pin_isr_enter())
 		{
 			pos_update(encoderArgs[3]);
 			velocity_update(encoderArgs[3], now);
+			EVNCoreSync0.core1_pin_isr_exit();
 		}
-
-		if (acquire)
-			mutex_exit(&mutex);
 	}
 
 	static void isr7()
 	{
 		pos_read(encoderArgs[3]);
 
-		uint32_t owner;
-		bool acquire = mutex_try_enter(&mutex, &owner);
-		if (!acquire && owner != core)
-			acquire = mutex_try_enter_block_until(&mutex, delayed_by_us(get_absolute_time(), 1000));
-
-		if (acquire || owner == core)
+		if (EVNCoreSync0.core1_pin_isr_enter())
+		{
 			pos_update(encoderArgs[3]);
-
-		if (acquire)
-			mutex_exit(&mutex);
+			EVNCoreSync0.core1_pin_isr_exit();
+		}
 	}
 
 	// timer interrupt ISR
 	static bool timerisr(struct repeating_timer* t)
 	{
-		if (mutex_try_enter_block_until(&mutex, delayed_by_us(get_absolute_time(), 1000)))
+		if (EVNCoreSync0.core1_timer_isr_enter())
 		{
-			spin_lock_unsafe_blocking(spin_lock);
-
 			for (int i = 0; i < MAX_MOTOR_OBJECTS; i++)
 			{
 				if (ports_started[i])
 					pid_update(pidArgs[i], encoderArgs[i]);
 			}
 
-			timerisr_executed = true;
-			spin_unlock_unsafe(spin_lock);
-			mutex_exit(&mutex);
+			EVNCoreSync0.core1_timer_isr_exit();
 		}
 
 		return true;
@@ -821,8 +750,6 @@ public:
 	float getDistanceToPoint(float x, float y) volatile;
 
 private:
-	void ensure_isr_executed() volatile;
-
 	float clean_input_turn_rate(float turn_rate) volatile;
 	float clean_input_speed(float speed, float turn_rate) volatile;
 	uint8_t clean_input_stop_action(uint8_t stop_action) volatile;
@@ -833,8 +760,6 @@ private:
 	static volatile drivebase_state_t* dbArgs[MAX_DB_OBJECTS];
 	static volatile bool dbs_started[MAX_DB_OBJECTS];
 	static volatile bool timerisr_enabled;
-	static volatile bool timerisr_executed;
-	static volatile uint8_t core;
 
 	static void attach_db_interrupt(volatile drivebase_state_t* arg)
 	{
@@ -853,21 +778,16 @@ private:
 			if (EVNMotor::timerisr_enabled)
 			{
 				//remove timer interrupt added by EVNMotor (if added)
-				cancel_repeating_timer(&EVNISRTimer0::sharedISRTimer(3));
-				cancel_repeating_timer(&EVNISRTimer1::sharedISRTimer(3));
-			}
-			else
-			{
-				//initialize mutex & spin lock otherwise
-				mutex_init(&EVNMotor::mutex);
-				EVNMotor::spin_lock = spin_lock_init(spin_lock_claim_unused(true));
+				cancel_repeating_timer(&EVNISRTimer0.sharedISRTimer(3));
+				cancel_repeating_timer(&EVNISRTimer1.sharedISRTimer(3));
 			}
 
-			core = rp2040.cpuid();
-			if (core == 0)
-				alarm_pool_add_repeating_timer_us(EVNISRTimer0::sharedAlarmPool(), PID_TIMER_INTERVAL_US, timerisr, NULL, &EVNISRTimer0::sharedISRTimer(4));
+			EVNCoreSync0.begin();
+
+			if (rp2040.cpuid() == 0)
+				alarm_pool_add_repeating_timer_us(EVNISRTimer0.sharedAlarmPool(), PID_TIMER_INTERVAL_US, timerisr, nullptr, &EVNISRTimer0.sharedISRTimer(4));
 			else
-				alarm_pool_add_repeating_timer_us(EVNISRTimer1::sharedAlarmPool(), PID_TIMER_INTERVAL_US, timerisr, NULL, &EVNISRTimer1::sharedISRTimer(4));
+				alarm_pool_add_repeating_timer_us(EVNISRTimer1.sharedAlarmPool(), PID_TIMER_INTERVAL_US, timerisr, nullptr, &EVNISRTimer1.sharedISRTimer(4));
 
 			EVNMotor::timerisr_enabled = true;
 			timerisr_enabled = true;
@@ -876,10 +796,8 @@ private:
 
 	static bool timerisr(struct repeating_timer* t)
 	{
-		if (mutex_try_enter_block_until(&EVNMotor::mutex, delayed_by_us(get_absolute_time(), 1000)))
+		if (EVNCoreSync0.core1_timer_isr_enter())
 		{
-			spin_lock_unsafe_blocking(EVNMotor::spin_lock);
-
 			for (int i = 0; i < MAX_DB_OBJECTS; i++)
 			{
 				if (dbs_started[i])
@@ -892,9 +810,7 @@ private:
 					EVNMotor::pid_update(EVNMotor::pidArgs[i], EVNMotor::encoderArgs[i]);
 			}
 
-			timerisr_executed = true;
-			spin_unlock_unsafe(EVNMotor::spin_lock);
-			mutex_exit(&EVNMotor::mutex);
+			EVNCoreSync0.core1_timer_isr_exit();
 		}
 		return true;
 	}
