@@ -145,9 +145,7 @@ public:
 
         uint8_t id = read8((uint8_t)reg::ID, false);
         if (id != ID && id != ALT_ID)
-        {
             return _sensor_started;
-        }
 
         _sensor_started = true;
 
@@ -156,7 +154,9 @@ public:
 
         setColourGain(colour_gain::X4);
         setColourIntegrationCycles(1);
-
+        setProximityGain(proximity_gain::X4);
+        setProximityPulseCount(8);
+        setProximityPulseLength(pulse_len::US_16);
         setProximityLED(led_curr::MA_100);
         setGestureLED(led_curr::MA_100);
         setLEDBoost(led_boost::X1);
@@ -169,14 +169,8 @@ public:
         setGesturePulseLength(pulse_len::US_32);
         setGesturePulseCount(10);
 
-        setProximityGain(proximity_gain::X4);
-        setProximityPulseCount(8);
-        setProximityPulseLength(pulse_len::US_16);
-
         setPower(true);
         setWait(false);
-        setColourMode(true);
-        setProximityMode(true);
         setGestureMode(true);
 
         return _sensor_started;
@@ -225,89 +219,70 @@ public:
     {
         if (_sensor_started)
         {
-            uint8_t value = read8((uint8_t)reg::ENABLE, false);
-            value &= 0b11111101;
-            value |= (enable << 1);
-            write8((uint8_t)reg::ENABLE, value);
+            setColourEnableRegister(enable);
 
             if (enable)
+            {
                 _colour_measurement_time_us = 278 * getColourIntegrationCycles();
+                _colour_enabled = true;
+                _gesture_enabled = false;
+                setGestureEnableRegister(false);
+            }
             else
+            {
+                _colour_enabled = false;
                 _colour_measurement_time_us = 0;
+            }
         }
     };
 
-    bool getColourMode()
-    {
-        if (_sensor_started)
-        {
-            uint8_t value = read8((uint8_t)reg::ENABLE, false);
-            value &= 0b00000010;
-            return (value >> 1);
-        }
-        return false;
-    };
+    bool getColourMode() { return _colour_enabled; };
 
     void setProximityMode(bool enable)
     {
         if (_sensor_started)
         {
-            uint8_t value = read8((uint8_t)reg::ENABLE, false);
-            value &= 0b11111011;
-            value |= (enable << 2);
-            write8((uint8_t)reg::ENABLE, value);
-            _skip_proximity = !enable;
+            setProximityEnableRegister(enable);
 
             if (enable)
+            {
                 _proximity_measurement_time_us = 697;
+                _proximity_enabled = true;
+                _gesture_enabled = false;
+                setGestureEnableRegister(false);
+            }
             else
+            {
+                _proximity_enabled = false;
                 _proximity_measurement_time_us = 0;
+            }
         }
     };
 
-    bool getProximityMode()
-    {
-        if (_sensor_started)
-        {
-            uint8_t value = read8((uint8_t)reg::ENABLE, false);
-            value &= 000000100;
-            return (value >> 2);
-        }
-        return false;
-    };
+    bool getProximityMode() { return _proximity_enabled; };
 
     void setGestureMode(bool enable)
     {
         if (_sensor_started)
         {
-            uint8_t value = read8((uint8_t)reg::ENABLE, false);
-            value &= 0b10111111;
-            value |= (enable << 6);
-            write8((uint8_t)reg::ENABLE, value);
+            setGestureEnableRegister(enable);
 
             if (!enable)
             {
-                value = read8((uint8_t)reg::GCONF4, false);
-                value &= 0b11111110;
-                value |= enable;
-                write8((uint8_t)reg::GCONF4, value);
-                _gesture_measurement_time_us = 0;
+                _gesture_enabled = false;
             }
             else
-                _gesture_measurement_time_us = 697 * 2;
+            {
+                setColourEnableRegister(false);
+                setProximityEnableRegister(true);
+                _gesture_enabled = true;
+                _colour_enabled = false;
+                _proximity_enabled = false;
+            }
         }
     };
 
-    bool getGestureMode()
-    {
-        if (_sensor_started)
-        {
-            uint8_t value = read8((uint8_t)reg::ENABLE, false);
-            value &= 0b01000000;
-            return (value >> 6);
-        }
-        return false;
-    };
+    bool getGestureMode() { return _gesture_enabled; }
 
     void setGestureLED(led_curr current)
     {
@@ -425,12 +400,27 @@ public:
 
     uint8_t readGesture(bool blocking = false, uint32_t timeout_ms = 5000)
     {
-        if (_sensor_started)
+        if (_sensor_started && (_gesture_enabled || blocking))
         {
+            if (!_gesture_enabled)
+            {
+                setGestureEnableRegister(true);
+                if (!_proximity_enabled)
+                    setProximityEnableRegister(true);
+            }
+
             if (blocking)
                 blockUntilGesture(timeout_ms);
 
-            if (!obtainGesture()) return GESTURE_NONE;
+            obtainGesture();
+
+            if (!_gesture_enabled)
+            {
+                setGestureEnableRegister(false);
+                if (!_proximity_enabled)
+                    setProximityEnableRegister(false);
+            }
+
             return _gesture;
         }
         return GESTURE_NONE;
@@ -438,12 +428,27 @@ public:
 
     uint8_t readGestureUpDown(bool blocking = false, uint32_t timeout_ms = 5000)
     {
-        if (_sensor_started)
+        if (_sensor_started && (_gesture_enabled || blocking))
         {
+            if (!_gesture_enabled)
+            {
+                setGestureEnableRegister(true);
+                if (!_proximity_enabled)
+                    setProximityEnableRegister(true);
+            }
+
             if (blocking)
                 blockUntilGesture(timeout_ms);
 
-            if (!obtainGesture()) return GESTURE_NONE;
+            obtainGesture();
+
+            if (!_gesture_enabled)
+            {
+                setGestureEnableRegister(false);
+                if (!_proximity_enabled)
+                    setProximityEnableRegister(false);
+            }
+
             return _gesture_ud;
         }
         return GESTURE_NONE;
@@ -451,12 +456,27 @@ public:
 
     uint8_t readGestureLeftRight(bool blocking = false, uint32_t timeout_ms = 5000)
     {
-        if (_sensor_started)
+        if (_sensor_started && (_gesture_enabled || blocking))
         {
+            if (!_gesture_enabled)
+            {
+                setGestureEnableRegister(true);
+                if (!_proximity_enabled)
+                    setProximityEnableRegister(true);
+            }
+
             if (blocking)
                 blockUntilGesture(timeout_ms);
 
-            if (!obtainGesture()) return GESTURE_NONE;
+            obtainGesture();
+
+            if (!_gesture_enabled)
+            {
+                setGestureEnableRegister(false);
+                if (!_proximity_enabled)
+                    setProximityEnableRegister(false);
+            }
+
             return _gesture_lr;
         }
         return GESTURE_NONE;
@@ -521,7 +541,7 @@ public:
 
     uint8_t readProximity(bool blocking = true)
     {
-        if (_sensor_started)
+        if (_sensor_started && _proximity_enabled)
         {
             this->updateProximity(blocking);
             return _proximity;
@@ -568,9 +588,9 @@ public:
 
     uint16_t readRed(bool blocking = true)
     {
-        if (_sensor_started)
+        if (_sensor_started && _colour_enabled)
         {
-            this->updateColourandProximity(blocking);
+            this->updateColour(blocking);
             return _r;
         }
         return 0;
@@ -578,9 +598,9 @@ public:
 
     uint16_t readGreen(bool blocking = true)
     {
-        if (_sensor_started)
+        if (_sensor_started && _colour_enabled)
         {
-            this->updateColourandProximity(blocking);
+            this->updateColour(blocking);
             return _g;
         }
         return 0;
@@ -588,9 +608,9 @@ public:
 
     uint16_t readBlue(bool blocking = true)
     {
-        if (_sensor_started)
+        if (_sensor_started && _colour_enabled)
         {
-            this->updateColourandProximity(blocking);
+            this->updateColour(blocking);
             return _b;
         }
         return 0;
@@ -598,54 +618,67 @@ public:
 
     uint16_t readClear(bool blocking = true)
     {
-        if (_sensor_started)
+        if (_sensor_started && _colour_enabled)
         {
-            this->updateColourandProximity(blocking);
+            this->updateColour(blocking);
             return _c;
         }
         return 0;
     };
 
 private:
-    uint8_t getGestureFIFOLevel()
+    void setGestureEnableRegister(bool enable)
     {
-        if (_sensor_started)
+        uint8_t value = read8((uint8_t)reg::ENABLE, false);
+        value &= 0b10111111;
+        value |= (enable << 6);
+        write8((uint8_t)reg::ENABLE, value);
+
+        if (!enable)
         {
-            uint8_t value = read8((uint8_t)reg::GFLVL, false);
-            return value;
+            value = read8((uint8_t)reg::GCONF4, false);
+            value &= 0b11111110;
+            value |= enable;
+            write8((uint8_t)reg::GCONF4, value);
         }
-        return 0;
     };
 
-    void updateColourandProximity(bool blocking = false)
+    void setProximityEnableRegister(bool enable)
+    {
+        uint8_t value = read8((uint8_t)reg::ENABLE, false);
+        value &= 0b11111011;
+        value |= (enable << 2);
+        write8((uint8_t)reg::ENABLE, value);
+    };
+
+    void setColourEnableRegister(bool enable)
+    {
+        uint8_t value = read8((uint8_t)reg::ENABLE, false);
+        value &= 0b11111101;
+        value |= (enable << 1);
+        write8((uint8_t)reg::ENABLE, value);
+    };
+
+    uint8_t getGestureFIFOLevel()
+    {
+        uint8_t value = read8((uint8_t)reg::GFLVL, false);
+        return value;
+    };
+
+    void updateColour(bool blocking = false)
     {
         uint32_t measurement_time_us =
             _proximity_measurement_time_us +
-            _colour_measurement_time_us +
-            _gesture_measurement_time_us;
+            _colour_measurement_time_us;
 
         if (blocking)
-            while (micros() - _last_reading1_us < measurement_time_us);
+            while (micros() - _colour_last_reading_us < measurement_time_us);
 
-        if (micros() - _last_reading1_us >= measurement_time_us)
+        if (micros() - _colour_last_reading_us >= measurement_time_us)
         {
-            bool update_proximity = false;
+            _colour_last_reading_us = micros();
 
-            if (!_skip_proximity && micros() - _last_reading2_us >= measurement_time_us)
-            {
-                update_proximity = true;
-                readBuffer((uint8_t)reg::CDATAL, 9, _buffer1, false);
-            }
-            else
-                readBuffer((uint8_t)reg::CDATAL, 8, _buffer1, false);
-
-            _last_reading1_us = micros();
-
-            if (update_proximity)
-            {
-                _proximity = _buffer1[8];
-                _last_reading2_us = _last_reading1_us;
-            }
+            readBuffer((uint8_t)reg::CDATAL, 8, _buffer1, false);
 
             _c = _buffer1[0] | _buffer1[1] << 8;
             _r = _buffer1[2] | _buffer1[3] << 8;
@@ -658,15 +691,14 @@ private:
     {
         uint32_t measurement_time_us =
             _proximity_measurement_time_us +
-            _colour_measurement_time_us +
-            _gesture_measurement_time_us;
+            _colour_measurement_time_us;
 
         if (blocking)
-            while (micros() - _last_reading2_us < measurement_time_us);
+            while (micros() - _proximity_last_reading_us < measurement_time_us);
 
-        if (micros() - _last_reading2_us >= measurement_time_us)
+        if (micros() - _proximity_last_reading_us >= measurement_time_us)
         {
-            _last_reading2_us = micros();
+            _proximity_last_reading_us = micros();
             _proximity = read8((uint8_t)reg::PDATA, false);
         }
     };
@@ -684,54 +716,44 @@ private:
         readBuffer((uint8_t)reg::GFIFO_U, 4 * fifo_lvl, _buffer2, false);
     };
 
-    uint8_t obtainGesture()
+    void obtainGesture()
     {
-        if (_sensor_started)
+        _gesture_fifo_index = 0;
+        _gesture = GESTURE_NONE;
+        _gesture_ud = GESTURE_NONE;
+        _gesture_lr = GESTURE_NONE;
+
+        if (!gestureDetected())
+            return;   //NO GESTURE
+
+        while (true)
         {
-            _gesture_fifo_index = 0;
-            _gesture = GESTURE_NONE;
-            _gesture_ud = GESTURE_NONE;
-            _gesture_lr = GESTURE_NONE;
-
-            if (!gestureDetected())
-                return GESTURE_NONE;   //NO GESTURE
-
-            while (true)
+            if (gestureDetected())
             {
-                if (gestureDetected())
+                uint8_t fifo_lvl = getGestureFIFOLevel();
+
+                this->updateGesture(fifo_lvl);
+
+                if (_gesture_fifo_index + fifo_lvl > 64)
+                    return; //NO EXIT
+
+                for (int i = 0; i < fifo_lvl; i++)
                 {
-                    uint8_t fifo_lvl = getGestureFIFOLevel();
-
-                    this->updateGesture(fifo_lvl);
-
-                    if (_gesture_fifo_index + fifo_lvl > 64)
-                    {
-                        return GESTURE_NONE; //NO EXIT
-                    }
-
-                    for (int i = 0; i < fifo_lvl; i++)
-                    {
-                        _gesture_fifo_up[_gesture_fifo_index] = _buffer2[i * 4];
-                        _gesture_fifo_down[_gesture_fifo_index] = _buffer2[i * 4 + 1];
-                        _gesture_fifo_left[_gesture_fifo_index] = _buffer2[i * 4 + 2];
-                        _gesture_fifo_right[_gesture_fifo_index] = _buffer2[i * 4 + 3];
-                        _gesture_fifo_index++;
-                    }
+                    _gesture_fifo_up[_gesture_fifo_index] = _buffer2[i * 4];
+                    _gesture_fifo_down[_gesture_fifo_index] = _buffer2[i * 4 + 1];
+                    _gesture_fifo_left[_gesture_fifo_index] = _buffer2[i * 4 + 2];
+                    _gesture_fifo_right[_gesture_fifo_index] = _buffer2[i * 4 + 3];
+                    _gesture_fifo_index++;
                 }
-                else
-                    break; //keep reading until gesture has exited
             }
-
-            if (_gesture_fifo_index < 4)
-            {
-                return GESTURE_NONE; //NO GESTURE
-            }
-
-            processGesture();
-            return _gesture;
+            else
+                break; //keep reading until gesture has exited
         }
 
-        return 0;
+        if (_gesture_fifo_index < 4)
+            return; //NO GESTURE
+
+        processGesture();
     };
 
     void processGesture()
@@ -762,9 +784,7 @@ private:
         }
 
         if (!last_gesture_found || !first_gesture_found)
-        {
             return;
-        }
 
         uint8_t up_first = _gesture_fifo_up[first_gesture_index];
         uint8_t down_first = _gesture_fifo_down[first_gesture_index];
@@ -789,27 +809,29 @@ private:
         _gesture = (abs(lr_delta) < abs(ud_delta)) ? _gesture_ud : _gesture_lr;
     };
 
-    bool _skip_proximity = false;
-    uint8_t _buffer1[9];
-    uint8_t _buffer2[128];
+    uint8_t _buffer1[8] = {};
+    uint8_t _buffer2[128] = {};
 
-    uint8_t _proximity;
-    uint8_t _c, _r, _g, _b;
+    uint8_t _proximity = 0;
+    uint16_t _c = 0, _r = 0, _g = 0, _b = 0;
     uint8_t _gesture;
     uint8_t _gesture_ud;
     uint8_t _gesture_lr;
 
-    uint32_t _gesture_measurement_time_us;
-    uint32_t _colour_measurement_time_us;
-    uint32_t _proximity_measurement_time_us;
-    uint32_t _last_reading1_us;
-    uint32_t _last_reading2_us;
+    bool _proximity_enabled = false;
+    bool _gesture_enabled = false;
+    bool _colour_enabled = false;
 
-    uint8_t _gesture_fifo_up[64];
-    uint8_t _gesture_fifo_down[64];
-    uint8_t _gesture_fifo_left[64];
-    uint8_t _gesture_fifo_right[64];
-    uint8_t _gesture_fifo_index;
+    uint32_t _colour_measurement_time_us = 0;
+    uint32_t _proximity_measurement_time_us = 0;
+    uint32_t _colour_last_reading_us = 0;
+    uint32_t _proximity_last_reading_us = 0;
+
+    uint8_t _gesture_fifo_up[64] = {};
+    uint8_t _gesture_fifo_down[64] = {};
+    uint8_t _gesture_fifo_left[64] = {};
+    uint8_t _gesture_fifo_right[64] = {};
+    uint8_t _gesture_fifo_index = 0;
 };
 
 #endif

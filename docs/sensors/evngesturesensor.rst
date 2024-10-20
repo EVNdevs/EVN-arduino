@@ -23,6 +23,26 @@ SCL   SCL         I2C Serial Clock
  --   INT         Not Connected
 ====  ==========  ===========
 
+Usage
+--------------
+
+While this sensor has 3 functions (Gesture, Colour, Proximity), not all of them cannot be used simultaneously.
+
+* When Gesture Mode is enabled, the Colour and Proximity readings must be disabled.
+* When Colour and Proximity Modes are enabled, Gesture Mode must be disabled.
+
+For convenience, the library does the following:
+
+* ``setGestureMode(true)`` automatically **disables** Proximity and Colour Mode
+* ``setColourMode(true)`` automatically **disables** Gesture Mode
+* ``setProximityMode(true)`` automatically **disables** Gesture Mode
+* By default, Gesture Mode is enabled, with Colour Mode and Proximity Mode disabled
+
+.. note::
+
+    When Gesture Mode is disabled, the ``gestureDetected()`` and non-blocking ``readGesture()`` will be disabled. 
+    However, a blocking ``readGesture()`` (``readGesture(true)``) will still be fully functional.
+
 Constructor
 -----------
 
@@ -36,6 +56,8 @@ Functions
 .. function:: bool begin()
 
     Initializes gesture sensor. Call this function before using the other functions.
+
+    By default, Gesture Mode is enabled, with Colour Mode and Proximity Mode disabled.
 
     :returns: Boolean indicating whether the sensor was successfully initialized. If ``false`` is returned, all other functions will return 0.
 
@@ -152,7 +174,16 @@ Sensor Settings
 .. function:: void setWait(bool enable)
 
 .. function:: void setGestureMode(bool enable)
+
+    Enable/disable Gesture Mode.
+    If ``enable`` is ``true``, this will disable Colour Mode and Proximity Mode as well.
+
+    :param enable: Whether Gesture Mode should be enabled
+
 .. function:: bool getGestureMode()
+
+    :returns: Whether Gesture Mode is enabled
+
 .. function:: void setGestureLED(led_curr current)
 .. function:: void setGestureGain(gesture_gain gain)
 .. function:: void setGesturePulseCount(uint8_t pulse_count)
@@ -163,14 +194,32 @@ Sensor Settings
 .. function:: void setGestureDimensions(gesture_dims dims)
 
 .. function:: void setProximityMode(bool enable)
+
+    Enable/disable Proximity Mode.
+    If ``enable`` is ``true``, this will disable Gesture Mode as well.
+
+    :param enable: Whether Proximity Mode should be enabled
+
 .. function:: bool getProximityMode()
+
+    :returns: Whether Proximity Mode is enabled
+
 .. function:: void setProximityGain(proximity_gain gain)
 .. function:: void setProximityLED(led_curr current)
 .. function:: void setProximityPulseCount(uint8_t pulse_count)
 .. function:: void setProximityPulseLength(pulse_len pulse_length)
     
 .. function:: void setColourMode(bool enable)
+
+    Enable/disable Colour Mode.
+    If ``enable`` is ``true``, this will disable Gesture Mode as well.
+
+    :param enable: Whether Colour Mode should be enabled
+
 .. function:: bool getColourMode()
+
+    :returns: Whether Colour Mode is enabled
+
 .. function:: void setColourGain(colour_gain gain)
-.. function:: uint16_t getColourIntegrationCycles()
 .. function:: void setColourIntegrationCycles(uint16_t int_cycles)
+.. function:: uint16_t getColourIntegrationCycles()
