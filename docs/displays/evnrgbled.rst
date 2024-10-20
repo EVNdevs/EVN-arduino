@@ -47,6 +47,15 @@ Constructor
     :param led_count: Number of LEDs connected to the servo port. Defaults to 8
     :param invert: Whether order of LED indexes should be inverted
 
+Functions
+---------
+
+.. function:: bool begin()
+
+    Initializes RGB LED Array. Call this function before using the other functions.
+
+    :returns: Boolean indicating whether the RGB LED array was successfully initialized.
+
 Set Functions
 """"""""""""""
 .. function:: void setLEDCount(uint8_t led_count)
@@ -78,9 +87,9 @@ Display Functions
     Updates given LED's RGB values in buffer and if ``show`` is ``true``, writes buffer to peripheral.
 
     :param led: Index of LED to update (0 to (led_count-1)). LED 0 is the LED closest to the signal & power pins
-    :param r: Red channel intensity. Defaults to 0
-    :param g: Green channel intensity. Defaults to 0
-    :param b: Blue channel intensity. Defaults to 0
+    :param r: Red channel intensity (0-255). Defaults to 0
+    :param g: Green channel intensity (0-255). Defaults to 0
+    :param b: Blue channel intensity (0-255). Defaults to 0
     :param show: Whether to write buffer to LEDs. Defaults to ``true``
 
 .. function:: void clearOne(uint8_t led, bool show = true)
@@ -96,9 +105,9 @@ Display Functions
 
     :param start_led: Starting index of LED to update (0 to (led_count-1)). LED 0 is the LED closest to the signal & power pins
     :param end_led: Ending index of LED to update (0 to (led_count-1)). This LED will be updated as well.
-    :param r: Red channel intensity. Defaults to 0
-    :param g: Green channel intensity. Defaults to 0
-    :param b: Blue channel intensity. Defaults to 0
+    :param r: Red channel intensity (0-255). Defaults to 0
+    :param g: Green channel intensity (0-255). Defaults to 0
+    :param b: Blue channel intensity (0-255). Defaults to 0
     :param show: Whether to write buffer to LEDs. Defaults to ``true``
 
 .. function:: void writeLine(uint8_t start_led, uint8_t end_led, uint8_t r = 0, uint8_t g = 0, uint8_t b = 0, bool show = true)
@@ -113,9 +122,9 @@ Display Functions
 
     Updates all LEDs' RGB values in buffer and if ``show`` is ``true``, writes buffer to peripheral.
 
-    :param r: Red channel intensity. Defaults to 0
-    :param g: Green channel intensity. Defaults to 0
-    :param b: Blue channel intensity. Defaults to 0
+    :param r: Red channel intensity (0-255). Defaults to 0
+    :param g: Green channel intensity (0-255). Defaults to 0
+    :param b: Blue channel intensity (0-255). Defaults to 0
     :param show: Whether to write buffer to LEDs. Defaults to ``true``
 
 .. function:: void clearAll(bool show = true)
