@@ -61,48 +61,6 @@ public:
         return _started;
     }
 
-    void end()
-    {
-        if (_started)
-        {
-            _started = false;
-            switch (_pin)
-            {
-            case PIN_SERVO1:
-                ports_started[0] = false;
-                break;
-            case PIN_SERVO2:
-                ports_started[1] = false;
-                break;
-            case PIN_SERVO3:
-                ports_started[2] = false;
-                break;
-            case PIN_SERVO4:
-                ports_started[3] = false;
-                break;
-            }
-
-            mutex_enter_blocking(&_mutex);
-
-            dma_channel_set_irq0_enabled(_dma, false);
-            dma_channel_config channel_config = dma_channel_get_default_config(_dma);
-            dma_channel_configure(_dma, &channel_config, NULL, NULL, 0, false);
-            dma_channel_unclaim(_dma);
-
-            if (!ports_started[0] && !ports_started[1] && !ports_started[2] && !ports_started[3])
-            {
-                irq_set_enabled(DMA_IRQ_0, false);
-                irq_remove_handler(DMA_IRQ_0, dma_isr);
-            }
-
-            pio_sm_set_enabled(_pio, _sm, false);
-            pio_sm_unclaim(_pio, _sm);
-            _started = false;
-
-            mutex_exit(&_mutex);
-        }
-    }
-
     void setInvert(bool enable)
     {
         _invert = enable;
@@ -205,14 +163,49 @@ public:
         }
     }
 
-private:
-    static uint32_t urgb_u32(uint8_t r, uint8_t g, uint8_t b) {
-        return
-            ((uint32_t)(r) << 16) |
-            ((uint32_t)(g) << 24) |
-            ((uint32_t)(b) << 8);
+    void end()
+    {
+        if (_started)
+        {
+            _started = false;
+            switch (_pin)
+            {
+            case PIN_SERVO1:
+                ports_started[0] = false;
+                break;
+            case PIN_SERVO2:
+                ports_started[1] = false;
+                break;
+            case PIN_SERVO3:
+                ports_started[2] = false;
+                break;
+            case PIN_SERVO4:
+                ports_started[3] = false;
+                break;
+            }
+
+            mutex_enter_blocking(&_mutex);
+
+            dma_channel_set_irq0_enabled(_dma, false);
+            dma_channel_config channel_config = dma_channel_get_default_config(_dma);
+            dma_channel_configure(_dma, &channel_config, NULL, NULL, 0, false);
+            dma_channel_unclaim(_dma);
+
+            if (!ports_started[0] && !ports_started[1] && !ports_started[2] && !ports_started[3])
+            {
+                irq_set_enabled(DMA_IRQ_0, false);
+                irq_remove_handler(DMA_IRQ_0, dma_isr);
+            }
+
+            pio_sm_set_enabled(_pio, _sm, false);
+            pio_sm_unclaim(_pio, _sm);
+            _started = false;
+
+            mutex_exit(&_mutex);
+        }
     }
 
+private:
     void dma_init()
     {
         _dma = dma_claim_unused_channel(true);
@@ -250,6 +243,13 @@ private:
             dma_channels[3] = _dma;
             break;
         }
+    }
+
+    static uint32_t urgb_u32(uint8_t r, uint8_t g, uint8_t b) {
+        return
+            ((uint32_t)(r) << 16) |
+            ((uint32_t)(g) << 24) |
+            ((uint32_t)(b) << 8);
     }
 
     static void dma_isr()

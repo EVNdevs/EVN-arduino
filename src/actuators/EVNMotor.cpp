@@ -1,12 +1,12 @@
 #include "EVNMotor.h"
 
-volatile encoder_state_t* EVNMotor::encoderArgs[] = {};
-volatile pid_control_t* EVNMotor::pidArgs[] = {};
-volatile bool EVNMotor::ports_started[] = { false, false, false, false };
+volatile encoder_state_t* EVNMotor::encoderArgs[] = { };
+volatile pid_control_t* EVNMotor::pidArgs[] = { };
+volatile bool EVNMotor::ports_started[] = { };
 volatile bool EVNMotor::timerisr_enabled = false;
 
-volatile drivebase_state_t* EVNDrivebase::dbArgs[] = {};
-volatile bool EVNDrivebase::dbs_started[] = { false, false };
+volatile drivebase_state_t* EVNDrivebase::dbArgs[] = { };
+volatile bool EVNDrivebase::dbs_started[] = { };
 volatile bool EVNDrivebase::timerisr_enabled = false;
 
 EVNMotor::EVNMotor(uint8_t port, uint8_t motortype, uint8_t motor_dir, uint8_t enc_dir)
