@@ -58,7 +58,7 @@ Functions
 
 .. function:: void begin()
 
-    Initializes continuous rotation servo object. Call this function before calling the other EVNContinuousServo functions.
+    Initializes continuous rotation servo. Call this function before calling the other EVNContinuousServo functions.
 
     .. code-block:: cpp
 
@@ -72,8 +72,9 @@ Functions
 .. note::
     For best performance, run this on the 2nd core using ``void setup1()``
 
-Using Continuous Servos
-""""""""""""""""""""""""
+.. function:: void end()
+
+    Deinitializes continuous servo and releases PIO state machine consumed by it. 
 
 .. function::   void write(float duty_cycle_pct)
 

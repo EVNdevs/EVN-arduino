@@ -60,7 +60,7 @@ Functions
 
 .. function:: void begin()
 
-    Initializes servo object. Call this function before calling the other EVNServo functions.
+    Initializes servo. Call this function before calling the other EVNServo functions.
 
     .. code-block:: cpp
         
@@ -74,8 +74,9 @@ Functions
 .. note::
     For best performance, run this on the 2nd core using ``void setup1()``
 
-Using Fixed Servos
-""""""""""""""""""
+.. function:: void end()
+
+    Deinitializes servo and releases PIO state machine consumed by it. 
 
 .. function:: float getMaxDPS()
 

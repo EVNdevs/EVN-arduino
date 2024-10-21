@@ -62,7 +62,7 @@ Functions
 
 .. function:: void end()
 
-    Deinitializes RGB LED Array and releases all PIO state machines and DMA peripherals consumed by it. 
+    Deinitializes RGB LED Array and releases PIO state machine and DMA channel consumed by it. 
     Does not clear the data currently written to the RGB LED Array.
 
 Set Functions
