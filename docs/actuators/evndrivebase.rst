@@ -1,6 +1,12 @@
 ``EVNDrivebase``
 ================
 
+Building upon the functionality provided by EVNMotor, EVNDrivebase provides functions useful for controlling differential drive robots.
+
+.. note:: EVNDrivebase consumes some of the RP2040's spinlock peripherals. See this `page`_ for more info.
+
+.. _page: ../getting-started/hardware-overview.html
+
 Constructor
 -----------
 

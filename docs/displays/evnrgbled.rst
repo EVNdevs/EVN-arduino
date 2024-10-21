@@ -8,9 +8,11 @@ However, this library uses Programmable IO (PIO) to handle the transmissions, so
 
 Another thing to note is that these can be daisy-chained, so you can control up to 48 LEDs (6 Peripherals) with one Servo port!
 
-.. note:: Each instance of ``EVNRGBLED`` (4 max) consumes 1 of the RP2040's 8 PIO state machines, so keep this in mind if you are using PIO for your own purposes.
+.. note:: Each instance of EVNRGBLED (4 max) consumes 1 of the RP2040's 8 PIO state machines, so keep this in mind if you are using PIO for your own purposes.
 
-.. note:: All instances of ``EVNRGBLED`` share 1 of the RP2040's 12 DMA channels and take full control of the DMA_IRQ_0 interrupt, so keep this in mind if you are using DMA for your own purposes.
+.. note:: EVNRGBLED consumes some of the RP2040's DMA peripherals. See this `page`_ for more info.
+
+.. _page: ../getting-started/hardware-overview.html
 
 Wiring (Servo)
 --------------

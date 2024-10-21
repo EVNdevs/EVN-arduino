@@ -218,7 +218,7 @@ Spinlocks are a hardware mechanism used to communicate and protect memory access
 
 On the RP2040, these are particularly valuable for multicore communication as it does not support atomic operations on variables (another common mechanism for core synchronization).
 
-The RP2040 has 32 spinlocks, 16 of which have been reserved for the user.
+The RP2040 has 32 spinlocks, 16 of which are reserved for the user.
 
 8 of these spinlocks are a striped range which can be shared by multiple classes, suitable for implementing memory barriers between the 2 cores.
 

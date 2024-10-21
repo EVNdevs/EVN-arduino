@@ -11,7 +11,11 @@ The default settings are for the Continuous Rotation Servo Standard Peripherals 
 
 For positional control with the Fixed Servo Standard Peirpherals, look at `EVNServo`_.
 
-.. note:: Each instance of ``EVNContinuousServo`` (4 max) consumes 1 of the RP2040's 8 PIO state machines, so keep this in mind if you are using PIO for your own purposes.
+.. note:: Each instance of EVNContinuousServo (4 max) consumes 1 of the RP2040's 8 PIO state machines, so keep this in mind if you are using PIO for your own purposes.
+
+.. note:: EVNContinuousServo consumes some of the RP2040's spinlock peripherals. See this `page`_ for more info.
+
+.. _page: ../getting-started/hardware-overview.html
 
 .. _EVNServo: evnservo.html
 .. _EVNAlpha: ../evnalpha.html
