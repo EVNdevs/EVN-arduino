@@ -8,7 +8,9 @@ However, this library uses Programmable IO (PIO) to handle the transmissions, so
 
 Another thing to note is that these can be daisy-chained, so you can control up to 48 LEDs (6 Peripherals) with one Servo port!
 
-.. note:: Each instance of ``EVNRGBLED`` consumes one of the RP2040's 8 PIO state machines, so keep this in mind if you are using PIO for your own purposes.
+.. note:: Each instance of ``EVNRGBLED`` (4 max) consumes 1 of the RP2040's 8 PIO state machines, so keep this in mind if you are using PIO for your own purposes.
+
+.. note:: All instances of ``EVNRGBLED`` share 1 of the RP2040's 12 DMA channels and take full control of the DMA_IRQ_0 interrupt, so keep this in mind if you are using DMA for your own purposes.
 
 Wiring (Servo)
 --------------
@@ -55,6 +57,11 @@ Functions
     Initializes RGB LED Array. Call this function before using the other functions.
 
     :returns: Boolean indicating whether the RGB LED array was successfully initialized.
+
+.. function:: void end()
+
+    Deinitializes RGB LED Array and releases all PIO state machines and DMA peripherals consumed by it. 
+    Does not clear the data currently written to the RGB LED Array.
 
 Set Functions
 """"""""""""""
@@ -137,9 +144,9 @@ Display Functions
 
     Writes buffer to LEDs. 
 
-    By default, this function is internally called at the end of all the ``write#()`` / ``clear#()`` functions.
+    By default, this function is internally called at the end of all the ``write###()`` / ``clear###()`` functions.
 
     However, it may be more useful for you to make multiple changes to the buffer using the above functions 
     with ``show`` set to ``false``, before calling ``show()`` at the end to update the LEDs. 
-    
-    This approach can achieve nicer visual output (all pixels change simultaneously) or faster updates (as ``show()`` is only called once).
+
+    This approach can achieve nicer visual output (all pixels change simultaneously) or faster updates (as ``update()`` is only called once).

@@ -8,9 +8,7 @@ The default settings are for the Fixed Servo Standard Peripherals we sell, the G
 
 .. _EVNMotor: evnmotor.html
 
-.. note::
-
-    By default, EVNServo objects will not move the servo's position until the user button is pressed. See   `EVNAlpha`_'s docs for more info.
+.. note:: Each instance of ``EVNServo`` (4 max) consumes 1 of the RP2040's 8 PIO state machines, so keep this in mind if you are using PIO for your own purposes.
 
 .. warning::
 

@@ -33,7 +33,7 @@ The analog inputs connect to your devices with analog output e.g. analog light s
 
 Minimally, you will also need to connect ground (GND) to these analog devices as well. You may also need to connect power (3V3) to power the device.
 
-The analog inputs on the multiplexer are not rated for voltages higher than the peripheral's supply voltage (usually 3.3V), so do not connect voltages higher than 3.3V to the inputs.
+The 4 analog input channels are not rated for voltages higher than the peripheral's supply voltage (usually 3.3V), so do not connect voltages higher than 3.3V to the inputs.
 
 If you need voltage measurement ranging up to 5V, consider powering the peripheral with 5V instead, since the I2C ports are 5V-tolerant.
 
@@ -42,15 +42,15 @@ Constructor
 
 .. class:: EVNADC(uint8_t port)
 
-    :param port: I2C port the multiplexer is connected to (1-16)
+    :param port: I2C port the 4-channel ADC is connected to (1-16)
 
 Functions
 ---------
 .. function:: bool begin()
 
-    Initializes analog multiplexer. Call this function before using the other functions.
+    Initializes 4-channel ADC. Call this function before using the other functions.
 
-    :returns: Boolean indicating whether the multiplexer was successfully initialized. If ``false`` is returned, all other functions will return 0.
+    :returns: Boolean indicating whether the 4-channel ADC was successfully initialized. If ``false`` is returned, all other functions will return 0.
 
 Set Functions
 """""""""""""""
