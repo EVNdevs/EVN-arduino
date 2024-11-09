@@ -41,15 +41,14 @@
 
 //TUNING FOR EVN DRIVEBASE CLASS
 #define USER_DRIVE_POS_MIN_LOOP_COUNT   2
-#define USER_DRIVE_POS_MIN_ERROR_DEG    0.5
-#define USER_DRIVE_POS_MIN_ERROR_MM     0.5
+#define USER_DRIVE_POS_MIN_ERROR_MOTOR_DEG  2
 
 #define DRIVEBASE_KP_SPEED              12.5
-#define DRIVEBASE_KI_SPEED              0
-#define DRIVEBASE_KD_SPEED              3.125
+#define DRIVEBASE_KI_SPEED              0.000125
+#define DRIVEBASE_KD_SPEED              12.5
 
 #define DRIVEBASE_KP_TURN_RATE          6000
-#define DRIVEBASE_KI_TURN_RATE          0
+#define DRIVEBASE_KI_TURN_RATE          0.06
 #define DRIVEBASE_KD_TURN_RATE          24000
 
 #define USER_SPEED_ACCEL                500

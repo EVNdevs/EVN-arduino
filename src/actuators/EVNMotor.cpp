@@ -181,9 +181,26 @@ float EVNMotor::getPosition() volatile
 	return output;
 }
 
+float EVNMotor::getTargetPosition() volatile
+{
+	if (!timerisr_enabled) return 0;
+	EVNCoreSync0.core0_enter();
+
+	float output = _pid_control.target_pos;
+
+	EVNCoreSync0.core0_exit();
+
+	return output;
+}
+
 float EVNMotor::getHeading() volatile
 {
 	return fmod(fmod(getPosition(), 360) + 360, 360);
+}
+
+float EVNMotor::getTargetHeading() volatile
+{
+	return fmod(fmod(getTargetPosition(), 360) + 360, 360);
 }
 
 void EVNMotor::setPosition(float position) volatile
@@ -233,13 +250,15 @@ void EVNMotor::runPWM(float duty_cycle_pct) volatile
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
 
+	float duty_cycle_pctc = constrain(duty_cycle_pct, -100, 100) / 100;
+
 	_pid_control.run_pwm = true;
 	_pid_control.run_speed = false;
 	_pid_control.run_time = false;
 	_pid_control.run_pos = false;
 	_pid_control.hold = false;
 
-	runPWM_static(&_pid_control, constrain(duty_cycle_pct, -100, 100) * 0.01);
+	runPWM_static(&_pid_control, duty_cycle_pctc);
 
 	EVNCoreSync0.core0_exit();
 }
@@ -272,7 +291,7 @@ void EVNMotor::runPosition(float dps, float position, uint8_t stop_action, bool 
 	EVNCoreSync0.core0_enter();
 
 	_pid_control.target_dps = clean_input_dps(dps);
-	_pid_control.target_pos = position;
+	_pid_control.end_pos = position;
 	_pid_control.stop_action = clean_input_stop_action(stop_action);
 
 	_pid_control.run_pwm = false;
@@ -292,20 +311,19 @@ void EVNMotor::runAngle(float dps, float degrees, uint8_t stop_action, bool wait
 	if (dps < 0 && degreesc > 0)
 		degreesc = -degreesc;
 
-	this->runPosition(dps, this->getPosition() + degreesc, stop_action, wait);
+	this->runPosition(dps, this->getTargetPosition() + degreesc, stop_action, wait);
 }
 
 void EVNMotor::runHeading(float dps, float heading, uint8_t stop_action, bool wait) volatile
 {
 	float target_heading = constrain(heading, 0, 360);
-	float current_heading = this->getHeading();
-	float degreesc = target_heading - current_heading;
+	float degreesc = target_heading - this->getTargetHeading();
 	if (degreesc > 180)
 		degreesc -= 360;
 	if (degreesc < -180)
 		degreesc += 360;
 
-	this->runPosition(dps, this->getPosition() + degreesc, stop_action, wait);
+	this->runPosition(dps, this->getTargetPosition() + degreesc, stop_action, wait);
 }
 
 void EVNMotor::runTime(float dps, uint32_t time_ms, uint8_t stop_action, bool wait) volatile
@@ -344,7 +362,7 @@ void EVNMotor::coast_unsafe() volatile
 
 void EVNMotor::hold_unsafe() volatile
 {
-	_pid_control.target_pos = getPosition_static(&_encoder);
+	_pid_control.end_pos = getPosition_static(&_encoder);
 	_pid_control.target_dps = _pid_control.max_rpm * 3;
 	_pid_control.stop_action = STOP_HOLD;
 	stopAction_static(&_pid_control, &_encoder, getPosition_static(&_encoder), getDPS_static(&_encoder));
@@ -427,6 +445,8 @@ EVNDrivebase::EVNDrivebase(float wheel_dia, float axle_track, EVNMotor* motor_le
 	db.max_speed = db.max_rpm / 60 * db.wheel_dia * M_PI;
 	db.max_turn_rate = db.max_rpm * 6 * db.wheel_dia / db.axle_track;
 	db.max_dps = db.max_rpm * 6;
+	db.max_distance_error = USER_DRIVE_POS_MIN_ERROR_MOTOR_DEG * db.wheel_dia * M_PI / 720;
+	db.max_angle_error = USER_DRIVE_POS_MIN_ERROR_MOTOR_DEG * db.wheel_dia / (2 * db.axle_track);
 
 	db.turn_rate_pid = new PIDController(DRIVEBASE_KP_TURN_RATE, DRIVEBASE_KI_TURN_RATE, DRIVEBASE_KD_TURN_RATE, DIRECT);
 	db.speed_pid = new PIDController(DRIVEBASE_KP_SPEED, DRIVEBASE_KI_SPEED, DRIVEBASE_KD_SPEED, DIRECT);
@@ -531,9 +551,26 @@ float EVNDrivebase::getAngle() volatile
 	return output;
 }
 
+float EVNDrivebase::getTargetAngle() volatile
+{
+	if (!timerisr_enabled) return 0;
+	EVNCoreSync0.core0_enter();
+
+	float output = db.target_angle;
+
+	EVNCoreSync0.core0_exit();
+
+	return output;
+}
+
 float EVNDrivebase::getHeading() volatile
 {
 	return fmod(fmod(getAngle(), 360) + 360, 360);
+}
+
+float EVNDrivebase::getTargetHeading() volatile
+{
+	return fmod(fmod(getTargetAngle(), 360) + 360, 360);
 }
 
 float EVNDrivebase::getX() volatile
@@ -616,15 +653,10 @@ float EVNDrivebase::scaling_factor_for_maintaining_radius(float speed, float tur
 
 float EVNDrivebase::radius_to_turn_rate(float speed, float radius) volatile
 {
-	float radiusc = max(0, radius);
-	float turn_rate;
-	if (radiusc == 0)
-	{
-		turn_rate = db.max_turn_rate;
-	}
-	else
-		turn_rate = fabs(speed / M_PI / radiusc * 180);
-	return turn_rate;
+	if (radius == 0)
+		return db.max_turn_rate;
+
+	return fabs(speed) * 180 / (M_PI * radius);
 }
 
 void EVNDrivebase::drive(float speed, float turn_rate) volatile
@@ -634,22 +666,29 @@ void EVNDrivebase::drive(float speed, float turn_rate) volatile
 
 void EVNDrivebase::drivePct(float speed_outer_pct, float turn_rate_pct) volatile
 {
-	float turn_rate_pctc = constrain(turn_rate_pct, -1, 1);
-	float speed_outer_pctc = constrain(speed_outer_pct, -1, 1);
-	float speed_inner_pctc = speed_outer_pctc * (1 - 2 * turn_rate_pctc);
+	float turn_rate_pctc = constrain(turn_rate_pct, -100, 100) / 100;
+	float speed_outer_pctc = constrain(speed_outer_pct, -100, 100) / 100;
+	float speed_inner_pctc = speed_outer_pctc * (1 - 2 * fabs(turn_rate_pctc));
 	float speed = (speed_outer_pctc + speed_inner_pctc) / 2 * db.max_speed;
 
-	if (turn_rate_pctc < 0)
-		speed *= -1;
-
+	//drive straight
 	if (turn_rate_pctc == 0)
 		this->drive(speed, 0);
-	else if (turn_rate_pctc == 1)
-		this->drive(0, speed_outer_pctc * db.max_turn_rate);
+
+	//turn on the spot
+	else if (fabs(turn_rate_pctc) == 1)
+		this->drive(0, fabs(speed_outer_pctc) * db.max_turn_rate * turn_rate_pctc);
+
+	//centre of turning radius between wheels
 	else if (turn_rate_pctc >= 0.5)
-		this->driveRadius(speed, db.axle_track * (1 - fabs(turn_rate_pctc)));
+		this->driveRadius(speed, db.axle_track * (1 - turn_rate_pctc));
+
+	else if (turn_rate_pctc <= -0.5)
+		this->driveRadius(speed, -db.axle_track * (1 + turn_rate_pctc));
+
+	//centre of turning radius outside of wheels
 	else
-		this->driveRadius(speed, db.axle_track * 0.25 / fabs(turn_rate_pctc));
+		this->driveRadius(speed, db.axle_track * 0.25 / turn_rate_pctc);
 }
 
 void EVNDrivebase::driveTurnRate(float speed, float turn_rate) volatile
@@ -662,7 +701,6 @@ void EVNDrivebase::driveTurnRate(float speed, float turn_rate) volatile
 
 	db.target_speed = speedc;
 	db.target_turn_rate = turn_ratec;
-
 	db.drive = true;
 	db.drive_position = false;
 
@@ -672,9 +710,8 @@ void EVNDrivebase::driveTurnRate(float speed, float turn_rate) volatile
 void EVNDrivebase::driveRadius(float speed, float radius) volatile
 {
 	float speedc = speed;
-	float radiusc = max(0, radius);
 	float turn_ratec = radius_to_turn_rate(speed, radius);
-	if (radiusc == 0)
+	if (radius == 0)
 		speedc = 0;
 
 	float scale = scaling_factor_for_maintaining_radius(speedc, turn_ratec);
@@ -687,22 +724,20 @@ void EVNDrivebase::driveRadius(float speed, float radius) volatile
 void EVNDrivebase::straight(float speed, float distance, uint8_t stop_action, bool wait) volatile
 {
 	float speedc = clean_input_speed(speed, 0);
-	float distancec = distance;
 
-	if (distancec < 0 && speedc > 0)
+	if (distance == 0 || speedc == 0)
+		return;
+
+	if ((distance > 0) != (speedc > 0))
 		speedc = -speedc;
-
-	if (distancec > 0 && speedc < 0)
-		distancec = -distancec;
 
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
 
+	db.end_angle = db.target_angle;
+	db.end_distance = db.target_distance + distance;
 	db.target_speed = speedc;
 	db.target_turn_rate = 0;
-	db.end_distance = db.current_distance + distancec;
-	db.end_angle = db.current_angle;
-
 	db.stop_action = clean_input_stop_action(stop_action);
 	db.drive = true;
 	db.drive_position = true;
@@ -720,9 +755,9 @@ void EVNDrivebase::curve(float speed, float radius, float angle, uint8_t stop_ac
 void EVNDrivebase::curveRadius(float speed, float radius, float angle, uint8_t stop_action, bool wait) volatile
 {
 	float speedc = speed;
-	float radiusc = max(0, radius);
-	float turn_ratec = radius_to_turn_rate(speedc, radiusc);
-	if (radiusc == 0)
+	float turn_ratec = radius_to_turn_rate(speedc, radius);
+
+	if (radius == 0)
 		speedc = 0;
 
 	float scale = scaling_factor_for_maintaining_radius(speedc, turn_ratec);
@@ -737,20 +772,22 @@ void EVNDrivebase::curveTurnRate(float speed, float turn_rate, float angle, uint
 	float turn_ratec = clean_input_turn_rate(turn_rate);
 	float speedc = clean_input_speed(speed, turn_ratec);
 
-	if ((angle < 0 && turn_ratec > 0) || (angle > 0 && turn_ratec < 0))
-		turn_ratec = -turn_ratec;
+	if (turn_ratec == 0 || angle == 0)
+		return;
+
+	if ((angle < 0) != (turn_ratec < 0))
+		angle = -angle;
 
 	float distance = angle / turn_ratec * speedc;
 
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
 
+	db.end_angle = db.target_angle + angle;
+	db.end_distance = db.target_distance + distance;
 	db.target_speed = speedc;
 	db.target_turn_rate = turn_ratec;
-	db.end_distance = db.current_distance + distance;
-	db.end_angle = db.current_angle + angle;
 	db.stop_action = clean_input_stop_action(stop_action);
-
 	db.drive = true;
 	db.drive_position = true;
 
@@ -772,8 +809,7 @@ void EVNDrivebase::turnDegrees(float turn_rate, float degrees, uint8_t stop_acti
 void EVNDrivebase::turnHeading(float turn_rate, float heading, uint8_t stop_action, bool wait) volatile
 {
 	float target_heading = constrain(heading, 0, 360);
-	float current_heading = fmod(fmod(db.current_angle, 360) + 360, 360);
-	float turn_angle = heading - current_heading;
+	float turn_angle = target_heading - getTargetHeading();
 	if (turn_angle > 180)
 		turn_angle -= 360;
 	if (turn_angle < -180)
@@ -789,7 +825,7 @@ void EVNDrivebase::driveToXY(float speed, float turn_rate, float x, float y, uin
 	if (angle_to_target < 0)
 		angle_to_target += 360;
 
-	float initial_heading = fmod(fmod(db.current_angle, 360) + 360, 360);
+	float initial_heading = getTargetHeading();
 	this->turnHeading(turn_rate, angle_to_target, stop_action, true);
 	this->straight(speed, this->getDistanceToPoint(x, y), stop_action, true);
 	if (restore_initial_heading)
