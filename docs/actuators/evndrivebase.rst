@@ -13,11 +13,8 @@ Constructor
 .. class:: EVNDrivebase(float wheel_dia, float axle_track, EVNMotor* motor_left, EVNMotor* motor_right);
 
     :param wheel_dia: Diameter of each wheel (in mm)
-
     :param axle_track: Distance between midpoint of both wheels (in mm)
-
     :param motor_left: Pointer to ``EVNMotor`` object for left motor
-
     :param motor_right: Pointer to ``EVNMotor`` object for right motor
 
     .. code-block:: cpp
@@ -126,9 +123,8 @@ Move Forever
 
     Runs drivebase at the given speed and turn rate until a new command is called
 
-    :param speed: velocity of drivebase (in mm/s)
-
-    :param turn_rate: turning rate of drivebase (in deg/s)
+    :param speed: Velocity of drivebase (in mm/s)
+    :param turn_rate: Turning rate of drivebase (in deg/s)
 
     .. code-block:: cpp
         
@@ -139,15 +135,42 @@ Move Forever
 
     Runs drivebase at the given speed and radius of turning until a new command is called
 
-    :param speed: velocity of drivebase (in mm/s)
-
-    :param radius: turning radius of drivebase (in mm)
+    :param speed: Velocity of drivebase (in mm/s)
+    :param radius: Turning radius of drivebase (in mm)
 
     .. code-block:: cpp
         
         //drive at a velocity of 50mm/s and move in an arc of radius 50mm
         db.driveRadius(50, 50);
 
+.. function:: void drivePct(float speed_outer_pct, float turn_rate_pct)
+    
+    This function simulates a differential drive function where the outer wheel speed is given as a percentage, 
+    along with a "turning rate" percentage input to define the turning behaviour as described below:
+
+    0% "turning rate": Both wheels run at speed_outer_pct, same direction
+    50% "turning rate": One wheel stationary, other wheel runs at speed_outer_pct (one-wheel turn)
+    100% "turning rate": Both wheels run at speed_outer_pct, but in opposite directions
+
+    Positive turning rate values turn anti-clockwise, negative values turn clockwise.
+
+    Since the inputs range from -100 to 100 (unlike driveRadius, where radius ranges to infinity), it can be easier to use this function for PID control.
+
+    :param speed_outer_pct: Speed for outer (faster) wheel in % (number from -100 to 100)
+    :param turn_rate_pct: Turning rate of drivebase in % (number from -100 to 100)
+
+    .. code-block:: cpp
+        
+        //drive forwards at 100% speed
+        db.drivePct(100, 0);
+        //drive forwards at 50% speed
+        db.drivePct(50, 0);
+        //drive backwards at 100% speed
+        db.drivePct(-100, 0);
+        //one-wheel clockwise turn at full speed
+        db.drivePct(100, 50);
+        //rotate clockwise on the spot at full speed
+        db.drivePct(100, 100);
 
 Move by a Fixed Amount
 """"""""""""""""""""""
@@ -156,10 +179,8 @@ Move by a Fixed Amount
 
     Runs drivebase in a straight line for the specified distance, then performs given stop action
 
-    :param speed: velocity of drivebase (in mm/s)
-
-    :param distance: distance to travel (in mm)
-
+    :param speed: Velocity of drivebase (in mm/s)
+    :param distance: Distance to travel (in mm)
     :param stop_action: Behaviour of the motor upon completing its command. Defaults to ``STOP_BRAKE``
 
         * ``STOP_BRAKE`` -- Brake (Slow decay)
@@ -178,12 +199,9 @@ Move by a Fixed Amount
 
     Runs drivebase in a curve of specified radius until its heading has shifted by the given angle, then performs given stop action
 
-    :param speed: velocity of drivebase (in mm/s)
-
-    :param radius: turning radius of drivebase (in mm)
-
-    :param angle: angle to travel by (in deg)
-
+    :param speed: Velocity of drivebase (in mm/s)
+    :param radius: Turning radius of drivebase (in mm)
+    :param angle: Angle to travel by (in deg)
     :param stop_action: Behaviour of the motor upon completing its command. Defaults to ``STOP_BRAKE``
 
         * ``STOP_BRAKE`` -- Brake (Slow decay)
@@ -201,12 +219,9 @@ Move by a Fixed Amount
 
     Runs drivebase at given speed and turn rate until its heading has shifted by the given angle, then runs specified stop action
 
-    :param speed: velocity of drivebase (in mm/s)
-
-    :param turn_rate: turning rate of drivebase (in deg/s)
-
-    :param angle: angle to travel by (in deg)
-
+    :param speed: Velocity of drivebase (in mm/s)
+    :param turn_rate: Turning rate of drivebase (in deg/s)
+    :param angle: Angle to travel by (in deg)
     :param stop_action: Behaviour of the motor upon completing its command. Defaults to ``STOP_BRAKE``
 
         * ``STOP_BRAKE`` -- Brake (Slow decay)
@@ -225,10 +240,8 @@ Move by a Fixed Amount
 
     Rotate drivebase on the spot by the given angle, then performs given stop action
     
-    :param turn_rate: turning rate of drivebase (in deg/s)
-
-    :param angle: angle to travel by (in deg)
-
+    :param turn_rate: Turning rate of drivebase (in deg/s)
+    :param angle: Angle to travel by (in deg)
     :param stop_action: Behaviour of the motor upon completing its command. Defaults to ``STOP_BRAKE``
 
         * ``STOP_BRAKE`` -- Brake (Slow decay)
@@ -246,10 +259,8 @@ Move by a Fixed Amount
 
     Rotate drivebase on the spot to the given heading, then performs given stop action
 
-    :param turn_rate: turning rate of drivebase (in deg/s)
-
-    :param heading: heading to travel to (in deg)
-
+    :param turn_rate: Turning rate of drivebase (in deg/s)
+    :param heading: Heading to travel to (in deg)
     :param stop_action: Behaviour of the motor upon completing its command. Defaults to ``STOP_BRAKE``
 
         * ``STOP_BRAKE`` -- Brake (Slow decay)
@@ -278,14 +289,10 @@ Move to Point
 
     Rotates drivebase to face target XY position, drives forward to target, and rotates back to original heading
 
-    :param speed: velocity of drivebase (in mm/s)
-
-    :param turn_rate: turning rate of drivebase (in deg/s)
-
+    :param speed: Velocity of drivebase (in mm/s)
+    :param turn_rate: Turning rate of drivebase (in deg/s)
     :param x: X coordinate of target
-
     :param y: Y coordinate of target
-
     :param stop_action: Behaviour of the motor upon completing its command. Defaults to ``STOP_BRAKE``
 
         * ``STOP_BRAKE`` -- Brake (Slow decay)
