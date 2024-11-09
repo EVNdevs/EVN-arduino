@@ -14,7 +14,7 @@ private:
     static const uint16_t AT_MODE_DELAY_MS = 20;
 
 public:
-    EVNBluetooth(uint8_t serial_port, uint32_t baud_rate = 9600, char* name = (char*)"EVN Bluetooth", uint8_t mode = BT_REMOTE, char* addr = NULL);
+    EVNBluetooth(uint8_t serial_port, uint32_t baud_rate = 9600, char* name = (char*)"EVN Bluetooth", uint8_t mode = BT_REMOTE, char* addr = nullptr);
     bool begin(bool exit_program_mode = true);
 
     bool inProgramMode();

@@ -116,17 +116,23 @@ Reading Raw RGBC Values
 
     :returns: raw blue reading
 
-Reading Calibrated RGBC Values
+Reading Normalised RGBC Values
 """""""""""""""""""""""""""""""
-Before reading calibrated values, you need to call the ``setXXrange()`` function for a given colour channel first.
+When you read the raw RGBC values, you may not have a reading of 0 on black surfaces or a maximum reading on white.
+
+Instead, the readings will usually range from a low (but non-zero) to a high (but non-max) value.
+
+Normalisation is the process of converting raw readings such that they range from 0 to 1 instead.
+
+Normalised Reading = (Raw Reading - Low) / (High - Low)
+
+Before reading normalised values, you need to call the ``setXXrange()`` function to set the low and high values for a given colour channel first.
 
 .. function:: void setClearRange(uint16_t low, uint16_t high)
     
-    Sets the range of possible clear values used for calibrating raw values.
+    Sets the range of possible clear values for raw readings
 
-    Calibrated Clear Reading = (Clear Raw - Clear Low) / (Clear High - Clear Low)
-
-    If this function is not called, ``readClearNorm()`` returns 0;
+    If this function is not called, ``readClearNorm()`` returns 0
 
     :param low: lower bound of readings for Clear channel
 
@@ -134,11 +140,9 @@ Before reading calibrated values, you need to call the ``setXXrange()`` function
 
 .. function:: void setRedRange(uint16_t low, uint16_t high)
     
-    Sets the range of possible red values used for calibrating raw values.
+    Sets the range of possible red values for raw readings
 
-    Calibrated Red Reading = (Red Raw - Red Low) / (Red High - Red Low)
-
-    If this function is not called, ``readRedNorm()`` returns 0;
+    If this function is not called, ``readRedNorm()`` returns 0
 
     :param low: lower bound of readings for Red channel
 
@@ -146,11 +150,9 @@ Before reading calibrated values, you need to call the ``setXXrange()`` function
 
 .. function:: void setGreenRange(uint16_t low, uint16_t high)
     
-    Sets the range of possible green values used for calibrating raw values.
+    Sets the range of possible green values for raw readings
 
-    Calibrated Green Reading = (Green Raw - Green Low) / (Green High - Green Low)
-
-    If this function is not called, ``readGreenNorm()`` returns 0;
+    If this function is not called, ``readGreenNorm()`` returns 0
 
     :param low: lower bound of readings for Green channel
 
@@ -158,68 +160,58 @@ Before reading calibrated values, you need to call the ``setXXrange()`` function
 
 .. function:: void setBlueRange(uint16_t low, uint16_t high)
     
-    Sets the range of possible blue values used for calibrating raw values.
+    Sets the range of possible blue values for raw readings
 
-    Calibrated Blue Reading = (Blue Raw - Blue Low) / (Blue High - Blue Low)
-
-    If this function is not called, ``readBlueNorm()`` returns 0;
+    If this function is not called, ``readBlueNorm()`` returns 0
 
     :param low: lower bound of readings for Blue channel
 
     :param high: upper bound of readings for Blue channel
 
-After calling these functions, you can use the ``readXXNorm()`` functions.
+After calling these functions, you can use the ``readXXNorm()`` functions to read normalised readings
 
-.. function:: float readClearCal(bool blocking = true)
+.. function:: float readClearNorm(bool blocking = true)
 
-    Returns calibrated clear reading from sensor.
-
-    Calibrated Clear Reading = (Clear Raw - Clear Low) / (Clear High - Clear Low)
+    Returns normalised clear reading from sensor.
 
     :param blocking: Block function from returning a value until a new reading is obtained. Defaults to ``true``
 
     :returns:
 
-        * if ``setClearRange()`` has been called, calibrated clear reading from 0 to 1
+        * if ``setClearRange()`` has been called, normalised clear reading from 0 to 1
         * -1 otherwise
 
-.. function:: float readRedCal(bool blocking = true)
+.. function:: float readRedNorm(bool blocking = true)
     
-    Returns calibrated red reading from sensor.
-
-    Calibrated Red Reading = (Red Raw - Red Low) / (Red High - Red Low)
+    Returns normalised red reading from sensor.
 
     :param blocking: Block function from returning a value until a new reading is obtained. Defaults to ``true``
 
     :returns:
 
-        * if ``setRedRange()`` has been called, calibrated red reading from 0 to 1
+        * if ``setRedRange()`` has been called, normalised red reading from 0 to 1
         * -1 otherwise
 
-.. function:: float readGreenCal(bool blocking = true)
+.. function:: float readGreenNorm(bool blocking = true)
     
-    Returns calibrated green reading from sensor.
-
-    Calibrated Green Reading = (Green Raw - Green Low) / (Green High - Green Low)
+    Returns normalised green reading from sensor.
 
     :param blocking: Block function from returning a value until a new reading is obtained. Defaults to ``true``
 
     :returns:
 
-        * if ``setGreenRange()`` has been called, calibrated green reading from 0 to 1
+        * if ``setGreenRange()`` has been called, normalised green reading from 0 to 1
         * -1 otherwise
 
 .. function:: float readBlueNorm()
     
-    Returns calibrated blue reading from sensor.
-
-    Calibrated Blue Reading = (Blue Raw - Blue Low) / (Blue High - Blue Low)
+    Returns normalised blue reading from sensor.
 
     :param blocking: Block function from returning a value until a new reading is obtained. Defaults to ``true``
 
     :returns:
 
-        * if ``setBlueRange()`` has been called, calibrated blue reading from 0 to 1
+        * if ``setBlueRange()`` has been called, normalised blue reading from 0 to 1
         * -1 otherwise
 
 Reading HSV Values

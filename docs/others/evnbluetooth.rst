@@ -43,7 +43,7 @@ This only needs to be done once to set the proper settings.
 Constructor
 -----------
 
-.. class:: EVNBluetooth(uint8_t serial_port, uint32_t baud_rate = 9600, char* name = (char*)"EVN Bluetooth", uint8_t mode = BT_REMOTE, char* addr = NULL);
+.. class:: EVNBluetooth(uint8_t serial_port, uint32_t baud_rate = 9600, char* name = (char*)"EVN Bluetooth", uint8_t mode = BT_REMOTE, char* addr = nullptr);
 
     :param serial_port: Serial port the sensor is connected to (1 or 2)
 
@@ -56,7 +56,7 @@ Constructor
         * ``BT_HOST``: Host Mode
         * ``BT_REMOTE``: Remote Mode
 
-    :param addr: Bluetooth Address of the device to connect to. This is only used in Host Mode. Store in a char array, or cast to ``char*`` before passing into this constructor.
+    :param addr: Bluetooth Address of the device to connect to. This is only used in Host Mode. Store in a char array, or cast to ``char*`` before passing into this constructor. Defaults to ``nullptr``.
 
     .. code-block:: cpp
         

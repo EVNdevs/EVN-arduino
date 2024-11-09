@@ -165,8 +165,6 @@ EVN Alpha uses a W25Q128JVSIQ 16MB SPI flash chip for program storage and read-o
 
 Since this is much larger than most compiled programs will use, you can use part of the flash memory as an `onboard filesystem`_.
 
-.. _onboard filesystem: https://arduino-pico.readthedocs.io/en/latest/fs.html 
-
 Disassembly
 -----------
 
@@ -178,12 +176,11 @@ RP2040 Hardware Utilised by EVN Libraries
 
 PWM
 """"
-
 The RP2040 has 16 PWM channels (split into 8 pairs called "slices" by Raspberry Pi). These channels have many functions, but the most common is to generate PWM outputs using ``analogWrite()``.
 
 However, these channels are split between the RP2040's 30 pins, and some are used to control the onboard motor drivers.
 
-The EVNMotor library uses slices PWM2, PWM3, PWM5 and PWM6 for motor ports 1-4 respectively.
+The ``EVNMotor`` library uses slices PWM2, PWM3, PWM5 and PWM6 for motor ports 1-4 respectively.
 
 Pins 10-11 are also connected to PWM6, so they cannot be used for ``analogWrite()`` if motor port 4 is simultaneously active.
 
@@ -191,35 +188,27 @@ However, the remaining output-capable pins (GP0-3 and 8-9) are connected to othe
 
 Timers
 """"""
-
-The EVNAlpha, EVNMotor and EVNServo libraries use hardware timers 1 and 2 to automatically update control loops for the motors and servos, without any end-user code.
+The ``EVNAlpha``, ``EVNMotor``and ``EVNServo`` libraries use hardware timers 1 and 2 to automatically update control loops for the motors and servos, without any end-user code.
 
 This leaves hardware timers 0 and 3 completely free for the end user. Users may also be able to share timers 1 and 2 with our libraries, as they are not fully utilised.
 
 PIO
 """"
+Each ``EVNServo``, ``EVNContinuousServo`` or ``EVNRGBLED`` object consumes one of the RP2040's 8 Programmable IO (PIO) state machines.
 
-Each EVNServo, EVNContinuousServo or EVNRGBLED object consumes one of the RP2040's 8 Programmable IO (PIO) state machines.
-
-For more information, refer to the `RP2040 Datasheet`_.
-
-.. _page: https://arduino-pico.readthedocs.io/en/latest/piouart.html
-.. _RP2040 Datasheet: https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf
-
-ADC
-""""
+ADC (Analog Pins)
+"""""""""""""""""
 The RP2040 has 4 pins with built-in ADC support (GP26-29), but these functions are not supported on EVN Alpha, as those 4 pins are internally connected to the motor drivers and cannot be repurposed.
-However, analog values can still be measured using our Analog Multiplexer Standard Peripheral.
+However, analog values can still be measured using our 4-Channel ADC Standard Peripheral.
 
 Second Core
 """""""""""
-
 At present, the following classes use the second core and are tested under the assumption that nothing else is running on the second core:
 
-* EVNMotor
-* EVNDrivebase
-* EVNServo
-* EVNContinuousServo
+* ``EVNMotor``
+* ``EVNDrivebase``
+* ``EVNServo``
+* ``EVNContinuousServo``
 
 You may be able to use the second core, but perfect operation of these classes will not be guaranteed (although we hope to achieve this one day).
 
@@ -229,12 +218,33 @@ Spinlocks are a hardware mechanism used to communicate and protect memory access
 
 On the RP2040, these are particularly valuable for multicore communication as it does not support atomic operations on variables (another common mechanism for core synchronization).
 
-The RP2040 has 32 spinlocks, but 8 of them have been reserved exclusively for libraries/end-user code.
+The RP2040 has 32 spinlocks, 16 of which are reserved for the user.
 
-The following classes use part of these 8 spinlocks:
+8 of these spinlocks are a striped range which can be shared by multiple classes, suitable for implementing memory barriers between the 2 cores.
 
-* EVNMotor and EVNDrivebase (shared): 2
-* EVNServo and EVNContinuousServo (shared): 2
-* EVNAlpha: 1
+The other 8 are available for exclusive non-shared use by classes/end-user code. For the EVN libraries, we use these to do basic scheduling of certain tasks between the cores.
+
+The following classes use some of these 16 spinlocks:
+
+* ``EVNMotor`` and ``EVNDrivebase`` (shared): 1 striped, 1 exclusive
+* ``EVNServo`` and ``EVNContinuousServo`` (shared): 1 striped, 1 exclusive
+* ``EVNRGBLED``: 1 striped
+* ``EVNAlpha``: 1 exclusive
 
 The spinlocks are shared across all instances of the given class(es).
+
+Direct Memory Access (DMA)
+""""""""""""""""""""""""""
+The RP2040 has 12 DMA channels, which can be used to offload memory-transfer related tasks from the main cores.
+
+DMA channels also have the ability to generate interrupts (DMA_IRQ_0 or DMA_IRQ_1).
+
+All instances of ``EVNRGBLED`` share one of the RP2040's 12 DMA channels and take full control of the DMA_IRQ_0 interrupt.
+
+More information
+""""""""""""""""
+For more information, refer to the `RP2040 Datasheet`_.
+
+.. _onboard filesystem: https://arduino-pico.readthedocs.io/en/latest/fs.html 
+.. _page: https://arduino-pico.readthedocs.io/en/latest/piouart.html
+.. _RP2040 Datasheet: https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf

@@ -20,11 +20,9 @@ By default, the button output is also linked to 2 other functions. Both can disa
 
 EVN Alpha has 2 TCA9548A I2C multiplexers, 1 on each I2C bus. This allows users to connect multiple I2C devices with the same I2C address without worrying about address clashing. However, users must set the port (1-16) for a given peripheral before communicating with it. EVNAlpha includes functions for port selection and de-selection to ease this process.
 
-.. note::
-    Our EVN-specific peripheral libaries (e.g. EVNColourSensor) do the port selection automatically, so port selection functions are not needed for them.
+.. note:: Our EVN-specific peripheral libaries (e.g. EVNColourSensor) do the port selection automatically, so port selection functions are not needed for them.
 
-.. note::
-    For Ports 9-16, 3rd party libraries and end-user code have to use Wire1 to interface with their sensors, as these ports are connected to the I2C1 bus.
+.. note:: For Ports 9-16, 3rd party libraries and end-user code have to use Wire1 to interface with their sensors, as these ports are connected to the I2C1 bus.
 
 .. class:: EVNAlpha(uint8_t mode = BUTTON_TOGGLE, bool link_led = true, bool link_movement = false, bool button_invert = false, uint32_t i2c_freq = 100000)
     

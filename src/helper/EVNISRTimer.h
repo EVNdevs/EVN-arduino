@@ -1,58 +1,56 @@
 #ifndef EVNISRTimer_h
 #define EVNISRTimer_h
 #include <Arduino.h>
-#include <stdio.h>
 #include "pico/stdlib.h"
-#include "pico/time.h"
 
-class EVNISRTimer0
+#define CORE0_TIMER_NUM 1
+#define CORE1_TIMER_NUM 2
+
+class EVNISRTimer
 {
 public:
-    static const uint8_t CORE0_TIMER_NUM = 1;
-    EVNISRTimer0() {};
+    EVNISRTimer(uint8_t timer_num)
+    {
+        _timer_num = timer_num;
+    };
 
     void begin()
     {
         if (!_started)
         {
+            _pool = alarm_pool_create(_timer_num, 16);
+
+            //set timer interrupts to be lower priority than pin change interrupts
+            switch (_timer_num)
+            {
+            case 0:
+                irq_set_priority(TIMER_IRQ_0, 0xC0);
+                break;
+            case 1:
+                irq_set_priority(TIMER_IRQ_1, 0xC0);
+                break;
+            case 2:
+                irq_set_priority(TIMER_IRQ_2, 0xC0);
+                break;
+            case 3:
+                irq_set_priority(TIMER_IRQ_3, 0xC0);
+                break;
+            }
+
             _started = true;
-            pool = alarm_pool_create(CORE0_TIMER_NUM, 16);
-            irq_set_priority(TIMER_IRQ_1, 0xC0);
         }
     };
 
-    static repeating_timer_t& sharedISRTimer(uint8_t timer_no) { static EVNISRTimer0 shared; shared.begin(); return shared.timers[timer_no]; }
-    static alarm_pool_t* sharedAlarmPool() { static EVNISRTimer0 shared; shared.begin(); return shared.pool; }
+    repeating_timer_t& sharedISRTimer(uint8_t idx) { this->begin(); return _timers[idx]; }
+    alarm_pool_t* sharedAlarmPool() { this->begin(); return _pool; }
 
 private:
-    static alarm_pool_t* pool;
-    static repeating_timer_t timers[16];
-    static bool _started;
+    alarm_pool_t* _pool = nullptr;
+    repeating_timer_t _timers[16] = {};
+    volatile bool _started = false;
+    volatile uint8_t _timer_num;
 };
 
-class EVNISRTimer1
-{
-public:
-    static const uint8_t CORE1_TIMER_NUM = 2;
-
-    EVNISRTimer1() {};
-    void begin()
-    {
-        if (!_started)
-        {
-            _started = true;
-            pool = alarm_pool_create(CORE1_TIMER_NUM, 16);
-            irq_set_priority(TIMER_IRQ_2, 0xC0);
-        }
-    };
-
-    static repeating_timer_t& sharedISRTimer(uint8_t timer_no) { static EVNISRTimer1 shared; shared.begin(); return shared.timers[timer_no]; }
-    static alarm_pool_t* sharedAlarmPool() { static EVNISRTimer1 shared; shared.begin(); return shared.pool; }
-
-private:
-    static alarm_pool_t* pool;
-    static repeating_timer_t timers[16];
-    static bool _started;
-};
+extern EVNISRTimer EVNISRTimer0, EVNISRTimer1;
 
 #endif

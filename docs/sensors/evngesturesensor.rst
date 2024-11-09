@@ -23,6 +23,26 @@ SCL   SCL         I2C Serial Clock
  --   INT         Not Connected
 ====  ==========  ===========
 
+Usage
+--------------
+
+While this sensor has 3 functions (Gesture, Colour, Proximity), not all of them cannot be used simultaneously.
+
+* When Gesture Mode is enabled, the Colour and Proximity readings must be disabled.
+* When Colour and Proximity Modes are enabled, Gesture Mode must be disabled.
+
+For convenience, the library does the following:
+
+* ``setGestureMode(true)`` automatically **disables** Proximity and Colour Mode
+* ``setColourMode(true)`` automatically **disables** Gesture Mode
+* ``setProximityMode(true)`` automatically **disables** Gesture Mode
+* By default, Gesture Mode is enabled, with Colour Mode and Proximity Mode disabled
+
+.. note::
+
+    When Gesture Mode is disabled, the ``gestureDetected()`` and non-blocking ``readGesture()`` will not work. 
+    However, blocking ``readGesture()`` will still be fully functional.
+
 Constructor
 -----------
 
@@ -36,6 +56,8 @@ Functions
 .. function:: bool begin()
 
     Initializes gesture sensor. Call this function before using the other functions.
+
+    By default, Gesture Mode is enabled, with Colour Mode and Proximity Mode disabled.
 
     :returns: Boolean indicating whether the sensor was successfully initialized. If ``false`` is returned, all other functions will return 0.
 
@@ -71,17 +93,21 @@ The function outputs can be evaluated against numbers or their written versions 
         }
     }
 
+To enable/disable Gesture Mode, use ``setGestureMode()``.
+
 .. function:: uint8_t readGesture(bool blocking = false, uint32_t timeout_ms = 5000)
 
     The function starts by checking if the start of a gesture has been detected by the sensor.
 
     If ``blocking`` is ``false`` and no gesture start (i.e. no movement) has been detected, ``GESTURE_NONE`` will be returned.
-    But if ``blocking`` is ``true``, the function will continue waiting for a gesture start until its runtime has exceeded ``timeout_ms``.
+    If ``blocking`` is ``true``, the function will continue waiting for a gesture start until its runtime has exceeded ``timeout_ms``.
 
     Once a gesture start is obtained, the function will continuously read the sensor data until the gesture ends or is deemed invalid.
     For example, if a human hand enters the sensor's view but hovers around the sensor without exiting, it is invalid.
 
     The gesture is then returned. Invalid gestures are returned as ``GESTURE_NONE``.
+
+    When Gesture Mode is disabled, only blocking reads (where ``blocking`` is set to ``true``) will work.
 
     :param blocking: Boolean indicating whether to wait for new gesture to begin. Defaults to ``false``
     :param timeout_ms: Time the sensor should wait for a new gesture before returning when ``blocking`` is ``true``  (in milliseconds). Defaults to 5000
@@ -89,7 +115,8 @@ The function outputs can be evaluated against numbers or their written versions 
 
 .. function:: uint8_t readGestureUpDown(bool blocking = false, uint32_t timeout_ms = 5000)
 
-    Same as ``readGesture``, but only returns ``GESTURE_NONE``, ``GESTURE_UP`` or ``GESTURE_DOWN``. Ensures that diagonal gestures will be not returned as ``GESTURE_LEFT`` or ``GESTURE_RIGHT``.
+    Same as ``readGesture``, but only returns ``GESTURE_NONE``, ``GESTURE_UP`` or ``GESTURE_DOWN``. 
+    Ensures that diagonal gestures will be not returned as ``GESTURE_LEFT`` or ``GESTURE_RIGHT``.
 
     :param blocking: Boolean indicating whether to wait for new gesture to begin. Defaults to ``false``
     :param timeout_ms: Time the sensor should wait for a new gesture before returning when ``blocking`` is ``true``  (in milliseconds). Defaults to 5000
@@ -97,7 +124,8 @@ The function outputs can be evaluated against numbers or their written versions 
 
 .. function:: uint8_t readGestureLeftRight(bool blocking = false, uint32_t timeout_ms = 5000)
 
-    Same as ``readGesture``, but only returns ``GESTURE_NONE``, ``GESTURE_LEFT`` or ``GESTURE_RIGHT``. Ensures that diagonal gestures will be not returned as ``GESTURE_UP`` or ``GESTURE_DOWN``.
+    Same as ``readGesture``, but only returns ``GESTURE_NONE``, ``GESTURE_LEFT`` or ``GESTURE_RIGHT``. 
+    Ensures that diagonal gestures will be not returned as ``GESTURE_UP`` or ``GESTURE_DOWN``.
 
     :param blocking: Boolean indicating whether sensor should wait for new gesture to begin. Defaults to false
     :param timeout_ms: Time the sensor should wait for a new gesture before returning when ``blocking`` is ``true``  (in milliseconds). Defaults to 5000
@@ -105,24 +133,36 @@ The function outputs can be evaluated against numbers or their written versions 
 
 .. function:: bool gestureDetected()
 
+    Returns whether new gesture movement has been detected.
+
+    Does not work when Gesture Mode is disabled.
+
     :returns: Boolean indicating whether the start of a gesture has been detected by the sensor
 
 Proximity Detection
 """""""""""""""""""
+
+To enable/disable Proximity Mode, use ``setProximityMode()``.
 
 .. function:: uint8_t readProximity(bool blocking = true)
 
     Returns proximity reading of any object within sensor's view to the sensor (from 0-255). A higher value indicates that the object is closer to the sensor, as readings are
     based on the intensity of infrared light emitted by the sensor being reflected back into the sensor.
 
+    Does not work when Proximity Mode is disabled.
+
     :returns: Proximity reading (0-255)
 
 RGBC Colour Detection
 """""""""""""""""""""
 
+To enable/disable Colour Mode, use ``setColourMode()``.
+
 .. function:: uint16_t readClear(bool blocking = true)
 
     Returns clear light reading from sensor.
+
+    Does not work when Colour Mode is disabled.
 
     :returns: Clear reading
 
@@ -130,17 +170,23 @@ RGBC Colour Detection
 
     Returns red light reading from sensor.
 
+    Does not work when Colour Mode is disabled.
+
     :returns: Red reading
 
 .. function:: uint16_t readGreen(bool blocking = true)
 
     Returns green light reading from sensor.
 
+    Does not work when Colour Mode is disabled.
+
     :returns: Green reading
 
 .. function:: uint16_t readBlue(bool blocking = true)
 
     Returns clear blue reading from sensor.
+
+    Does not work when Colour Mode is disabled.
 
     :returns: Blue reading
 
@@ -152,7 +198,16 @@ Sensor Settings
 .. function:: void setWait(bool enable)
 
 .. function:: void setGestureMode(bool enable)
+
+    Enable/disable Gesture Mode.
+    If ``enable`` is ``true``, this will disable Colour Mode and Proximity Mode as well.
+
+    :param enable: Whether Gesture Mode should be enabled
+
 .. function:: bool getGestureMode()
+
+    :returns: Whether Gesture Mode is enabled
+
 .. function:: void setGestureLED(led_curr current)
 .. function:: void setGestureGain(gesture_gain gain)
 .. function:: void setGesturePulseCount(uint8_t pulse_count)
@@ -163,14 +218,32 @@ Sensor Settings
 .. function:: void setGestureDimensions(gesture_dims dims)
 
 .. function:: void setProximityMode(bool enable)
+
+    Enable/disable Proximity Mode.
+    If ``enable`` is ``true``, this will disable Gesture Mode as well.
+
+    :param enable: Whether Proximity Mode should be enabled
+
 .. function:: bool getProximityMode()
+
+    :returns: Whether Proximity Mode is enabled
+
 .. function:: void setProximityGain(proximity_gain gain)
 .. function:: void setProximityLED(led_curr current)
 .. function:: void setProximityPulseCount(uint8_t pulse_count)
 .. function:: void setProximityPulseLength(pulse_len pulse_length)
     
 .. function:: void setColourMode(bool enable)
+
+    Enable/disable Colour Mode.
+    If ``enable`` is ``true``, this will disable Gesture Mode as well.
+
+    :param enable: Whether Colour Mode should be enabled
+
 .. function:: bool getColourMode()
+
+    :returns: Whether Colour Mode is enabled
+
 .. function:: void setColourGain(colour_gain gain)
-.. function:: uint16_t getColourIntegrationCycles()
 .. function:: void setColourIntegrationCycles(uint16_t int_cycles)
+.. function:: uint16_t getColourIntegrationCycles()

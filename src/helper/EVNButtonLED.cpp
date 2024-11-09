@@ -30,9 +30,9 @@ void EVNButtonLED::begin()
 		pinMode(PIN_LED, OUTPUT_8MA);
 		button.spin_lock = spin_lock_init(spin_lock_claim_unused(true));
 		if (rp2040.cpuid() == 0)
-			alarm_pool_add_repeating_timer_ms(EVNISRTimer0::sharedAlarmPool(), UPDATE_INTERVAL_MS, update, NULL, &EVNISRTimer0::sharedISRTimer(2));
+			alarm_pool_add_repeating_timer_ms(EVNISRTimer0.sharedAlarmPool(), UPDATE_INTERVAL_MS, update, nullptr, &EVNISRTimer0.sharedISRTimer(2));
 		else
-			alarm_pool_add_repeating_timer_ms(EVNISRTimer1::sharedAlarmPool(), UPDATE_INTERVAL_MS, update, NULL, &EVNISRTimer1::sharedISRTimer(2));
+			alarm_pool_add_repeating_timer_ms(EVNISRTimer1.sharedAlarmPool(), UPDATE_INTERVAL_MS, update, nullptr, &EVNISRTimer1.sharedISRTimer(2));
 
 		button.started = true;
 	}

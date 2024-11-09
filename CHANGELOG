@@ -1,3 +1,29 @@
+1.1.1 (9/11/24)
+
+-- Features --
+
+EVNDrivebase: drivePct() function has been added! See docs for more info. straight() and curveXXX() functions should also have greater accuracy upon completion.
+
+-- Bugfixes --
+
+EVNDrivebase: Fixed crucial bugs where straight and curveXXX functions would fail to complete or glitch for several seconds with major incorrect movements
+
+EVNColourSensor: In docs, some functions were named incorrectly. They have been rectified since.
+
+1.1.0 (22/10/24)
+
+-- Bugfixes --
+
+EVNGestureSensor: Fixed bug where colour readings were accidentally constrained to 8-bit value. 
+
+EVNGestureSensor: Discovered sensor issue where gesture mode causes colour and proximity modes to fail under certain conditions. This is not a bug but rather part of the sensor's design. Docs have been updated to communicate this more clearly and library has been updated for more convenience when switching between modes.
+
+-- Features --
+
+EVNRGBLED, EVNServo, EVNContinuousServo: end() function added. Calling this function releases any PIO state machines consumed by the objects.
+
+EVNRGBLED: This class now uses the RP2040's DMA peripherals to transfer data to the RGB LEDs, greatly reducing the execution time for update() on the main CPU core.
+
 1.0.2 (22/09/24)
 
 -- Bugfixes --
