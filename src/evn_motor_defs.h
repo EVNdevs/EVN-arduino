@@ -35,21 +35,19 @@
 #define NXT_LARGE_ACCEL         155 * 600
 #define NXT_LARGE_DECEL         155 * 600
 
-//TUNING FOR EVN MOTOR CLASS
-#define USER_RUN_DEGREES_MIN_LOOP_COUNT     1
-#define USER_RUN_DEGREES_MIN_ERROR_DEG      0.5
+//TUNING FOR EVNMOTOR CLASS
+#define USER_RUN_DEGREES_MIN_ERROR_MOTOR_DEG    0.5
 
-//TUNING FOR EVN DRIVEBASE CLASS
-#define USER_DRIVE_POS_MIN_LOOP_COUNT       2
-#define USER_DRIVE_POS_MIN_ERROR_MOTOR_DEG  2
+//TUNING FOR EVNDRIVEBASE CLASS
+#define USER_DRIVE_POS_MIN_ERROR_MOTOR_DEG      2
 
-#define DRIVEBASE_KP_SPEED                  12.5
-#define DRIVEBASE_KI_SPEED                  0.000125
-#define DRIVEBASE_KD_SPEED                  12.5
+#define DRIVEBASE_KP_SPEED                  6.25
+#define DRIVEBASE_KI_SPEED                  0.0000625
+#define DRIVEBASE_KD_SPEED                  3.125
 
-#define DRIVEBASE_KP_TURN_RATE              6000
-#define DRIVEBASE_KI_TURN_RATE              0.06
-#define DRIVEBASE_KD_TURN_RATE              24000
+#define DRIVEBASE_KP_TURN_RATE              6.25
+#define DRIVEBASE_KI_TURN_RATE              0.00003125
+#define DRIVEBASE_KD_TURN_RATE              12.5
 
 #define USER_SPEED_ACCEL                    500
 #define USER_SPEED_DECEL                    500

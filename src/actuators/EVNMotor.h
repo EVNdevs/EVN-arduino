@@ -83,7 +83,6 @@ typedef struct
 	float target_pos;
 	float error;
 	float output;
-	uint8_t counter;
 	uint32_t start_time_us;
 	bool stalled;
 } pid_control_t;
@@ -138,8 +137,6 @@ typedef struct
 	float speed_output;
 	float target_motor_left_dps;
 	float target_motor_right_dps;
-	uint8_t counter;
-
 } drivebase_state_t;
 
 class EVNMotor
@@ -399,12 +396,7 @@ protected:
 			{
 				if (!pidArg->hold)
 				{
-					if (fabs(pidArg->end_pos - pos) <= USER_RUN_DEGREES_MIN_ERROR_DEG)
-						pidArg->counter++;
-					else
-						pidArg->counter = 0;
-
-					if (pidArg->counter >= USER_RUN_DEGREES_MIN_LOOP_COUNT)
+					if (fabs(pidArg->end_pos - pos) <= USER_RUN_DEGREES_MIN_ERROR_MOTOR_DEG)
 					{
 						stopAction_static(pidArg, encoderArg, pos, dps);
 						return;
@@ -921,13 +913,14 @@ private:
 			if (((arg->target_turn_rate >= 0 && arg->target_angle >= arg->current_angle) || (arg->target_turn_rate <= 0 && arg->target_angle <= arg->current_angle)) &&
 				((arg->target_speed >= 0 && arg->target_distance >= arg->current_distance) || (arg->target_speed <= 0 && arg->target_distance <= arg->current_distance)))
 			{
-				//angle error -> difference between the robot's current angle and the angle it should travel at
+				//angle error -> difference between the robot's current angle and the angle it should travel at (converted to motor degrees)
 				arg->angle_error = arg->target_angle - arg->current_angle;
 				if (arg->angle_error > 180)
 					arg->angle_error -= 360;
 				if (arg->angle_error < -180)
 					arg->angle_error += 360;
-				arg->angle_error /= 180;
+
+				arg->angle_error = arg->angle_error / arg->wheel_dia * arg->axle_track;
 
 				float ki = arg->turn_rate_pid->getKi();
 				if (!arg->drive_position)
@@ -1145,17 +1138,12 @@ private:
 				if ((old_sign_from_target_angle != new_sign_from_target_angle) || no_change_to_target_angle)
 					arg->target_angle = arg->end_angle;
 
-				//ideally, counter should only increment when both errors are in acceptable range
+				//ideally, we should only stop when both errors are in acceptable range
 				//however, our control scheme might only hit both targets SOME of the time
 				//so we count it as complete when the motor is already targeting the angle and distance endpoints, and either error is acceptable
 				if (arg->target_angle == arg->end_angle && arg->target_distance == arg->end_distance
 					&& (fabs(arg->end_angle - arg->current_angle) <= arg->max_angle_error
 						|| fabs(arg->end_distance - arg->current_distance) <= arg->max_distance_error))
-					arg->counter++;
-				else
-					arg->counter = 0;
-
-				if (arg->counter >= USER_DRIVE_POS_MIN_LOOP_COUNT)
 					stopAction_static(arg);
 			}
 		}
