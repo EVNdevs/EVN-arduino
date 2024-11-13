@@ -256,7 +256,6 @@ void EVNMotor::runPWM(float duty_cycle_pct) volatile
 	_pid_control.run_speed = false;
 	_pid_control.run_time = false;
 	_pid_control.run_pos = false;
-	_pid_control.hold = false;
 
 	runPWM_static(&_pid_control, duty_cycle_pctc);
 
@@ -282,7 +281,6 @@ void EVNMotor::runSpeed_unsafe(float dps) volatile
 	_pid_control.run_pos = false;
 	_pid_control.run_time = false;
 	_pid_control.run_speed = true;
-	_pid_control.hold = false;
 }
 
 void EVNMotor::runPosition(float dps, float position, uint8_t stop_action, bool wait) volatile
@@ -298,7 +296,6 @@ void EVNMotor::runPosition(float dps, float position, uint8_t stop_action, bool 
 	_pid_control.run_pos = true;
 	_pid_control.run_time = false;
 	_pid_control.run_speed = false;
-	_pid_control.hold = false;
 
 	EVNCoreSync0.core0_exit();
 
@@ -341,7 +338,6 @@ void EVNMotor::runTime(float dps, uint32_t time_ms, uint8_t stop_action, bool wa
 	_pid_control.run_pos = false;
 	_pid_control.run_time = true;
 	_pid_control.run_speed = false;
-	_pid_control.hold = false;
 
 	EVNCoreSync0.core0_exit();
 
@@ -363,7 +359,6 @@ void EVNMotor::coast_unsafe() volatile
 void EVNMotor::hold_unsafe() volatile
 {
 	_pid_control.end_pos = getPosition_static(&_encoder);
-	_pid_control.target_dps = _pid_control.max_rpm * 3;
 	_pid_control.stop_action = STOP_HOLD;
 	stopAction_static(&_pid_control, &_encoder, getPosition_static(&_encoder), getDPS_static(&_encoder));
 }
@@ -659,6 +654,20 @@ float EVNDrivebase::radius_to_turn_rate(float speed, float radius) volatile
 	return fabs(speed) * 180 / (M_PI * radius);
 }
 
+void EVNDrivebase::stall_until_stopped() volatile
+{
+	if (!timerisr_enabled) return;
+
+	bool stop = false;
+
+	while (!stop)
+	{
+		EVNCoreSync0.core0_enter();
+		stop = db.stall_until_stop;
+		EVNCoreSync0.core0_exit();
+	}
+}
+
 void EVNDrivebase::drive(float speed, float turn_rate) volatile
 {
 	this->driveTurnRate(speed, turn_rate);
@@ -744,7 +753,11 @@ void EVNDrivebase::straight(float speed, float distance, uint8_t stop_action, bo
 
 	EVNCoreSync0.core0_exit();
 
-	if (wait) while (!this->completed());
+	if (wait)
+	{
+		while (!this->completed());
+		stall_until_stopped();
+	}
 }
 
 void EVNDrivebase::curve(float speed, float radius, float angle, uint8_t stop_action, bool wait) volatile
@@ -793,7 +806,11 @@ void EVNDrivebase::curveTurnRate(float speed, float turn_rate, float angle, uint
 
 	EVNCoreSync0.core0_exit();
 
-	if (wait) while (!this->completed());
+	if (wait)
+	{
+		while (!this->completed());
+		stall_until_stopped();
+	}
 }
 
 void EVNDrivebase::turn(float turn_rate, float degrees, uint8_t stop_action, bool wait) volatile
@@ -841,6 +858,8 @@ void EVNDrivebase::stop() volatile
 	stopAction_static(&db);
 
 	EVNCoreSync0.core0_exit();
+
+	stall_until_stopped();
 }
 
 void EVNDrivebase::coast() volatile
@@ -852,6 +871,8 @@ void EVNDrivebase::coast() volatile
 	stopAction_static(&db);
 
 	EVNCoreSync0.core0_exit();
+
+	stall_until_stopped();
 }
 
 void EVNDrivebase::hold() volatile
@@ -863,6 +884,8 @@ void EVNDrivebase::hold() volatile
 	stopAction_static(&db);
 
 	EVNCoreSync0.core0_exit();
+
+	stall_until_stopped();
 }
 
 bool EVNDrivebase::completed() volatile

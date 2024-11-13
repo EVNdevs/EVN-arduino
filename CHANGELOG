@@ -1,3 +1,19 @@
+1.1.3 (14/11/24)
+
+-- Bugfixes --
+
+EVNMotor: PID tunings for NXT and EV3 Motors improved. Hold is now much more stable as well, with lower settling time and less glitches.
+
+EVNDrivebase: 
+
+Previously, if drive functions were called right after the stop/coast/hold functions, EVNDrivebase would encounter sudden jerks, some of them prolonged.
+
+This occurs because the controllers are unable to properly control the motors mid-pause. This issue has been rectified with a "stop-check", which ensures that after stop commands are issued, the controller will not begin further commands until the motors have actually stopped.
+
+During the stop-check, EVNDrivebase can still receive commands from the user, but it will just start performing those commands when the stop-check is done. Drive-to-endpoint positions with wait enabled and stop/coast/hold functions will also stall the main core until the drivebase has paused or the stop check times out (conversely, drive forever, drive-to-endpoint with no wait enabled will not).
+
+The stop check thresholds and timeout values being configurable in src/evn_motor_defs.h. We hope this will significantly improve your EVN experience :)
+
 1.1.2 (10/11/24)
 
 -- Bugfixes --

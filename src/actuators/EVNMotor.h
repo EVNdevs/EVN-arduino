@@ -73,7 +73,6 @@ typedef struct
 	float end_pos;
 	bool run_time;
 	uint32_t run_time_ms;
-	bool hold;
 	uint8_t stop_action;
 
 	//LOOP
@@ -137,6 +136,8 @@ typedef struct
 	float speed_output;
 	float target_motor_left_dps;
 	float target_motor_right_dps;
+	bool stall_until_stop;
+	uint32_t stop_time;
 } drivebase_state_t;
 
 class EVNMotor
@@ -208,12 +209,12 @@ protected:
 
 	static bool position_control_enabled(volatile pid_control_t* arg)
 	{
-		return arg->run_pos || arg->hold;
+		return arg->run_pos;
 	}
 
 	static bool loop_control_enabled(volatile pid_control_t* arg)
 	{
-		return (arg->run_speed || arg->run_time || arg->run_pos || arg->hold);
+		return (arg->run_speed || arg->run_time || arg->run_pos);
 	}
 
 	static void velocity_update(volatile encoder_state_t* arg, uint32_t now)
@@ -290,6 +291,13 @@ protected:
 		//keep at most recent state
 		pidArg->target_dps_constrained = dps;
 
+		//reset PID controller, stop loop control
+		pidArg->pos_pid->reset();
+		pidArg->run_pwm = false;
+		pidArg->run_speed = false;
+		pidArg->run_pos = false;
+		pidArg->run_time = false;
+
 		//coast and brake stop functions based on DRV8833 datasheet
 		//hold uses position PID control, setting the current position as an endpoint
 		switch (pidArg->stop_action)
@@ -298,25 +306,19 @@ protected:
 			digitalWrite(pidArg->motora, LOW);
 			digitalWrite(pidArg->motorb, LOW);
 			pidArg->target_pos = pos;
-			pidArg->hold = false;
 			break;
 		case STOP_BRAKE:
 			digitalWrite(pidArg->motora, HIGH);
 			digitalWrite(pidArg->motorb, HIGH);
 			pidArg->target_pos = pos;
-			pidArg->hold = false;
 			break;
 		case STOP_HOLD:
-			pidArg->hold = true;
+			pidArg->target_dps_constrained = 0;
+			pidArg->target_pos = pidArg->end_pos;
+			pidArg->target_dps = 0;
+			pidArg->run_speed = true;
 			break;
 		}
-
-		//reset PID controller, stop loop control
-		pidArg->pos_pid->reset();
-		pidArg->run_pwm = false;
-		pidArg->run_speed = false;
-		pidArg->run_pos = false;
-		pidArg->run_time = false;
 	}
 
 	static float getPosition_static(volatile encoder_state_t* arg)
@@ -394,13 +396,10 @@ protected:
 
 			if (position_control_enabled(pidArg))
 			{
-				if (!pidArg->hold)
+				if (fabs(pidArg->end_pos - pos) <= USER_RUN_DEGREES_MIN_ERROR_MOTOR_DEG)
 				{
-					if (fabs(pidArg->end_pos - pos) <= USER_RUN_DEGREES_MIN_ERROR_MOTOR_DEG)
-					{
-						stopAction_static(pidArg, encoderArg, pos, dps);
-						return;
-					}
+					stopAction_static(pidArg, encoderArg, pos, dps);
+					return;
 				}
 
 				pidArg->run_dir = (pidArg->end_pos - pos > 0) ? DIRECT : REVERSE;
@@ -429,7 +428,6 @@ protected:
 			pidArg->target_dps_end_decel = decel_dps;
 			float signed_target_dps_end_decel = pidArg->target_dps_end_decel * ((pidArg->run_dir == DIRECT) ? 1 : -1);
 
-			float kp = pidArg->pos_pid->getKp();
 			float ki = pidArg->pos_pid->getKi();
 			float kd = pidArg->pos_pid->getKd();
 
@@ -487,9 +485,7 @@ protected:
 				}
 			}
 			else
-			{
 				pidArg->stalled = true;
-			}
 
 			pidArg->error = pidArg->target_pos - pos;
 
@@ -499,7 +495,6 @@ protected:
 			pidArg->output = pidArg->pos_pid->compute(pidArg->error);
 
 			//restore original gains
-			pidArg->pos_pid->setKp(kp);
 			pidArg->pos_pid->setKi(ki);
 			pidArg->pos_pid->setKd(kd);
 
@@ -749,6 +744,7 @@ private:
 	uint8_t clean_input_stop_action(uint8_t stop_action) volatile;
 	float scaling_factor_for_maintaining_radius(float speed, float turn_rate) volatile;
 	float radius_to_turn_rate(float speed, float radius) volatile;
+	void stall_until_stopped() volatile;
 
 	volatile drivebase_state_t db = {};
 	static volatile drivebase_state_t* dbArgs[MAX_DB_OBJECTS];
@@ -822,10 +818,10 @@ private:
 			arg->motor_right->coast_unsafe();
 			break;
 		case STOP_HOLD:
-			if (!arg->motor_left->_pid_control.hold)
-				arg->motor_left->hold_unsafe();
-			if (!arg->motor_right->_pid_control.hold)
-				arg->motor_right->hold_unsafe();
+			arg->motor_left->_pid_control.target_dps_constrained = 0;
+			arg->motor_right->_pid_control.target_dps_constrained = 0;
+			arg->motor_left->runSpeed_unsafe(0);
+			arg->motor_right->runSpeed_unsafe(0);
 			break;
 		}
 
@@ -833,6 +829,7 @@ private:
 		// but as of right now I have no way to get a good estimate
 		arg->target_speed_constrained = 0;
 		arg->target_turn_rate_constrained = 0;
+
 		arg->target_angle = arg->current_angle;
 		arg->target_distance = arg->current_distance;
 
@@ -841,6 +838,9 @@ private:
 
 		arg->drive = false;
 		arg->drive_position = false;
+
+		arg->stall_until_stop = true;
+		arg->stop_time = micros();
 	}
 
 	static float getDistance_static(volatile drivebase_state_t* arg)
@@ -851,6 +851,12 @@ private:
 	static float getAngle_static(volatile drivebase_state_t* arg)
 	{
 		return (arg->motor_right->getPosition_static(&arg->motor_right->_encoder) - arg->motor_left->getPosition_static(&arg->motor_left->_encoder)) * arg->wheel_dia / (2 * arg->axle_track);
+	}
+
+	static float motorsStopped_static(volatile drivebase_state_t* arg)
+	{
+		return (arg->motor_right->getDPS_static(&arg->motor_right->_encoder) <= USER_DRIVE_STOP_CHECK_THRESHOLD_DPS
+			&& arg->motor_left->getDPS_static(&arg->motor_left->_encoder) <= USER_DRIVE_STOP_CHECK_THRESHOLD_DPS);
 	}
 
 	static void pid_update(volatile drivebase_state_t* arg)
@@ -872,6 +878,14 @@ private:
 
 		arg->position_x += distance_travelled_in_last_loop * cos(arg->current_angle / 180 * M_PI);
 		arg->position_y += distance_travelled_in_last_loop * sin(arg->current_angle / 180 * M_PI);
+
+		if (arg->stall_until_stop)
+		{
+			if (motorsStopped_static(arg) || (now - arg->stop_time) > USER_DRIVE_STOP_CHECK_TIMEOUT_US)
+				arg->stall_until_stop = false;
+			else
+				return;
+		}
 
 		if (EVNAlpha::motorsEnabled() && arg->drive)
 		{
@@ -910,8 +924,8 @@ private:
 
 			// only run motors if target is "ahead" of the current position
 			// otherwise, wait for target to update itself
-			if (((arg->target_turn_rate >= 0 && arg->target_angle >= arg->current_angle) || (arg->target_turn_rate <= 0 && arg->target_angle <= arg->current_angle)) &&
-				((arg->target_speed >= 0 && arg->target_distance >= arg->current_distance) || (arg->target_speed <= 0 && arg->target_distance <= arg->current_distance)))
+			if (((arg->target_turn_rate >= 0 && (arg->target_angle - arg->current_angle) >= 0) || (arg->target_turn_rate <= 0 && (arg->current_angle - arg->target_angle) >= 0)) &&
+				((arg->target_speed >= 0 && (arg->target_distance - arg->current_distance) >= 0) || (arg->target_speed <= 0 && (arg->current_distance - arg->target_distance) >= 0)))
 			{
 				//angle error -> difference between the robot's current angle and the angle it should travel at (converted to motor degrees)
 				arg->angle_error = arg->target_angle - arg->current_angle;

@@ -12,8 +12,8 @@
 #define LEGO_PPR				180
 
 //TUNING FOR LEGO EV3 LARGE SERVO MOTOR
-#define KP_EV3_LARGE            0.35
-#define KI_EV3_LARGE	        0.00035
+#define KP_EV3_LARGE            0.25
+#define KI_EV3_LARGE	        0.0000125
 #define KD_MAX_EV3_LARGE	    2.45
 #define EV3_LARGE_MAX_RPM		155
 #define EV3_LARGE_ACCEL         155 * 600
@@ -21,15 +21,15 @@
 
 //TUNING FOR LEGO EV3 MEDIUM SERVO MOTOR
 #define KP_EV3_MED	            0.16
-#define KI_EV3_MED	            0.00016
+#define KI_EV3_MED	            0.000008
 #define KD_MAX_EV3_MED	        1.3
 #define EV3_MED_MAX_RPM			245
 #define EV3_MED_ACCEL           245 * 600
 #define EV3_MED_DECEL           245 * 600
 
 //TUNING FOR LEGO NXT LARGE SERVO MOTOR
-#define KP_NXT_LARGE	        0.35
-#define KI_NXT_LARGE	        0.00035
+#define KP_NXT_LARGE	        0.25
+#define KI_NXT_LARGE	        0.0000125
 #define KD_MAX_NXT_LARGE	    2.45
 #define NXT_LARGE_MAX_RPM		155
 #define NXT_LARGE_ACCEL         155 * 600
@@ -40,9 +40,11 @@
 
 //TUNING FOR EVNDRIVEBASE CLASS
 #define USER_DRIVE_POS_MIN_ERROR_MOTOR_DEG      2
+#define USER_DRIVE_STOP_CHECK_THRESHOLD_DPS     20
+#define USER_DRIVE_STOP_CHECK_TIMEOUT_US        500000
 
 #define DRIVEBASE_KP_SPEED                  6.25
-#define DRIVEBASE_KI_SPEED                  0.0000625
+#define DRIVEBASE_KI_SPEED                  0.00003125
 #define DRIVEBASE_KD_SPEED                  3.125
 
 #define DRIVEBASE_KP_TURN_RATE              6.25
