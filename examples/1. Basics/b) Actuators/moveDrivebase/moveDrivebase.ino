@@ -16,8 +16,8 @@ EVNAlpha board;
 //however, you can set link_movement to true to use the button as an enable/disable switch for motors and servos
 //to try this out, uncomment line 12 and comment line 10
 
-EVNMotor left(MOTOR_PORT_LEFT, EV3_LARGE);  //motor type can be NXT_LARGE, EV3_LARGE or MOTOR_CUSTOM
-EVNMotor right(MOTOR_PORT_RIGHT, EV3_LARGE);  //motor type can be NXT_LARGE, EV3_LARGE or MOTOR_CUSTOM
+EVNMotor left(MOTOR_PORT_LEFT, EV3_LARGE);  //motor type can be NXT_LARGE, EV3_LARGE or CUSTOM_MOTOR
+EVNMotor right(MOTOR_PORT_RIGHT, EV3_LARGE);  //motor type can be NXT_LARGE, EV3_LARGE or CUSTOM_MOTOR
 EVNDrivebase db(62.4, 170, &left, &right);
 
 void setup1()
