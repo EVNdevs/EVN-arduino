@@ -83,7 +83,7 @@ public:
         X64 = 0x03
     };
 
-    EVNColourSensor(uint8_t port, uint8_t integration_cycles = 1, gain gain = gain::X16) : EVNI2CDevice(port)
+    EVNColourSensor(uint8_t port, uint8_t integration_cycles = 1, gain gain = COLOUR_GAIN_X16) : EVNI2CDevice(port)
     {
         _addr = I2C_ADDR;
         _gain = gain;

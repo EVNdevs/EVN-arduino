@@ -19,14 +19,14 @@
 #define ENV_FILTER_X8       (EVNEnvSensor::filter::X8)
 #define ENV_FILTER_X16      (EVNEnvSensor::filter::X16)
 
-#define ENV_STANDBY_MS_0_5  (EVNEnvSensor::standby::MS_MS_0_5)
-#define ENV_STANDBY_MS_10   (EVNEnvSensor::standby::MS_MS_10)
-#define ENV_STANDBY_MS_20   (EVNEnvSensor::standby::MS_MS_20)
-#define ENV_STANDBY_MS_62_5 (EVNEnvSensor::standby::MS_MS_62_5)
-#define ENV_STANDBY_MS_125  (EVNEnvSensor::standby::MS_MS_125)
-#define ENV_STANDBY_MS_250  (EVNEnvSensor::standby::MS_MS_250)
-#define ENV_STANDBY_MS_500  (EVNEnvSensor::standby::MS_MS_500)
-#define ENV_STANDBY_MS_1000 (EVNEnvSensor::standby::MS_MS_1000)
+#define ENV_STANDBY_MS_0_5  (EVNEnvSensor::standby::MS_0_5)
+#define ENV_STANDBY_MS_10   (EVNEnvSensor::standby::MS_10)
+#define ENV_STANDBY_MS_20   (EVNEnvSensor::standby::MS_20)
+#define ENV_STANDBY_MS_62_5 (EVNEnvSensor::standby::MS_62_5)
+#define ENV_STANDBY_MS_125  (EVNEnvSensor::standby::MS_125)
+#define ENV_STANDBY_MS_250  (EVNEnvSensor::standby::MS_250)
+#define ENV_STANDBY_MS_500  (EVNEnvSensor::standby::MS_500)
+#define ENV_STANDBY_MS_1000 (EVNEnvSensor::standby::MS_1000)
 
 struct evn_env
 {
@@ -141,7 +141,7 @@ public:
         _addr = I2C_ADDR;
 
         _sampling_temp = sampling_temp;
-        _sampling_press = sampling_pres;
+        _sampling_pres = sampling_pres;
         _sampling_hum = sampling_hum;
         _filter = filter;
         _standby = standby;

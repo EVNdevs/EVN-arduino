@@ -110,9 +110,9 @@ public:
     //TODO: MAYBE explore low power mode and sample rate dividers
 
     EVNIMUSensor(uint8_t port,
-        data_rate data_rate = data_rate::HZ_92,
-        accel_range accel_range = accel_range::G_4,
-        gyro_range gyro_range = gyro_range::DPS_500,
+        data_rate data_rate = IMU_HZ_92,
+        accel_range accel_range = IMU_ACCEL_G_4,
+        gyro_range gyro_range = IMU_GYRO_DPS_500,
         float gx_offset = 0, float gy_offset = 0, float gz_offset = 0,
         float ax_low = 0, float ax_high = 0, float ay_low = 0,
         float ay_high = 0, float az_low = 0, float az_high = 0)

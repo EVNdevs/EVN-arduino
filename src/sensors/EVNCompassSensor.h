@@ -267,9 +267,9 @@ public:
                 value = read8(hmc_reg::MODE);
                 value &= 0b11111100;
                 if (enable)
-                    value |= hmc_mode::CONTINUOUS;
+                    value |= (uint8_t)hmc_mode::CONTINUOUS;
                 else
-                    value |= hmc_mode::STANDBY;
+                    value |= (uint8_t)hmc_mode::STANDBY;
                 write8(hmc_reg::MODE, value);
             }
             else
@@ -278,9 +278,9 @@ public:
                 value = read8(qmc_reg::CONFIG);
                 value &= 0b11111100;
                 if (enable)
-                    value |= qmc_mode::CONTINUOUS;
+                    value |= (uint8_t)qmc_mode::CONTINUOUS;
                 else
-                    value |= qmc_mode::STANDBY;
+                    value |= (uint8_t)qmc_mode::STANDBY;
                 write8(qmc_reg::CONFIG, value);
             }
         }
