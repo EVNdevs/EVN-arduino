@@ -51,6 +51,15 @@ public:
         mutex_enter_blocking(&_mutex);
     };
 
+    void core0_enter_force()
+    {
+        //grabs mutex without ensuring timerisr has executed once
+
+        if (!_started) return;
+
+        mutex_enter_blocking(&_mutex);
+    };
+
     void core0_exit()
     {
         //WARNING: assumes that core0_enter has been called
