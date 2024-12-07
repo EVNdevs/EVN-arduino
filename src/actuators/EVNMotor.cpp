@@ -9,13 +9,13 @@ volatile drivebase_state_t* EVNDrivebase::dbArgs[] = { };
 volatile bool EVNDrivebase::dbs_started[] = { };
 volatile bool EVNDrivebase::timerisr_enabled = false;
 
-EVNMotor::EVNMotor(uint8_t port, uint8_t motortype, uint8_t motor_dir, uint8_t enc_dir)
+EVNMotor::EVNMotor(uint8_t port, uint8_t motor_type, uint8_t motor_dir, uint8_t enc_dir)
 {
 	// clean inputs
 	motor_dir = constrain(motor_dir, 0, 1);
 	enc_dir = constrain(enc_dir, 0, 1);
 	_pid_control.port = constrain(port, 1, 4);
-	motortype = constrain(motortype, 0, 3);
+	motor_type = constrain(motor_type, 0, 3);
 
 	// set pins
 	switch (_pid_control.port)
@@ -67,9 +67,9 @@ EVNMotor::EVNMotor(uint8_t port, uint8_t motortype, uint8_t motor_dir, uint8_t e
 	}
 
 	// configure settings according to motor type
-	_pid_control.motor_type = motortype;
+	_pid_control.motor_type = motor_type;
 
-	switch (motortype)
+	switch (motor_type)
 	{
 	case EV3_LARGE:
 		_pid_control.max_rpm = EV3_LARGE_MAX_RPM;
@@ -315,7 +315,7 @@ void EVNMotor::runAngle(float dps, float degrees, uint8_t stop_action, bool wait
 	if (dps == 0 || degrees == 0)
 		return;
 
-	if ((dps < 0) || (degrees < 0))
+	if (dps < 0 || degrees < 0)
 	{
 		dps = -fabs(dps);
 		degrees = -fabs(degrees);
@@ -757,7 +757,7 @@ void EVNDrivebase::straight(float speed, float distance, uint8_t stop_action, bo
 	if (distance == 0 || speed == 0)
 		return;
 
-	if ((distance < 0) || (speed < 0))
+	if (distance < 0 || speed < 0)
 	{
 		distance = -fabs(distance);
 		speed = -fabs(speed);
@@ -810,7 +810,7 @@ void EVNDrivebase::curveTurnRate(float speed, float turn_rate, float angle, uint
 	if (turn_rate == 0 || angle == 0)
 		return;
 
-	if ((angle < 0) || (turn_rate < 0))
+	if (angle < 0 || turn_rate < 0)
 	{
 		angle = -fabs(angle);
 		turn_rate = -fabs(turn_rate);

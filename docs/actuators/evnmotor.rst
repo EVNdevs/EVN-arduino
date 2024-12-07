@@ -15,11 +15,11 @@ We have built-in motor profiles for NXT Large Motors, EV3 Medium Motors and EV3 
 Constructor
 -----------
 
-.. class:: EVNMotor(uint8_t port, uint8_t motortype = EV3_LARGE, uint8_t motor_dir = DIRECT, uint8_t enc_dir = DIRECT)
+.. class:: EVNMotor(uint8_t port, uint8_t motor_type = EV3_LARGE, uint8_t motor_dir = DIRECT, uint8_t enc_dir = DIRECT)
     
     :param port: Port the motor is connected to (1 - 4)
     
-    :param motortype: Type of motor connected. Defaults to ``EV3_LARGE``
+    :param motor_type: Type of motor connected. Defaults to ``EV3_LARGE``
 
         * ``EV3_LARGE`` - EV3 Large Servo Motor
         * ``EV3_MED`` - EV3 Medium Servo Motor

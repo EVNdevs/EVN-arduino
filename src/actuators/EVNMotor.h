@@ -153,7 +153,7 @@ public:
 	friend class EVNDrivebase;
 	friend class EVNOmniDrivebaseBasic;
 
-	EVNMotor(uint8_t port, uint8_t motortype = EV3_LARGE, uint8_t motor_dir = DIRECT, uint8_t enc_dir = DIRECT);
+	EVNMotor(uint8_t port, uint8_t motor_type = EV3_LARGE, uint8_t motor_dir = DIRECT, uint8_t enc_dir = DIRECT);
 	void begin() volatile;
 	float getPosition() volatile;
 	float getHeading() volatile;
