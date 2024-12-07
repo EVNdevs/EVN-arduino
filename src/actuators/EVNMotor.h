@@ -54,6 +54,7 @@ typedef struct
 typedef struct
 {
 	//MOTOR CHARACTERISTICS
+	uint8_t port;
 	uint8_t motor_type;
 	uint8_t motora;
 	uint8_t motorb;
@@ -152,7 +153,7 @@ public:
 	friend class EVNDrivebase;
 	friend class EVNOmniDrivebaseBasic;
 
-	EVNMotor(uint8_t port, uint8_t motortype = EV3_LARGE, uint8_t motor_dir = DIRECT, uint8_t enc_dir = DIRECT);
+	EVNMotor(uint8_t port, uint8_t motor_type = EV3_LARGE, uint8_t motor_dir = DIRECT, uint8_t enc_dir = DIRECT);
 	void begin() volatile;
 	float getPosition() volatile;
 	float getHeading() volatile;
@@ -512,10 +513,9 @@ protected:
 	//also adds timer interrupt shared by all ports (if not already added)
 	static void attach_interrupts(volatile encoder_state_t* encoderArg, volatile pid_control_t* pidArg)
 	{
-		switch (encoderArg->enca)
+		switch (pidArg->port)
 		{
-		case PIN_MOTOR1_ENCA:
-		case PIN_MOTOR1_ENCB:
+		case 1:
 			if (!ports_started[0])
 			{
 				encoderArgs[0] = encoderArg;
@@ -526,8 +526,7 @@ protected:
 			}
 			break;
 
-		case PIN_MOTOR2_ENCA:
-		case PIN_MOTOR2_ENCB:
+		case 2:
 			if (!ports_started[1])
 			{
 				encoderArgs[1] = encoderArg;
@@ -538,8 +537,7 @@ protected:
 			}
 			break;
 
-		case PIN_MOTOR3_ENCA:
-		case PIN_MOTOR3_ENCB:
+		case 3:
 			if (!ports_started[2])
 			{
 				encoderArgs[2] = encoderArg;
@@ -550,8 +548,7 @@ protected:
 			}
 			break;
 
-		case PIN_MOTOR4_ENCA:
-		case PIN_MOTOR4_ENCB:
+		case 4:
 			if (!ports_started[3])
 			{
 				encoderArgs[3] = encoderArg;
@@ -565,8 +562,6 @@ protected:
 
 		if (!timerisr_enabled)
 		{
-			EVNCoreSync0.begin();
-
 			if (rp2040.cpuid() == 0)
 				alarm_pool_add_repeating_timer_us(EVNISRTimer0.sharedAlarmPool(), PID_TIMER_INTERVAL_US, timerisr, nullptr, &EVNISRTimer0.sharedISRTimer(3));
 			else
@@ -772,8 +767,6 @@ private:
 				cancel_repeating_timer(&EVNISRTimer1.sharedISRTimer(3));
 			}
 
-			EVNCoreSync0.begin();
-
 			if (rp2040.cpuid() == 0)
 				alarm_pool_add_repeating_timer_us(EVNISRTimer0.sharedAlarmPool(), PID_TIMER_INTERVAL_US, timerisr, nullptr, &EVNISRTimer0.sharedISRTimer(4));
 			else
@@ -791,7 +784,9 @@ private:
 			for (int i = 0; i < MAX_DB_OBJECTS; i++)
 			{
 				if (dbs_started[i])
-					pid_update(dbArgs[i]);
+					if (EVNMotor::ports_started[dbArgs[i]->motor_left->_pid_control.port - 1]
+						&& EVNMotor::ports_started[dbArgs[i]->motor_right->_pid_control.port - 1])
+						pid_update(dbArgs[i]);
 			}
 
 			for (int i = 0; i < EVNMotor::MAX_MOTOR_OBJECTS; i++)

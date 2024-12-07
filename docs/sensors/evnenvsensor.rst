@@ -26,23 +26,14 @@ SDA   SDA         I2C Serial Data
 Constructor
 -----------
 
-.. class:: EVNEnvSensor(uint8_t port, mode mode = mode::NORMAL, sampling sampling_temp = sampling::X1, sampling sampling_pres = sampling::X1, sampling sampling_hum = sampling::X1, filter filter = filter::OFF, standby standby = standby::MS_0_5)
-
-    The listed default settings for the sensor are listed here. Refer to ``writeSettings()`` for more information.
+.. class:: EVNEnvSensor(uint8_t port, sampling sampling_temp = ENV_SAMPLING_X1, sampling sampling_pres = ENV_SAMPLING_X1, sampling sampling_hum = ENV_SAMPLING_X1, filter filter = ENV_FILTER_OFF, standby standby = ENV_STANDBY_MS_0_5)
 
     :param port: I2C port the sensor is connected to (1-16)
-
-    :param mode: Mode to run sensor in. Defaults to ``EVNEnvSensor::mode::NORMAL``
-
-    :param sampling_temp: Sampling rate for temperature. Defaults to ``EVNEnvSensor::sampling::X1``
-
-    :param sampling_pres: Sampling rate for pressure. Defaults to ``EVNEnvSensor::sampling::X1``
-
-    :param sampling_hum: Sampling rate for humidity. Defaults to ``EVNEnvSensor::sampling::X1``
-
-    :param filter: Filter rate applied to readings. Defaults to ``EVNEnvSensor::filter::OFF``
-        
-    :param standby: Standby time between end of reading and start of new reading (in ms). Defaults to ``EVNEnvSensor::standby::MS_0_5``
+    :param sampling_temp: Sampling rate for temperature. Defaults to ``ENV_SAMPLING_X1``
+    :param sampling_pres: Sampling rate for pressure. Defaults to ``ENV_SAMPLING_X1``
+    :param sampling_hum: Sampling rate for humidity. Defaults to ``ENV_SAMPLING_X1``
+    :param filter: Filter rate applied to readings. Defaults to ``ENV_FILTER_OFF``
+    :param standby: Standby time between end of reading and start of new reading (in ms). Defaults to ``ENV_STANDBY_MS_0_5``
 
 Functions
 ---------
@@ -134,14 +125,11 @@ Reading Pressure & Altitude
 Advanced Sensor Settings
 """"""""""""""""""""""""
 
-.. function:: void setMode(mode mode)
+.. function:: void setMode(bool enable)
 
     Sets mode to run sensor in
 
-    :param mode: Mode to run sensor in
-
-    * ``EVNEnvSensor::mode::SLEEP`` (low-current sleep mode, measurement disabled)
-    * ``EVNEnvSensor::mode::NORMAL`` (measurement enabled)
+    :param enable: Whether measurement is enabled
 
 .. function:: void setSamplingRate(sampling sampling_temp, sampling sampling_hum, sampling sampling_pres)
     
@@ -153,12 +141,12 @@ Advanced Sensor Settings
     :param sampling_pres: Sampling rate for pressure
     :param sampling_hum: Sampling rate for humidity
 
-    * ``EVNEnvSensor::sampling::OFF`` (disables measurement)
-    * ``EVNEnvSensor::sampling::X1`` (1)
-    * ``EVNEnvSensor::sampling::X2`` (2)
-    * ``EVNEnvSensor::sampling::X4`` (4)
-    * ``EVNEnvSensor::sampling::X8`` (8)
-    * ``EVNEnvSensor::sampling::X16`` (16)
+    * ``ENV_SAMPLING_OFF`` (disables measurement)
+    * ``ENV_SAMPLING_X1`` (1)
+    * ``ENV_SAMPLING_X2`` (2)
+    * ``ENV_SAMPLING_X4`` (4)
+    * ``ENV_SAMPLING_X8`` (8)
+    * ``ENV_SAMPLING_X16`` (16)
 
 .. function:: void setFilterRate(filter filter)
 
@@ -166,11 +154,11 @@ Advanced Sensor Settings
 
     :param filter: Filter rate for pressure measurements
 
-    * ``EVNEnvSensor::filter::OFF`` (filter disabled)
-    * ``EVNEnvSensor::filter::X2`` (2)
-    * ``EVNEnvSensor::filter::X4`` (4)
-    * ``EVNEnvSensor::filter::X8`` (8)
-    * ``EVNEnvSensor::filter::X16`` (16)
+    * ``ENV_FILTER_OFF`` (filter disabled)
+    * ``ENV_FILTER_X2`` (2)
+    * ``ENV_FILTER_X4`` (4)
+    * ``ENV_FILTER_X8`` (8)
+    * ``ENV_FILTER_X16`` (16)
 
 .. function:: void setStandbyTime(standby standby_time)
 
@@ -178,12 +166,12 @@ Advanced Sensor Settings
 
     :param standby_time: Standby time between readings
 
-    * ``EVNEnvSensor::standby::MS_0_5`` (0.5ms)
-    * ``EVNEnvSensor::standby::MS_10`` (10ms)
-    * ``EVNEnvSensor::standby::MS_20`` (20ms)
-    * ``EVNEnvSensor::standby::MS_62_5`` (62.5ms)
-    * ``EVNEnvSensor::standby::MS_125`` (125ms)
-    * ``EVNEnvSensor::standby::MS_250`` (250ms)
-    * ``EVNEnvSensor::standby::MS_500`` (500ms)
-    * ``EVNEnvSensor::standby::MS_1000`` (1000ms)
+    * ``ENV_STANDBY_MS_0_5`` (0.5ms)
+    * ``ENV_STANDBY_MS_10`` (10ms)
+    * ``ENV_STANDBY_MS_20`` (20ms)
+    * ``ENV_STANDBY_MS_62_5`` (62.5ms)
+    * ``ENV_STANDBY_MS_125`` (125ms)
+    * ``ENV_STANDBY_MS_250`` (250ms)
+    * ``ENV_STANDBY_MS_500`` (500ms)
+    * ``ENV_STANDBY_MS_1000`` (1000ms)
 

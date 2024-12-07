@@ -29,9 +29,12 @@ GND   GND         Ground (0V)
 Constructor
 -----------
 
-.. class:: EVNIMUSensor(uint8_t port, float gx_offset = 0, float gy_offset = 0, float gz_offset = 0, float ax_low = 0, float ax_high = 0, float ay_low = 0, float ay_high = 0, float az_low = 0, float az_high = 0)
+.. class:: EVNIMUSensor(uint8_t port, data_rate data_rate = IMU_HZ_92, accel_range accel_range = IMU_ACCEL_G_4, gyro_range gyro_range = IMU_GYRO_DPS_500, float gx_offset = 0, float gy_offset = 0, float gz_offset = 0, float ax_low = 0, float ax_high = 0, float ay_low = 0, float ay_high = 0, float az_low = 0, float az_high = 0)
 
     :param port: I2C port the sensor is connected to (1-16)
+    :param data_rate: Data rate of gyroscope and accelerometer measurements. Defaults to ``IMU_HZ_92``
+    :param accel_range: Range of accelerometer measurements. Defaults to ``IMU_ACCEL_G_4``
+    :param gyro_range: Range of gyroscope measurements. Defaults to ``IMU_GYRO_DPS_500``
     :param gx_offset: Gyroscope X-axis offset. Defaults to 0
     :param gy_offset: Gyroscope Y-axis offset. Defaults to 0
     :param gz_offset: Gyroscope Z-axis offset. Defaults to 0
@@ -188,27 +191,27 @@ However, the IMU Sensor Standard Peripheral can be mounted in many orientations,
 
     :param range: Range of accelerometer measurements
 
-    * ``EVNIMUSensor::accel_range::G_2`` (+-2g)
-    * ``EVNIMUSensor::accel_range::G_4`` (+-4g)
-    * ``EVNIMUSensor::accel_range::G_8`` (+-8g)
-    * ``EVNIMUSensor::accel_range::G_16`` (+-16g)
+    * ``IMU_ACCEL_G_2`` (+-2g)
+    * ``IMU_ACCEL_G_4`` (+-4g)
+    * ``IMU_ACCEL_G_8`` (+-8g)
+    * ``IMU_ACCEL_G_16`` (+-16g)
 
 .. function:: void setGyroRange(gyro_range range)
 
     :param range: Range of gyroscope measurements
 
-    * ``EVNIMUSensor::gyro_range::DPS_250`` (+-250DPS)
-    * ``EVNIMUSensor::gyro_range::DPS_500`` (+-500DPS)
-    * ``EVNIMUSensor::gyro_range::DPS_1000`` (+-1000DPS)
-    * ``EVNIMUSensor::gyro_range::DPS_2000`` (+-2000DPS)
+    * ``IMU_GYRO_DPS_250`` (+-250DPS)
+    * ``IMU_GYRO_DPS_500`` (+-500DPS)
+    * ``IMU_GYRO_DPS_1000`` (+-1000DPS)
+    * ``IMU_GYRO_DPS_2000`` (+-2000DPS)
 
 .. function:: void setDataRate(data_rate data_rate)
 
     :param data_rate: Data rate of gyroscope and accelerometer measurements
 
-    * ``EVNIMUSensor::data_rate::HZ_5`` (5 Hz)
-    * ``EVNIMUSensor::data_rate::HZ_10`` (10 Hz)
-    * ``EVNIMUSensor::data_rate::HZ_20`` (20 Hz)
-    * ``EVNIMUSensor::data_rate::HZ_41`` (41 Hz)
-    * ``EVNIMUSensor::data_rate::HZ_92`` (92 Hz)
-    * ``EVNIMUSensor::data_rate::HZ_184`` (184 Hz)
+    * ``IMU_HZ_5`` (5 Hz)
+    * ``IMU_HZ_10`` (10 Hz)
+    * ``IMU_HZ_20`` (20 Hz)
+    * ``IMU_HZ_41`` (41 Hz)
+    * ``IMU_HZ_92`` (92 Hz)
+    * ``IMU_HZ_184`` (184 Hz)

@@ -6,6 +6,28 @@
 #include "../EVNAlpha.h"
 #include "../helper/EVNI2CDevice.h"
 
+#define ENV_SAMPLING_OFF    (EVNEnvSensor::sampling::OFF)
+#define ENV_SAMPLING_X1     (EVNEnvSensor::sampling::X1)
+#define ENV_SAMPLING_X2     (EVNEnvSensor::sampling::X2)
+#define ENV_SAMPLING_X4     (EVNEnvSensor::sampling::X4)
+#define ENV_SAMPLING_X8     (EVNEnvSensor::sampling::X8)
+#define ENV_SAMPLING_X16    (EVNEnvSensor::sampling::X16)
+
+#define ENV_FILTER_OFF      (EVNEnvSensor::filter::OFF)
+#define ENV_FILTER_X2       (EVNEnvSensor::filter::X2)
+#define ENV_FILTER_X4       (EVNEnvSensor::filter::X4)
+#define ENV_FILTER_X8       (EVNEnvSensor::filter::X8)
+#define ENV_FILTER_X16      (EVNEnvSensor::filter::X16)
+
+#define ENV_STANDBY_MS_0_5  (EVNEnvSensor::standby::MS_0_5)
+#define ENV_STANDBY_MS_10   (EVNEnvSensor::standby::MS_10)
+#define ENV_STANDBY_MS_20   (EVNEnvSensor::standby::MS_20)
+#define ENV_STANDBY_MS_62_5 (EVNEnvSensor::standby::MS_62_5)
+#define ENV_STANDBY_MS_125  (EVNEnvSensor::standby::MS_125)
+#define ENV_STANDBY_MS_250  (EVNEnvSensor::standby::MS_250)
+#define ENV_STANDBY_MS_500  (EVNEnvSensor::standby::MS_500)
+#define ENV_STANDBY_MS_1000 (EVNEnvSensor::standby::MS_1000)
+
 struct evn_env
 {
     float pressure;
@@ -114,12 +136,15 @@ public:
         MS_1000 = 0x05,
     };
 
-    //settings are not exposed in this constructor because there are too many
-    //use set functions instead
-
-    EVNEnvSensor(uint8_t port) : EVNI2CDevice(port)
+    EVNEnvSensor(uint8_t port, sampling sampling_temp = ENV_SAMPLING_X1, sampling sampling_pres = ENV_SAMPLING_X1, sampling sampling_hum = ENV_SAMPLING_X1, filter filter = ENV_FILTER_OFF, standby standby = ENV_STANDBY_MS_0_5) : EVNI2CDevice(port)
     {
         _addr = I2C_ADDR;
+
+        _sampling_temp = sampling_temp;
+        _sampling_pres = sampling_pres;
+        _sampling_hum = sampling_hum;
+        _filter = filter;
+        _standby = standby;
     };
 
     bool begin()
@@ -169,20 +194,22 @@ public:
 
         setSamplingRate(_sampling_temp, _sampling_hum, _sampling_pres);
         setFilterRate(_filter);
-        setStandbyTime(_standby_time);
-        setMode(_mode);
+        setStandbyTime(_standby);
+        setMode(true);
 
         _last_reading_us = micros();
 
         return _sensor_started;
     };
 
-    void setMode(mode mode)
+    void setMode(bool enable)
     {
         uint8_t value = read8((uint8_t)reg::CTRL_MEAS);
         value &= 0b11111100;
-        write8((uint8_t)reg::CTRL_MEAS, value | (uint8_t)mode);
-        _mode = mode;
+        if (enable)
+            write8((uint8_t)reg::CTRL_MEAS, value | (uint8_t)mode::NORMAL);
+        else
+            write8((uint8_t)reg::CTRL_MEAS, value | (uint8_t)mode::SLEEP);
     };
 
     void setSamplingRate(sampling sampling_temp, sampling sampling_hum, sampling sampling_pres)
@@ -241,9 +268,9 @@ public:
         _filter = filter;
     };
 
-    void setStandbyTime(standby standby_time)
+    void setStandbyTime(standby standby)
     {
-        switch (standby_time)
+        switch (standby)
         {
         case standby::MS_0_5:
             _standby_time_us = 500;
@@ -285,12 +312,12 @@ public:
         //write setting
         uint8_t value2 = read8((uint8_t)reg::CONFIG);
         value2 &= 0b00011111;
-        write8((uint8_t)reg::CONFIG, value2 | ((uint8_t)standby_time << 5));
+        write8((uint8_t)reg::CONFIG, value2 | ((uint8_t)standby << 5));
 
         //write original mode
         write8((uint8_t)reg::CTRL_MEAS, value1);
 
-        _standby_time = standby_time;
+        _standby = standby;
     };
 
     evn_env readAll(bool blocking = true)
@@ -493,12 +520,11 @@ private:
     uint32_t _standby_time_us;
     uint32_t _last_reading_us;
 
-    mode _mode = mode::NORMAL;
-    sampling _sampling_temp = sampling::X1;
-    sampling _sampling_pres = sampling::X1;
-    sampling _sampling_hum = sampling::X1;
-    filter _filter = filter::OFF;
-    standby _standby_time = standby::MS_0_5;
+    sampling _sampling_temp;
+    sampling _sampling_pres;
+    sampling _sampling_hum;
+    filter _filter;
+    standby _standby;
 };
 
 #endif

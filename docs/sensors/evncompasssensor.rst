@@ -32,7 +32,7 @@ Constructor
 -----------
 
 .. class:: EVNCompassSensor(uint8_t port, float hard_x = 0, float hard_y = 0, float hard_z = 0, float soft_x_0 = 1, float soft_x_1 = 0, float soft_x_2 = 0, float soft_y_0 = 0, float soft_y_1 = 1, float soft_y_2 = 0, float soft_z_0 = 0, float soft_z_1 = 0, float soft_z_2 = 1)
-  
+
     :param port: I2C port the sensor is connected to (1-16)
     :param hard_x: X-axis hard iron calibration value. Defaults to 0
     :param hard_y: Y-axis hard iron calibration value. Defaults to 0
@@ -46,6 +46,18 @@ Constructor
     :param soft_z_0: Z-axis soft iron calibration value 0. Defaults to 0
     :param soft_z_1: Z-axis soft iron calibration value 1. Defaults to 0
     :param soft_z_2: Z-axis soft iron calibration value 2. Defaults to 1
+
+Since advanced sensor settings are different depending on which sensor model you have, sensor settings can only be changed using the functions below.
+
+These are the defaults:
+    * QMC Model:
+        * Data Rate: ``COMPASS_QMC_HZ_200``
+        * Range: ``COMPASS_QMC_GA_2``
+        * Samples per Reading: ``COMPASS_QMC_X512``
+    * HMC Model:
+        * Data Rate: ``COMPASS_HMC_HZ_75``
+        * Range: ``COMPASS_HMC_GA_4``
+        * Samples per Reading: ``COMPASS_HMC_X1``
 
 Functions
 ---------
@@ -134,6 +146,12 @@ Reading Magnetometer Values
 Sensor Settings
 """"""""""""""""
 
+.. function:: void setMode(bool enable)
+
+    Sets mode to run sensor in
+
+    :param enable: Whether measurement is enabled
+
 The compass measures along 3 different axes (X, Y and Z). This image depicts the 3 axes of the sensor.
 As a quick reference, the sensor PCB has markings for the X and Y axis.
 By default, the X axis is set as the axis passing through the front of the robot, and the Z axis as the axis passing through the top of the robot.
@@ -159,78 +177,64 @@ However, the Compass Sensor Standard Peripheral can be mounted in many orientati
 Advanced Sensor Settings (HMC)
 """""""""""""""""""""""""""""""
 
-.. function:: void setModeHMC(hmc_mode mode)
-
-    :param mode: Mode to run sensor in
-
-    * ``EVNCompassSensor::hmc_mode::CONTINUOUS`` (measurement enabled)
-    * ``EVNCompassSensor::hmc_mode::STANDBY`` (measurement disabled)
-
 .. function:: void setDataRateHMC(hmc_data_rate data_rate)
 
     :param data_rate: Rate at which the sensor takes measurements
 
-    * ``EVNCompassSensor::hmc_data_rate::HZ_0_75`` (0.75Hz)
-    * ``EVNCompassSensor::hmc_data_rate::HZ_1_5`` (1.5Hz)
-    * ``EVNCompassSensor::hmc_data_rate::HZ_3`` (3Hz)
-    * ``EVNCompassSensor::hmc_data_rate::HZ_7_5`` (7.5Hz)
-    * ``EVNCompassSensor::hmc_data_rate::HZ_15`` (15Hz)
-    * ``EVNCompassSensor::hmc_data_rate::HZ_30`` (30Hz)
-    * ``EVNCompassSensor::hmc_data_rate::HZ_75`` (75Hz)
+    * ``COMPASS_HMC_HZ_0_75`` (0.75Hz)
+    * ``COMPASS_HMC_HZ_1_5`` (1.5Hz)
+    * ``COMPASS_HMC_HZ_3`` (3Hz)
+    * ``COMPASS_HMC_HZ_7_5`` (7.5Hz)
+    * ``COMPASS_HMC_HZ_15`` (15Hz)
+    * ``COMPASS_HMC_HZ_30`` (30Hz)
+    * ``COMPASS_HMC_HZ_75`` (75Hz)
 
 .. function:: void setRangeHMC(hmc_range range)
 
     :param range: Measurable magnetic range of readings (in Gauss)
 
-    * ``EVNCompassSensor::hmc_range::GA_0_88`` (+-0.88Ga)
-    * ``EVNCompassSensor::hmc_range::GA_1_3`` (+-1.3Ga)
-    * ``EVNCompassSensor::hmc_range::GA_1_9`` (+-1.9Ga)
-    * ``EVNCompassSensor::hmc_range::GA_2_5`` (+-2.5Ga)
-    * ``EVNCompassSensor::hmc_range::GA_4`` (+-4Ga)
-    * ``EVNCompassSensor::hmc_range::GA_4_7`` (+-4.7Ga)
-    * ``EVNCompassSensor::hmc_range::GA_5_6`` (+-5.6Ga)
-    * ``EVNCompassSensor::hmc_range::GA_8_1`` (+-8.1Ga)
+    * ``COMPASS_HMC_GA_0_88`` (+-0.88Ga)
+    * ``COMPASS_HMC_GA_1_3`` (+-1.3Ga)
+    * ``COMPASS_HMC_GA_1_9`` (+-1.9Ga)
+    * ``COMPASS_HMC_GA_2_5`` (+-2.5Ga)
+    * ``COMPASS_HMC_GA_4`` (+-4Ga)
+    * ``COMPASS_HMC_GA_4_7`` (+-4.7Ga)
+    * ``COMPASS_HMC_GA_5_6`` (+-5.6Ga)
+    * ``COMPASS_HMC_GA_8_1`` (+-8.1Ga)
 
-.. function:: void setSamplesHMC(hmc_samples samples)
+.. function:: void setSamplingRateHMC(hmc_sampling samples)
 
     :param samples: Number of samples taken per reading
 
-    * ``EVNCompassSensor::hmc_samples::X1`` (1)
-    * ``EVNCompassSensor::hmc_samples::X2`` (2)
-    * ``EVNCompassSensor::hmc_samples::X3`` (3)
-    * ``EVNCompassSensor::hmc_samples::X4`` (4)
+    * ``COMPASS_HMC_SAMPLING_X1`` (1)
+    * ``COMPASS_HMC_SAMPLING_X2`` (2)
+    * ``COMPASS_HMC_SAMPLING_X4`` (4)
+    * ``COMPASS_HMC_SAMPLING_X8`` (8)
 
 Advanced Sensor Settings (QMC)
 """"""""""""""""""""""""""""""
-
-.. function:: void setModeQMC(qmc_mode mode)
-
-    :param mode: Mode to run sensor in
-
-    * ``EVNCompassSensor::qmc_mode::CONTINUOUS`` (measurement enabled)
-    * ``EVNCompassSensor::qmc_mode::STANDBY`` (measurement disabled)
 
 .. function:: void setDataRateQMC(qmc_data_rate data_rate)
 
     :param data_rate: Rate at which the sensor takes measurements
 
-    * ``EVNCompassSensor::qmc_data_rate::HZ_10`` (10Hz)
-    * ``EVNCompassSensor::qmc_data_rate::HZ_50`` (50Hz)
-    * ``EVNCompassSensor::qmc_data_rate::HZ_100`` (100Hz)
-    * ``EVNCompassSensor::qmc_data_rate::HZ_200`` (200Hz)
+    * ``COMPASS_QMC_HZ_10`` (10Hz)
+    * ``COMPASS_QMC_HZ_50`` (50Hz)
+    * ``COMPASS_QMC_HZ_100`` (100Hz)
+    * ``COMPASS_QMC_HZ_200`` (200Hz)
 
 .. function:: void setRangeQMC(qmc_range range)
 
     :param range: Measurable magnetic range of readings (in Gauss)
 
-    * ``EVNCompassSensor::qmc_range::GA_2`` (+-2Ga)
-    * ``EVNCompassSensor::qmc_range::GA_8`` (+-8Ga)
+    * ``COMPASS_QMC_GA_2`` (+-2Ga)
+    * ``COMPASS_QMC_GA_8`` (+-8Ga)
 
-.. function:: void setSamplesQMC(qmc_samples samples)
+.. function:: void setSamplingRateQMC(qmc_sampling samples)
 
     :param samples: Number of samples taken per reading
 
-    * ``EVNCompassSensor::qmc_samples::X64`` (64)
-    * ``EVNCompassSensor::qmc_samples::X128`` (128)
-    * ``EVNCompassSensor::qmc_samples::X256`` (256)
-    * ``EVNCompassSensor::qmc_samples::X512`` (512)
+    * ``COMPASS_QMC_SAMPLING_X64`` (64)
+    * ``COMPASS_QMC_SAMPLING_X128`` (128)
+    * ``COMPASS_QMC_SAMPLING_X256`` (256)
+    * ``COMPASS_QMC_SAMPLING_X512`` (512)

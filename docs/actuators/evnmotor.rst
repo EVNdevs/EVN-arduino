@@ -15,11 +15,11 @@ We have built-in motor profiles for NXT Large Motors, EV3 Medium Motors and EV3 
 Constructor
 -----------
 
-.. class:: EVNMotor(uint8_t port, uint8_t motortype = EV3_LARGE, uint8_t motor_dir = DIRECT, uint8_t enc_dir = DIRECT)
+.. class:: EVNMotor(uint8_t port, uint8_t motor_type = EV3_LARGE, uint8_t motor_dir = DIRECT, uint8_t enc_dir = DIRECT)
     
     :param port: Port the motor is connected to (1 - 4)
     
-    :param motortype: Type of motor connected. Defaults to ``EV3_LARGE``
+    :param motor_type: Type of motor connected. Defaults to ``EV3_LARGE``
 
         * ``EV3_LARGE`` - EV3 Large Servo Motor
         * ``EV3_MED`` - EV3 Medium Servo Motor
@@ -146,6 +146,8 @@ Run by a Fixed Amount
 
     Run motor by the given angle (relative to its starting position), then performs the given stop action.
 
+    Motor direction is reversed when the ``degrees`` or ``dps`` inputs are negative (e.g. ``runAngle(100, -100)``, ``runAngle(-100, 100)``, or ``runAngle(-100, -100)`` will all run the motor in reverse).
+
     :param dps: Angular velocity to run the motor at (in DPS)
     :param degrees: Angular displacement which the motor has to travel (in degrees)
     :param stop_action: Behaviour of the motor upon completing its command. Defaults to ``STOP_BRAKE``
@@ -183,6 +185,8 @@ Run by a Fixed Amount
 .. function:: void runHeading(float dps, float heading, uint8_t stop_action = STOP_BRAKE, bool wait = true)
 
     Run motor to the specified motor shaft heading, then performs the given stop action.
+
+    Motor direction will be automatically computed to minimize the rotation needed to achieve the correct heading.
 
     :param dps: Angular velocity to run the motor at (in DPS)
     :param time_ms: Heading which the motor has to travel to (0 - 360 degrees)

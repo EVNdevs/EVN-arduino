@@ -15,7 +15,7 @@ EVNAlpha board;
 //however, you can set link_movement to true to use the button as an enable/disable switch for motors and servos
 //to try this out, uncomment line 12 and comment line 10
 
-EVNMotor motor(MOTOR_PORT, EV3_MED);  //motor type can be NXT_LARGE, EV3_LARGE or MOTOR_CUSTOM
+EVNMotor motor(MOTOR_PORT, EV3_MED);  //motor type can be NXT_LARGE, EV3_LARGE, EV3_MED or CUSTOM_MOTOR
 
 void setup1()
 {
@@ -36,7 +36,7 @@ void loop()
 		//for quick reference, 1 RPM (revolution per minute) = 6 DPS (degrees per second)
 
 		motor.runTime(300, 2000); 	//run motor at 300DPS for 2s
-		motor.runAngle(400, -360);	//run motor at 400DPS for -360deg (runAngle(-400, 360) produces the same effect)
+		motor.runAngle(400, -360);	//run motor at -400DPS for -360deg
 		motor.runSpeed(-600);    	//run motor at -600DPS until new command is given
 		delay(6000);           	//continue running for 6 seconds
 	}
