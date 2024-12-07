@@ -151,6 +151,7 @@ protected:
 class EVNContinuousServo : public EVNServoBase
 {
     friend class EVNServo;
+    using EVNServoBase::EVNServoBase;
 
 public:
     void begin() volatile;
