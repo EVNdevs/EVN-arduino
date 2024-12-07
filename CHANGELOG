@@ -1,3 +1,38 @@
+1.2.0 (08/12/24)
+
+In this update, we've made several changes (some of them breaking) to the sensor classes in the hopes of making them more approachable for end-users, despite the many sensor settings options made available for them. Additionally, this update fixes urgent bugs for EVNDrivebase (on the latest versions of the Arduino-Pico core) and EVNContinuousServo.
+
+Currently, we're working on obtaining better PID tunings for EVNMotor and EVNDrivebase for better line-tracking performance. Expect that sometime soon :)
+
+-- Features --
+
+EVNColourSensor, EVNCompassSensor, EVNGestureSensor, EVNIMUSensor, EVNEnvSensor:
+
+For these classes, we adopted the convention of using enums in the class as inputs to set sensor settings (e.g. EVNColourSensor::gain::X4). Given the sheer number of settings, the lengthy wording and possible confusion of using enums, we have decided to add #defines that abbreviate the enums into shorter, simpler terms for the user to pass as input.
+
+For instance, for EVNColourSensor, instead of calling sensor.setGain(EVNColourSensor::gain::X1), the user may now sensor.setGain(COLOUR_GAIN_X1), which is shorter and less confusing.
+
+These additions will not break existing code; the #defines will get converted to the enums during compilation. However, there are some changes or removals of certain enums that will break existing code, detailed more closely below.
+
+-- Changes --
+
+EVNMotor: The behaviour of runAngle() when given negative inputs has been standardised and clarified in docs
+EVNDrivebase: The behaviour of curve(), curveTurnRate() and straight() when given negative inputs has been standardised and clarified in docs
+EVNIMUSensor: Constructor now contains 3 additional input parameters for sensor settings
+EVNEnvSensor: Constructor now contains 5 additional input parameters for sensor settings (docs were previously outdated)
+
+-- BREAKING Changes --
+EVNCompassSensor: hmc_samples and qmc_samples enums have been renamed to hmc_sampling and qmc_sampling. This will break existing code that sets the sensor sampling rate, and should be changed to use the newly added #defines.
+EVNCompassSensor: setSamplesQMC() and setSamplesHMC() renamed to setSamplingRateQMC() and setSamplingRateHMC() respectively
+EVNCompassSensor: setModeQMC() and setModeHMC() combined into one function setMode()
+
+EVNCompassSensor, EVNEnvSensor: setMode() now receives a boolean (instead of enum) indicating whether to enable/disable measurement. This will break existing code that sets sensor mode, and should be changed to use booleans instead.
+
+-- Bugfixes --
+
+EVNDrivebase: Fixed bug for Arduino-Pico >=4.3.0 where begin() would crash
+EVNContinuousServo: Fixed compilation errors
+
 1.1.3 (14/11/24)
 
 -- Bugfixes --
