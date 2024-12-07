@@ -6,6 +6,11 @@
 #include "../EVNAlpha.h"
 #include "../helper/EVNI2CDevice.h"
 
+#define COLOUR_GAIN_X1  (EVNColourSensor::gain::X1)
+#define COLOUR_GAIN_X4  (EVNColourSensor::gain::X4)
+#define COLOUR_GAIN_X16 (EVNColourSensor::gain::X16)
+#define COLOUR_GAIN_X60 (EVNColourSensor::gain::X60)
+
 struct evn_col
 {
     uint16_t red;

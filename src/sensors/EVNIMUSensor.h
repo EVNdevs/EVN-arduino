@@ -11,6 +11,23 @@
 #define AXIS_Y 1
 #define AXIS_Z 2
 
+#define IMU_GYRO_DPS_250    (EVNIMUSensor::gyro_range::DPS_250)
+#define IMU_GYRO_DPS_500    (EVNIMUSensor::gyro_range::DPS_500)
+#define IMU_GYRO_DPS_1000   (EVNIMUSensor::gyro_range::DPS_1000)
+#define IMU_GYRO_DPS_2000   (EVNIMUSensor::gyro_range::DPS_2000)
+
+#define IMU_ACCEL_G_2       (EVNIMUSensor::accel_range::G_2)
+#define IMU_ACCEL_G_4       (EVNIMUSensor::accel_range::G_4)
+#define IMU_ACCEL_G_8       (EVNIMUSensor::accel_range::G_8)
+#define IMU_ACCEL_G_16      (EVNIMUSensor::accel_range::G_16)
+
+#define IMU_HZ_184          (EVNIMUSensor::data_rate::HZ_184)
+#define IMU_HZ_92           (EVNIMUSensor::data_rate::HZ_92)
+#define IMU_HZ_41           (EVNIMUSensor::data_rate::HZ_41)
+#define IMU_HZ_20           (EVNIMUSensor::data_rate::HZ_20)
+#define IMU_HZ_10           (EVNIMUSensor::data_rate::HZ_10)
+#define IMU_HZ_5            (EVNIMUSensor::data_rate::HZ_5)
+
 class EVNIMUSensor : private EVNI2CDevice {
 public:
     static const uint8_t I2C_ADDR = 0x68;
@@ -93,6 +110,9 @@ public:
     //TODO: MAYBE explore low power mode and sample rate dividers
 
     EVNIMUSensor(uint8_t port,
+        data_rate data_rate = data_rate::HZ_92,
+        accel_range accel_range = accel_range::G_4,
+        gyro_range gyro_range = gyro_range::DPS_500,
         float gx_offset = 0, float gy_offset = 0, float gz_offset = 0,
         float ax_low = 0, float ax_high = 0, float ay_low = 0,
         float ay_high = 0, float az_low = 0, float az_high = 0)
@@ -100,6 +120,10 @@ public:
     {
         _addr = I2C_ADDR;
         _filter = new Madgwick;
+
+        _data_rate = data_rate;
+        _accel_range = accel_range;
+        _gyro_range = gyro_range;
 
         setCalibrationGyro(gx_offset, gy_offset, gz_offset);
         setCalibrationAccel(ax_low, ax_high, ay_low, ay_high, az_low, az_high);
@@ -120,9 +144,9 @@ public:
 
         _sensor_started = true;
 
-        setAccelRange(accel_range::G_4);
-        setGyroRange(gyro_range::DPS_500);
-        setDataRate(data_rate::HZ_92);
+        setAccelRange(_accel_range);
+        setGyroRange(_gyro_range);
+        setDataRate(_data_rate);
 
         if (calibrate_gyro)
         {
@@ -154,7 +178,9 @@ public:
 
     void setAccelRange(accel_range range)
     {
-        switch (range)
+        _accel_range = range;
+
+        switch (_accel_range)
         {
         case accel_range::G_2:
             _accel_sens = 16384;
@@ -178,7 +204,9 @@ public:
 
     void setGyroRange(gyro_range range)
     {
-        switch (range)
+        _gyro_range = range;
+
+        switch (_gyro_range)
         {
         case gyro_range::DPS_250:
             _gyro_sens = 131;
@@ -202,7 +230,9 @@ public:
 
     void setDataRate(data_rate data_rate)
     {
-        switch (data_rate)
+        _data_rate = data_rate;
+
+        switch (_data_rate)
         {
         case data_rate::HZ_5:
             _measurement_time_us = 200000;
@@ -578,6 +608,10 @@ private:
 
     float _ax_scale, _ay_scale, _az_scale,
         _ax_offset, _ay_offset, _az_offset;
+
+    data_rate _data_rate;
+    accel_range _accel_range;
+    gyro_range _gyro_range;
 
     Madgwick* _filter;
     EVNCompassSensor* _compass;

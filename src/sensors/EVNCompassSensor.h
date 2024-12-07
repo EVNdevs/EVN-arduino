@@ -10,6 +10,41 @@
 #define AXIS_Y 1
 #define AXIS_Z 2
 
+#define COMPASS_HMC_HZ_75           (EVNCompassSensor::hmc_data_rate::HZ_75)
+#define COMPASS_HMC_HZ_30           (EVNCompassSensor::hmc_data_rate::HZ_30)
+#define COMPASS_HMC_HZ_15           (EVNCompassSensor::hmc_data_rate::HZ_15)
+#define COMPASS_HMC_HZ_7_5          (EVNCompassSensor::hmc_data_rate::HZ_7_5)
+#define COMPASS_HMC_HZ_3            (EVNCompassSensor::hmc_data_rate::HZ_3)
+#define COMPASS_HMC_HZ_1_5          (EVNCompassSensor::hmc_data_rate::HZ_1_5)
+#define COMPASS_HMC_HZ_0_75         (EVNCompassSensor::hmc_data_rate::HZ_0_75)
+
+#define COMPASS_HMC_GA_8_1          (EVNCompassSensor::hmc_range::GA_8_1)
+#define COMPASS_HMC_GA_5_6          (EVNCompassSensor::hmc_range::GA_5_6)
+#define COMPASS_HMC_GA_4_7          (EVNCompassSensor::hmc_range::GA_4_7)
+#define COMPASS_HMC_GA_4            (EVNCompassSensor::hmc_range::GA_4)
+#define COMPASS_HMC_GA_2_5          (EVNCompassSensor::hmc_range::GA_2_5)
+#define COMPASS_HMC_GA_1_9          (EVNCompassSensor::hmc_range::GA_1_9)
+#define COMPASS_HMC_GA_1_3          (EVNCompassSensor::hmc_range::GA_1_3)
+#define COMPASS_HMC_GA_0_88         (EVNCompassSensor::hmc_range::GA_0_88)
+
+#define COMPASS_HMC_SAMPLING_X1     (EVNCompassSensor::hmc_sampling::X1)
+#define COMPASS_HMC_SAMPLING_X2     (EVNCompassSensor::hmc_sampling::X2)
+#define COMPASS_HMC_SAMPLING_X4     (EVNCompassSensor::hmc_sampling::X4)
+#define COMPASS_HMC_SAMPLING_X8     (EVNCompassSensor::hmc_sampling::X8)
+
+#define COMPASS_QMC_HZ_10           (EVNCompassSensor::qmc_data_rate::HZ_10)
+#define COMPASS_QMC_HZ_50           (EVNCompassSensor::qmc_data_rate::HZ_50)
+#define COMPASS_QMC_HZ_100          (EVNCompassSensor::qmc_data_rate::HZ_100)
+#define COMPASS_QMC_HZ_200          (EVNCompassSensor::qmc_data_rate::HZ_200)
+
+#define COMPASS_QMC_GA_8            (EVNCompassSensor::qmc_range::GA_8)
+#define COMPASS_QMC_GA_2            (EVNCompassSensor::qmc_range::GA_2)
+
+#define COMPASS_QMC_SAMPLING_X64    (EVNCompassSensor::qmc_sampling::X64)
+#define COMPASS_QMC_SAMPLING_X128   (EVNCompassSensor::qmc_sampling::X128)
+#define COMPASS_QMC_SAMPLING_X256   (EVNCompassSensor::qmc_sampling::X256)
+#define COMPASS_QMC_SAMPLING_X512   (EVNCompassSensor::qmc_sampling::X512)
+
 class EVNCompassSensor : private EVNI2CDevice {
 public:
 
@@ -68,7 +103,7 @@ public:
         GA_0_88 = 0x00,
     };
 
-    enum class hmc_samples : uint8_t
+    enum class hmc_sampling : uint8_t
     {
         X1 = 0x00,
         X2 = 0x01,
@@ -114,7 +149,7 @@ public:
         GA_2 = 0x00,
     };
 
-    enum class qmc_samples : uint8_t {
+    enum class qmc_sampling : uint8_t {
         X64 = 0x03,
         X128 = 0x02,
         X256 = 0x01,
@@ -168,23 +203,23 @@ public:
 
         _sensor_started = true;
 
+        setMode(true);
+
         if (_is_qmc)
         {
             _addr = QMC_I2C_ADDR;
             write8((uint8_t)qmc_reg::RESET, 0x01);
             delay(10);
-            setModeQMC(qmc_mode::CONTINUOUS);
             setDataRateQMC(qmc_data_rate::HZ_200);
             setRangeQMC(qmc_range::GA_2);
-            setSamplesQMC(qmc_samples::X512);
+            setSamplingRateQMC(qmc_sampling::X512);
         }
         else
         {
             _addr = HMC_I2C_ADDR;
-            setModeHMC(hmc_mode::CONTINUOUS);
             setDataRateHMC(hmc_data_rate::HZ_75);
             setRangeHMC(hmc_range::GA_4);
-            setSamplesHMC(hmc_samples::X1);
+            setSamplingRateHMC(hmc_sampling::X1);
         }
         return _sensor_started;
     };
@@ -222,27 +257,32 @@ public:
             _calibrated = true;
     };
 
-    void setModeHMC(hmc_mode mode)
+    void setMode(bool enable)
     {
-        if (_sensor_started && !_is_qmc)
+        if (_sensor_started)
         {
-            uint8_t value;
-            value = read8(hmc_reg::MODE);
-            value &= 0b11111100;
-            value |= (uint8_t)mode;
-            write8(hmc_reg::MODE, value);
-        }
-    };
-
-    void setModeQMC(qmc_mode mode)
-    {
-        if (_sensor_started && _is_qmc)
-        {
-            uint8_t value;
-            value = read8(qmc_reg::CONFIG);
-            value &= 0b11111100;
-            value |= (uint8_t)mode;
-            write8(qmc_reg::CONFIG, value);
+            if (!_is_qmc)
+            {
+                uint8_t value;
+                value = read8(hmc_reg::MODE);
+                value &= 0b11111100;
+                if (enable)
+                    value |= hmc_mode::CONTINUOUS;
+                else
+                    value |= hmc_mode::STANDBY;
+                write8(hmc_reg::MODE, value);
+            }
+            else
+            {
+                uint8_t value;
+                value = read8(qmc_reg::CONFIG);
+                value &= 0b11111100;
+                if (enable)
+                    value |= qmc_mode::CONTINUOUS;
+                else
+                    value |= qmc_mode::STANDBY;
+                write8(qmc_reg::CONFIG, value);
+            }
         }
     };
 
@@ -367,7 +407,7 @@ public:
         }
     };
 
-    void setSamplesHMC(hmc_samples samples)
+    void setSamplingRateHMC(hmc_sampling samples)
     {
         if (_sensor_started && !_is_qmc)
         {
@@ -379,7 +419,7 @@ public:
         }
     };
 
-    void setSamplesQMC(qmc_samples samples)
+    void setSamplingRateQMC(qmc_sampling samples)
     {
         if (_sensor_started && _is_qmc)
         {

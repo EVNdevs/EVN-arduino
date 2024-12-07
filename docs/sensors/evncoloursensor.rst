@@ -28,13 +28,13 @@ SDA   SDA         I2C Serial Data
 Constructor
 -----------
 
-.. class:: EVNColourSensor(uint8_t port, uint8_t integration_cycles = 1, gain gain = gain::X16)
+.. class:: EVNColourSensor(uint8_t port, uint8_t integration_cycles = 1, gain gain = COLOUR_GAIN_X16)
 
     The listed default settings for the sensor are listed here. Refer to ``setGain()`` & ``setIntegrationTime()`` for more information.
 
     :param port: I2C port the sensor is connected to (1-16)
     :param integration_cycles: Number of 2.4ms integration cycle for one reading. Defaults to 1
-    :param gain: Gain applied to readings. Defaults to ``EVNColourSensor::gain::X16``
+    :param gain: Gain applied to readings. Defaults to ``COLOUR_GAIN_X16``
 
 Functions
 ---------
@@ -54,10 +54,10 @@ Functions
 
     :param gain: Gain applied to readings
 
-        * ``EVNColourSensor::gain::X1`` -- 1x gain
-        * ``EVNColourSensor::gain::X4`` -- 4x gain
-        * ``EVNColourSensor::gain::X16`` -- 16x gain
-        * ``EVNColourSensor::gain::X60`` -- 60x gain
+        * ``COLOUR_GAIN_X1`` -- 1x gain
+        * ``COLOUR_GAIN_X4`` -- 4x gain
+        * ``COLOUR_GAIN_X16`` -- 16x gain
+        * ``COLOUR_GAIN_X60`` -- 60x gain
 
 .. function:: void setIntegrationCycles(uint8_t integration_cycles)
 
@@ -76,10 +76,10 @@ Functions
 
     :param gain: Gain applied to readings
 
-        * ``EVNColourSensor::gain::X1`` -- 1x gain
-        * ``EVNColourSensor::gain::X4`` -- 4x gain
-        * ``EVNColourSensor::gain::X16`` -- 16x gain
-        * ``EVNColourSensor::gain::X60`` -- 60x gain
+        * ``COLOUR_GAIN_X1`` -- 1x gain
+        * ``COLOUR_GAIN_X4`` -- 4x gain
+        * ``COLOUR_GAIN_X16`` -- 16x gain
+        * ``COLOUR_GAIN_X60`` -- 60x gain
 
 Reading Raw RGBC Values
 """""""""""""""""""""""

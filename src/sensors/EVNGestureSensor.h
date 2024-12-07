@@ -12,6 +12,45 @@
 #define GESTURE_LEFT    3
 #define GESTURE_RIGHT   4
 
+#define GESTURE_FIFO_DATASETS_1     (EVNGestureSensor::gesture_fifo::DATASETS_1)
+#define GESTURE_FIFO_DATASETS_4     (EVNGestureSensor::gesture_fifo::DATASETS_4)
+#define GESTURE_FIFO_DATASETS_8     (EVNGestureSensor::gesture_fifo::DATASETS_8)
+#define GESTURE_FIFO_DATASETS_16    (EVNGestureSensor::gesture_fifo::DATASETS_16)
+
+#define GESTURE_LED_MA_100          (EVNGestureSensor::led_curr::GESTURE_MA_100)
+#define GESTURE_LED_MA_50           (EVNGestureSensor::led_curr::GESTURE_MA_50)
+#define GESTURE_LED_MA_25           (EVNGestureSensor::led_curr::GESTURE_MA_25)
+#define GESTURE_LED_MA_12_5         (EVNGestureSensor::led_curr::GESTURE_MA_12_5)
+
+#define GESTURE_LED_X1              (EVNGestureSensor::led_boost::X1)
+#define GESTURE_LED_X1_5            (EVNGestureSensor::led_boost::X1_5)
+#define GESTURE_LED_X2              (EVNGestureSensor::led_boost::X2)
+#define GESTURE_LED_X3              (EVNGestureSensor::led_boost::X3)
+
+#define GESTURE_COL_GAIN_X1         (EVNGestureSensor::colour_gain::X1)
+#define GESTURE_COL_GAIN_X4         (EVNGestureSensor::colour_gain::X4)
+#define GESTURE_COL_GAIN_X16        (EVNGestureSensor::colour_gain::X16)
+#define GESTURE_COL_GAIN_X64        (EVNGestureSensor::colour_gain::X64)
+
+#define GESTURE_GAIN_X1             (EVNGestureSensor::gesture_gain::X1)
+#define GESTURE_GAIN_X2             (EVNGestureSensor::gesture_gain::X2)
+#define GESTURE_GAIN_X4             (EVNGestureSensor::gesture_gain::X4)
+#define GESTURE_GAIN_X8             (EVNGestureSensor::gesture_gain::X8)
+
+#define GESTURE_PROX_GAIN_X1        (EVNGestureSensor::prox_gain::X1)
+#define GESTURE_PROX_GAIN_X2        (EVNGestureSensor::prox_gain::X2)
+#define GESTURE_PROX_GAIN_X4        (EVNGestureSensor::prox_gain::X4)
+#define GESTURE_PROX_GAIN_X8        (EVNGestureSensor::prox_gain::X8)
+
+#define GESTURE_DIMS_UP_DOWN        (EVNGestureSensor::gesture_dims::UP_DOWN)
+#define GESTURE_DIMS_LEFT_RIGHT     (EVNGestureSensor::gesture_dims::LEFT_RIGHT)
+#define GESTURE_DIMS_ALL            (EVNGestureSensor::gesture_dims::ALL)
+
+#define GESTURE_PULSE_US_4          (EVNGestureSensor::pulse_len::US_4)
+#define GESTURE_PULSE_US_8          (EVNGestureSensor::pulse_len::US_8)
+#define GESTURE_PULSE_US_16         (EVNGestureSensor::pulse_len::US_16)
+#define GESTURE_PULSE_US_32         (EVNGestureSensor::pulse_len::US_32)
+
 class EVNGestureSensor : private EVNI2CDevice {
 public:
     static const uint8_t I2C_ADDR = 0x39;
