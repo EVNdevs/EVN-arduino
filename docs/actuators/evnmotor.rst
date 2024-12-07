@@ -146,6 +146,8 @@ Run by a Fixed Amount
 
     Run motor by the given angle (relative to its starting position), then performs the given stop action.
 
+    Motor direction is reversed when the ``degrees`` or ``dps`` inputs are negative (e.g. ``runAngle(100, -100)``, ``runAngle(-100, 100)``, or ``runAngle(-100, -100)`` will all run the motor in reverse).
+
     :param dps: Angular velocity to run the motor at (in DPS)
     :param degrees: Angular displacement which the motor has to travel (in degrees)
     :param stop_action: Behaviour of the motor upon completing its command. Defaults to ``STOP_BRAKE``
@@ -183,6 +185,8 @@ Run by a Fixed Amount
 .. function:: void runHeading(float dps, float heading, uint8_t stop_action = STOP_BRAKE, bool wait = true)
 
     Run motor to the specified motor shaft heading, then performs the given stop action.
+
+    Motor direction will be automatically computed to minimize the rotation needed to achieve the correct heading.
 
     :param dps: Angular velocity to run the motor at (in DPS)
     :param time_ms: Heading which the motor has to travel to (0 - 360 degrees)

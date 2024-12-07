@@ -48,19 +48,24 @@ Standard Peripherals each come with a cable to connect to Alpha.
 
 * The 270 Degree Servo and Continuous Servo Peripherals come with non-removable 3-Wire cables.
 
-At one end of the cable, all the wires will be joined into one plastic connector. 
-With the exception of the Servo Peripherals, this connector plugs into the EVN Alpha brick, and has a notch to avoid being plugged in reverse (called a **key**).
+At one end of the cable, all the wires will be joined into one 4-pin connector, which plugs into EVN Alpha. 
+
 The wire colours are also colour-coded to match the pin layout of the ports on EVN Alpha.
+
+.. note::
+
+  As of November 2024, we no longer ship cables with keyed connectors (with a notch) due to availability issues. 
+  This means our cables are essentially 4-pin to 4 * 1-pin Dupont cables.
+  However, we will ensure that the keyed cables that we have shipped will remain compatible with any future shell revisions.
 
 On the other end of the cable, each wire is separated from the others. They all need to be connected to the Peripheral, but they're not joined together
 because the layout of the pins differs with each Peripheral.
 
 The library reference page for each Peripheral (linked below) contains a pin layout section to guide you on the connections.
 
-The pins we used on the Alpha and Standard Peripherals are standard 2.54mm pitch pin headers, and the cables can be substituted with 2.54mm Dupont jumper wires as well! 
-Jumper cables don't have a key, so you'll need to be slightly more careful with your wiring, but they will work perfectly. 
+The pins we used on the Alpha and Standard Peripherals are standard 2.54mm pitch pin headers, and the cables can be substituted with normal 2.54mm Dupont jumper wires as well! 
 
-Likewise, our cables will function well for interfacing with non-Standard Peripherals if they also have 2.54mm pitch pins.
+Likewise, our cables can be used to interface with non-Standard Peripherals with 2.54mm pitch pins.
 
 Wiring
 --------

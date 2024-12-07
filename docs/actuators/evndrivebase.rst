@@ -177,7 +177,9 @@ Move by a Fixed Amount
 
 .. function:: void straight(float speed, float distance, uint8_t stop_action = STOP_BRAKE, bool wait = true);
 
-    Runs drivebase in a straight line for the specified distance, then performs given stop action
+    Runs drivebase in a straight line for the specified distance, then performs given stop action.
+
+    Drivebase speed direction is reversed when the ``speed`` or ``distance`` inputs are negative (e.g. ``straight(100, -100)``, ``straight(-100, 100)``, or ``straight(-100, -100)`` will all move the drivebase backwards).
 
     :param speed: Velocity of drivebase (in mm/s)
     :param distance: Distance to travel (in mm)
@@ -197,7 +199,9 @@ Move by a Fixed Amount
 .. function::   void curve(float speed, float radius, float angle, uint8_t stop_action = STOP_BRAKE, bool wait = true);
                 void curveRadius(float speed, float radius, float angle, uint8_t stop_action = STOP_BRAKE, bool wait = true);
 
-    Runs drivebase in a curve of specified radius until its heading has shifted by the given angle, then performs given stop action
+    Runs drivebase in a curve of specified radius until its heading has shifted by the given angle, then performs given stop action.
+
+    Drivebase turning direction is reversed when the ``radius`` or ``angle`` inputs are negative (e.g. ``curve(100, 100, -100)``, ``curve(100, -100, 100)``, or ``curve(100, -100, -100)`` will all use a negative (clockwise) turning rate).
 
     :param speed: Velocity of drivebase (in mm/s)
     :param radius: Turning radius of drivebase (in mm)
@@ -218,6 +222,8 @@ Move by a Fixed Amount
 .. function:: void curveTurnRate(float speed, float turn_rate, float angle, uint8_t stop_action = STOP_BRAKE, bool wait = true);
 
     Runs drivebase at given speed and turn rate until its heading has shifted by the given angle, then runs specified stop action
+
+    Drivebase turning direction is reversed when the ``turn_rate`` or ``angle`` inputs are negative (e.g. ``curveTurnRate(100, 100, -100)``, ``curveTurnRate(100, -100, 100)``, or ``curveTurnRate(100, -100, -100)`` will all use a negative (clockwise) turning rate).
 
     :param speed: Velocity of drivebase (in mm/s)
     :param turn_rate: Turning rate of drivebase (in deg/s)
