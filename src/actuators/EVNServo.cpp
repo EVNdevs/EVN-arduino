@@ -115,13 +115,21 @@ void EVNServo::writeMicroseconds(uint16_t pulse_us, uint16_t wait_time_ms) volat
     }
 }
 
-void EVNServo::end() volatile
+void EVNServo::setMode(bool enable) volatile
 {
     if (!timerisr_enabled) return;
     EVNCoreSync1.core0_enter();
 
-    EVNServoBase::end();
-    fservos_enabled[_servo.port - 1] = false;
+    if (enable && !cservos_enabled[_servo.port - 1])
+    {
+        EVNServoBase::begin();
+        fservos_enabled[_servo.port - 1] = true;
+    }
+    else
+    {
+        EVNServoBase::end();
+        fservos_enabled[_servo.port - 1] = false;
+    }
 
     EVNCoreSync1.core0_exit();
 }
@@ -158,13 +166,21 @@ void EVNContinuousServo::writeMicroseconds(uint16_t pulse_us) volatile
     EVNCoreSync1.core0_exit();
 }
 
-void EVNContinuousServo::end() volatile
+void EVNContinuousServo::setMode(bool enable) volatile
 {
     if (!timerisr_enabled) return;
     EVNCoreSync1.core0_enter();
 
-    EVNServoBase::end();
-    cservos_enabled[_servo.port - 1] = false;
+    if (enable && !fservos_enabled[_servo.port - 1])
+    {
+        EVNServoBase::begin();
+        cservos_enabled[_servo.port - 1] = true;
+    }
+    else
+    {
+        EVNServoBase::end();
+        cservos_enabled[_servo.port - 1] = false;
+    }
 
     EVNCoreSync1.core0_exit();
 }

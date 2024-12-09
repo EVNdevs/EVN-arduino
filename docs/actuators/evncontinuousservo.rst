@@ -72,10 +72,6 @@ Functions
 .. note::
     For best performance, run this on the 2nd core using ``void setup1()``
 
-.. function:: void end()
-
-    Deinitializes continuous servo and releases PIO state machine consumed by it. 
-
 .. function::   void write(float duty_cycle_pct)
 
     Runs continuous rotation servo at given duty cycle in %(-100 to 100)
@@ -97,3 +93,9 @@ Functions
 
         //write 1500us pulse to continuous rotation servo
         cservo.writeMicroseconds(1500);
+
+.. function:: void setMode(bool enable)
+
+    Enable/disable continuous servo. When disabled, the PIO state machine consumed by the EVNContinuousServo object is released.
+
+    :param enable: Whether to enable continuous servo operation

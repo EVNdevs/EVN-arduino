@@ -158,8 +158,7 @@ public:
 
 	EVNMotor(uint8_t port, uint8_t motor_type = EV3_LARGE, uint8_t motor_dir = DIRECT, uint8_t enc_dir = DIRECT);
 	void begin() volatile;
-	void end() volatile;
-
+	void setMode(bool enable) volatile;
 	void setPID(float p, float i, float d) volatile;
 	void setAccel(float accel_dps_sq) volatile;
 	void setDecel(float decel_dps_sq) volatile;
@@ -206,24 +205,13 @@ protected:
 
 	static volatile encoder_state_t* encoderArgs[MAX_MOTOR_OBJECTS];
 	static volatile pid_control_t* pidArgs[MAX_MOTOR_OBJECTS];
-	static volatile bool ports_started[MAX_MOTOR_OBJECTS];
+	static volatile bool ports_enabled[MAX_MOTOR_OBJECTS];
 	static volatile bool timerisr_enabled;
-	static volatile bool pinisrs_enabled[MAX_MOTOR_OBJECTS];
+	static volatile bool odom_enabled[MAX_MOTOR_OBJECTS];
 
-	static bool timed_control_enabled(volatile pid_control_t* arg)
-	{
-		return arg->run_time;
-	}
-
-	static bool position_control_enabled(volatile pid_control_t* arg)
-	{
-		return arg->run_pos;
-	}
-
-	static bool loop_control_enabled(volatile pid_control_t* arg)
-	{
-		return (arg->run_speed || arg->run_time || arg->run_pos);
-	}
+	static bool timed_control_enabled(volatile pid_control_t* arg) { return arg->run_time; }
+	static bool position_control_enabled(volatile pid_control_t* arg) { return arg->run_pos; }
+	static bool loop_control_enabled(volatile pid_control_t* arg) { return (arg->run_speed || arg->run_time || arg->run_pos); }
 
 	static void velocity_update(volatile encoder_state_t* arg, uint32_t now)
 	{
@@ -529,62 +517,62 @@ protected:
 		switch (pidArg->port)
 		{
 		case 1:
-			if (!ports_started[0])
+			if (!ports_enabled[0])
 			{
 				encoderArgs[0] = encoderArg;
 				pidArgs[0] = pidArg;
-				ports_started[0] = true;
-				if (!pinisrs_enabled[0])
+				ports_enabled[0] = true;
+				if (!odom_enabled[0])
 				{
 					attachInterrupt(encoderArg->enca, isr0, CHANGE);
 					attachInterrupt(encoderArg->encb, isr1, CHANGE);
 				}
-				pinisrs_enabled[0] = true;
+				odom_enabled[0] = true;
 			}
 			break;
 
 		case 2:
-			if (!ports_started[1])
+			if (!ports_enabled[1])
 			{
 				encoderArgs[1] = encoderArg;
 				pidArgs[1] = pidArg;
-				ports_started[1] = true;
-				if (!pinisrs_enabled[1])
+				ports_enabled[1] = true;
+				if (!odom_enabled[1])
 				{
 					attachInterrupt(encoderArg->enca, isr2, CHANGE);
 					attachInterrupt(encoderArg->encb, isr3, CHANGE);
 				}
-				pinisrs_enabled[1] = true;
+				odom_enabled[1] = true;
 			}
 			break;
 
 		case 3:
-			if (!ports_started[2])
+			if (!ports_enabled[2])
 			{
 				encoderArgs[2] = encoderArg;
 				pidArgs[2] = pidArg;
-				ports_started[2] = true;
-				if (!pinisrs_enabled[2])
+				ports_enabled[2] = true;
+				if (!odom_enabled[2])
 				{
 					attachInterrupt(encoderArg->enca, isr4, CHANGE);
 					attachInterrupt(encoderArg->encb, isr5, CHANGE);
 				}
-				pinisrs_enabled[2] = true;
+				odom_enabled[2] = true;
 			}
 			break;
 
 		case 4:
-			if (!ports_started[3])
+			if (!ports_enabled[3])
 			{
 				encoderArgs[3] = encoderArg;
 				pidArgs[3] = pidArg;
-				ports_started[3] = true;
-				if (!pinisrs_enabled[3])
+				ports_enabled[3] = true;
+				if (!odom_enabled[3])
 				{
 					attachInterrupt(encoderArg->enca, isr6, CHANGE);
 					attachInterrupt(encoderArg->encb, isr7, CHANGE);
 				}
-				pinisrs_enabled[3] = true;
+				odom_enabled[3] = true;
 			}
 			break;
 		}
@@ -705,7 +693,7 @@ protected:
 		{
 			for (int i = 0; i < MAX_MOTOR_OBJECTS; i++)
 			{
-				if (ports_started[i])
+				if (ports_enabled[i])
 					pid_update(pidArgs[i], encoderArgs[i]);
 			}
 
@@ -724,8 +712,7 @@ public:
 
 	EVNDrivebase(float wheel_dia, float axle_track, EVNMotor* motor_left, EVNMotor* motor_right);
 	void begin() volatile;
-	void end() volatile;
-
+	void setMode(bool enable) volatile;
 	void setSpeedPID(float kp, float ki, float kd) volatile;
 	void setTurnRatePID(float kp, float ki, float kd) volatile;
 	void setSpeedAccel(float speed_accel) volatile;
@@ -774,17 +761,19 @@ private:
 
 	volatile drivebase_state_t db = {};
 	static volatile drivebase_state_t* dbArgs[MAX_DB_OBJECTS];
-	static volatile bool dbs_started[MAX_DB_OBJECTS];
+	static volatile bool dbs_enabled[MAX_DB_OBJECTS];
+	static volatile bool odom_enabled[MAX_DB_OBJECTS];
 	static volatile bool timerisr_enabled;
 
 	static void attach_interrupts(volatile drivebase_state_t* arg)
 	{
 		for (int i = 0; i < MAX_DB_OBJECTS; i++)
 		{
-			if (!dbs_started[i])
+			if (!dbs_enabled[i])
 			{
 				dbArgs[i] = arg;
-				dbs_started[i] = true;
+				dbs_enabled[i] = true;
+				odom_enabled[i] = true;
 				arg->id = i + 1;
 				break;
 			}
@@ -814,13 +803,20 @@ private:
 		if (EVNCoreSync0.core1_timer_isr_enter())
 		{
 			for (int i = 0; i < MAX_DB_OBJECTS; i++)
-				if (dbs_started[i])
-					if (EVNMotor::ports_started[dbArgs[i]->motor_left->_pid_control.port - 1]
-						&& EVNMotor::ports_started[dbArgs[i]->motor_right->_pid_control.port - 1])
+			{
+				if (odom_enabled[i])
+					if (EVNMotor::ports_enabled[dbArgs[i]->motor_left->_pid_control.port - 1]
+						&& EVNMotor::ports_enabled[dbArgs[i]->motor_right->_pid_control.port - 1])
+						pos_update(dbArgs[i]);
+
+				if (dbs_enabled[i])
+					if (EVNMotor::ports_enabled[dbArgs[i]->motor_left->_pid_control.port - 1]
+						&& EVNMotor::ports_enabled[dbArgs[i]->motor_right->_pid_control.port - 1])
 						pid_update(dbArgs[i]);
+			}
 
 			for (int i = 0; i < EVNMotor::MAX_MOTOR_OBJECTS; i++)
-				if (EVNMotor::ports_started[i])
+				if (EVNMotor::ports_enabled[i])
 					EVNMotor::pid_update(EVNMotor::pidArgs[i], EVNMotor::encoderArgs[i]);
 
 			EVNCoreSync0.core1_timer_isr_exit();
@@ -882,6 +878,18 @@ private:
 			&& arg->motor_left->getDPS_static(&arg->motor_left->_encoder) <= USER_DRIVE_STOP_CHECK_THRESHOLD_DPS);
 	}
 
+	static void pos_update(volatile drivebase_state_t* arg)
+	{
+		//update angle and linear distance travelled
+		arg->current_angle = getAngle_static(arg);
+		arg->current_distance = getDistance_static(arg);
+		float distance_travelled_in_last_loop = arg->current_distance - arg->prev_distance;
+		arg->prev_distance = arg->current_distance;
+
+		arg->position_x += distance_travelled_in_last_loop * cos(arg->current_angle / 180 * M_PI);
+		arg->position_y += distance_travelled_in_last_loop * sin(arg->current_angle / 180 * M_PI);
+	}
+
 	static void pid_update(volatile drivebase_state_t* arg)
 	{
 		//update time between loops
@@ -892,15 +900,6 @@ private:
 
 		if (time_since_last_loop < 0)
 			return;
-
-		//update angle and linear distance travelled
-		arg->current_angle = getAngle_static(arg);
-		arg->current_distance = getDistance_static(arg);
-		float distance_travelled_in_last_loop = arg->current_distance - arg->prev_distance;
-		arg->prev_distance = arg->current_distance;
-
-		arg->position_x += distance_travelled_in_last_loop * cos(arg->current_angle / 180 * M_PI);
-		arg->position_y += distance_travelled_in_last_loop * sin(arg->current_angle / 180 * M_PI);
 
 		if (arg->stall_until_stop)
 		{

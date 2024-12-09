@@ -2,12 +2,13 @@
 
 volatile encoder_state_t* EVNMotor::encoderArgs[] = { };
 volatile pid_control_t* EVNMotor::pidArgs[] = { };
-volatile bool EVNMotor::ports_started[] = { };
+volatile bool EVNMotor::ports_enabled[] = { };
 volatile bool EVNMotor::timerisr_enabled = false;
-volatile bool EVNMotor::pinisrs_enabled[] = { };
+volatile bool EVNMotor::odom_enabled[] = { };
 
 volatile drivebase_state_t* EVNDrivebase::dbArgs[] = { };
-volatile bool EVNDrivebase::dbs_started[] = { };
+volatile bool EVNDrivebase::dbs_enabled[] = { };
+volatile bool EVNDrivebase::odom_enabled[] = { };
 volatile bool EVNDrivebase::timerisr_enabled = false;
 
 EVNMotor::EVNMotor(uint8_t port, uint8_t motor_type, uint8_t motor_dir, uint8_t enc_dir)
@@ -126,12 +127,12 @@ void EVNMotor::begin() volatile
 	EVNCoreSync0.core0_exit();
 }
 
-void EVNMotor::end() volatile
+void EVNMotor::setMode(bool enable) volatile
 {
 	if (!timerisr_enabled) return;
 	EVNCoreSync1.core0_enter();
 
-	ports_started[_pid_control.port - 1] = false;
+	ports_enabled[_pid_control.port - 1] = enable;
 
 	EVNCoreSync1.core0_exit();
 }
@@ -499,12 +500,12 @@ void EVNDrivebase::begin() volatile
 	EVNCoreSync0.core0_exit();
 }
 
-void EVNDrivebase::end() volatile
+void EVNDrivebase::setMode(bool enable) volatile
 {
 	if (!timerisr_enabled) return;
 	EVNCoreSync1.core0_enter();
 
-	dbs_started[db.id - 1] = false;
+	dbs_enabled[db.id - 1] = enable;
 
 	EVNCoreSync1.core0_exit();
 }

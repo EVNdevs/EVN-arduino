@@ -58,7 +58,7 @@ public:
     void writeMicroseconds(uint16_t pulse_us, uint16_t wait_time_ms = 0) volatile;
     uint16_t getRange() volatile { return _servo.range; };
     float getMaxDPS() volatile { return _servo.max_dps; };
-    void end() volatile;
+    void setMode(bool enable) volatile;
 
 protected:
     static volatile bool timerisr_enabled;
@@ -159,7 +159,7 @@ public:
     void begin() volatile;
     void write(float duty_cycle_pct) volatile;
     void writeMicroseconds(uint16_t pulse_us) volatile;
-    void end() volatile;
+    void setMode(bool enable) volatile;
 
 protected:
     static volatile bool timerisr_enabled;

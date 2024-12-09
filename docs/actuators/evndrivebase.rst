@@ -54,10 +54,6 @@ Functions
     This command should be run on the 2nd core using ``void setup1()``. 
     However, you can still call the movement functions in ``void loop()`` like a normal program.
 
-.. function:: void end()
-
-    Disables any movement functions called afterwards. To re-enable, call ``begin()`` again on either core.
-
 Measurements
 """"""""""""
 
@@ -349,6 +345,12 @@ Control Settings
 """"""""""""""""
 
 To view the default PID and accel/decel values, look at ``src\evn_motor_defs.h`` in the Github repository.
+
+.. function:: void setMode(bool enable)
+
+    Disables any movement functions called afterwards. Does not disable odometry or wipe settings.
+
+    :param enable: Whether drivebase movement should be enabled
 
 .. function:: void setSpeedPID(float kp, float ki, float kd);
 
