@@ -26,10 +26,10 @@ void loop()
 
     Serial.print("CLEAR:");
     Serial.print(c);
-    Serial.print(",RED:");
+    Serial.print(", RED:");
     Serial.print(r);
-    Serial.print(",GREEN:");
+    Serial.print(", GREEN:");
     Serial.print(g);
-    Serial.print(",BLUE:");
+    Serial.print(", BLUE:");
     Serial.println(b);
 }
