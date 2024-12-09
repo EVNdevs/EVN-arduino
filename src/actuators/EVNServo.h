@@ -121,22 +121,24 @@ protected:
                     if (arg->position > arg->end_position)
                     {
                         arg->position -= deg_per_loop;
-                        if (arg->position < arg->end_position) arg->position = arg->end_position;
+                        if (arg->position < arg->end_position)
+                            arg->position = arg->end_position;
                     }
 
                     if (arg->position < arg->end_position)
                     {
                         arg->position += deg_per_loop;
-                        if (arg->position > arg->end_position) arg->position = arg->end_position;
+                        if (arg->position > arg->end_position)
+                            arg->position = arg->end_position;
                     }
 
-                    float pulse = (float)(arg->position / arg->range) * (float)(arg->max_pulse_us - arg->min_pulse_us);
+                    arg->pulse = (float)(arg->position / arg->range) * (float)(arg->max_pulse_us - arg->min_pulse_us);
                     if (arg->servo_dir == DIRECT)
-                        pulse = (float)arg->min_pulse_us + pulse;
+                        arg->pulse = (float)arg->min_pulse_us + arg->pulse;
                     else
-                        pulse = (float)arg->max_pulse_us - pulse;
+                        arg->pulse = (float)arg->max_pulse_us - arg->pulse;
 
-                    arg->servo->writeMicroseconds(pulse);
+                    arg->servo->writeMicroseconds(arg->pulse);
                 }
             }
             else
