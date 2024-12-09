@@ -4,6 +4,7 @@ volatile encoder_state_t* EVNMotor::encoderArgs[] = { };
 volatile pid_control_t* EVNMotor::pidArgs[] = { };
 volatile bool EVNMotor::ports_started[] = { };
 volatile bool EVNMotor::timerisr_enabled = false;
+volatile bool EVNMotor::pinisrs_enabled[] = { };
 
 volatile drivebase_state_t* EVNDrivebase::dbArgs[] = { };
 volatile bool EVNDrivebase::dbs_started[] = { };
@@ -131,8 +132,6 @@ void EVNMotor::end() volatile
 	EVNCoreSync1.core0_enter();
 
 	ports_started[_pid_control.port - 1] = false;
-	detachInterrupt(_encoder.enca);
-	detachInterrupt(_encoder.encb);
 
 	EVNCoreSync1.core0_exit();
 }

@@ -208,6 +208,7 @@ protected:
 	static volatile pid_control_t* pidArgs[MAX_MOTOR_OBJECTS];
 	static volatile bool ports_started[MAX_MOTOR_OBJECTS];
 	static volatile bool timerisr_enabled;
+	static volatile bool pinisrs_enabled[MAX_MOTOR_OBJECTS];
 
 	static bool timed_control_enabled(volatile pid_control_t* arg)
 	{
@@ -533,8 +534,12 @@ protected:
 				encoderArgs[0] = encoderArg;
 				pidArgs[0] = pidArg;
 				ports_started[0] = true;
-				attachInterrupt(encoderArg->enca, isr0, CHANGE);
-				attachInterrupt(encoderArg->encb, isr1, CHANGE);
+				if (!pinisrs_enabled[0])
+				{
+					attachInterrupt(encoderArg->enca, isr0, CHANGE);
+					attachInterrupt(encoderArg->encb, isr1, CHANGE);
+				}
+				pinisrs_enabled[0] = true;
 			}
 			break;
 
@@ -544,8 +549,12 @@ protected:
 				encoderArgs[1] = encoderArg;
 				pidArgs[1] = pidArg;
 				ports_started[1] = true;
-				attachInterrupt(encoderArg->enca, isr2, CHANGE);
-				attachInterrupt(encoderArg->encb, isr3, CHANGE);
+				if (!pinisrs_enabled[1])
+				{
+					attachInterrupt(encoderArg->enca, isr2, CHANGE);
+					attachInterrupt(encoderArg->encb, isr3, CHANGE);
+				}
+				pinisrs_enabled[1] = true;
 			}
 			break;
 
@@ -555,8 +564,12 @@ protected:
 				encoderArgs[2] = encoderArg;
 				pidArgs[2] = pidArg;
 				ports_started[2] = true;
-				attachInterrupt(encoderArg->enca, isr4, CHANGE);
-				attachInterrupt(encoderArg->encb, isr5, CHANGE);
+				if (!pinisrs_enabled[2])
+				{
+					attachInterrupt(encoderArg->enca, isr4, CHANGE);
+					attachInterrupt(encoderArg->encb, isr5, CHANGE);
+				}
+				pinisrs_enabled[2] = true;
 			}
 			break;
 
@@ -566,8 +579,12 @@ protected:
 				encoderArgs[3] = encoderArg;
 				pidArgs[3] = pidArg;
 				ports_started[3] = true;
-				attachInterrupt(encoderArg->enca, isr6, CHANGE);
-				attachInterrupt(encoderArg->encb, isr7, CHANGE);
+				if (!pinisrs_enabled[3])
+				{
+					attachInterrupt(encoderArg->enca, isr6, CHANGE);
+					attachInterrupt(encoderArg->encb, isr7, CHANGE);
+				}
+				pinisrs_enabled[3] = true;
 			}
 			break;
 		}
@@ -1007,7 +1024,7 @@ private:
 				{
 					Serial.print("Spd_Err:");
 					Serial.print(arg->speed_error);
-					Serial.print(",Ang_Err:");
+					Serial.print(", Ang_Err:");
 					Serial.println(arg->angle_error);
 				}
 			}
