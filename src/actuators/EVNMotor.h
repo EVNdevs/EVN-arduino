@@ -9,7 +9,7 @@
 #include "../evn_pins_defs.h"
 #include "../helper/EVNCoreSync.h"
 
-// TODO: Add end function for classes
+// TODO: Allow motor functions to be called even when EVNDrivebase is active
 
 //INPUT PARAMETER MACROS
 #define DIRECT	1
@@ -75,6 +75,7 @@ typedef struct
 	bool run_time;
 	uint32_t run_time_ms;
 	uint8_t stop_action;
+	bool debug;
 
 	//LOOP
 	uint32_t last_update;
@@ -101,6 +102,7 @@ typedef struct
 	float axle_track;
 	EVNMotor* motor_left;
 	EVNMotor* motor_right;
+	uint8_t id;
 
 	float speed_accel;
 	float speed_decel;
@@ -121,6 +123,7 @@ typedef struct
 	float end_angle;
 	float end_distance;
 	uint8_t stop_action;
+	bool debug;
 
 	//LOOP
 	uint32_t last_update;
@@ -155,6 +158,15 @@ public:
 
 	EVNMotor(uint8_t port, uint8_t motor_type = EV3_LARGE, uint8_t motor_dir = DIRECT, uint8_t enc_dir = DIRECT);
 	void begin() volatile;
+	void end() volatile;
+
+	void setPID(float p, float i, float d) volatile;
+	void setAccel(float accel_dps_sq) volatile;
+	void setDecel(float decel_dps_sq) volatile;
+	void setMaxRPM(float max_rpm) volatile;
+	void setPPR(uint32_t ppr) volatile;
+	void setDebug() volatile;
+
 	float getPosition() volatile;
 	float getHeading() volatile;
 	void setPosition(float position) volatile;
@@ -174,12 +186,6 @@ public:
 
 	bool completed() volatile;
 	bool stalled() volatile;
-
-	void setPID(float p, float i, float d) volatile;
-	void setAccel(float accel_dps_sq) volatile;
-	void setDecel(float decel_dps_sq) volatile;
-	void setMaxRPM(float max_rpm) volatile;
-	void setPPR(uint32_t ppr) volatile;
 
 protected:
 	float getTargetPosition() volatile;
@@ -500,6 +506,12 @@ protected:
 			pidArg->pos_pid->setKd(kd);
 
 			runPWM_static(pidArg, pidArg->output);
+
+			if (pidArg->debug)
+			{
+				Serial.print("Err:");
+				Serial.println(pidArg->error);
+			}
 		}
 
 		else if (!EVNAlpha::motorsEnabled() || !pidArg->run_pwm)
@@ -695,6 +707,23 @@ public:
 
 	EVNDrivebase(float wheel_dia, float axle_track, EVNMotor* motor_left, EVNMotor* motor_right);
 	void begin() volatile;
+	void end() volatile;
+
+	void setSpeedPID(float kp, float ki, float kd) volatile;
+	void setTurnRatePID(float kp, float ki, float kd) volatile;
+	void setSpeedAccel(float speed_accel) volatile;
+	void setSpeedDecel(float speed_decel) volatile;
+	void setTurnRateAccel(float turn_rate_accel) volatile;
+	void setTurnRateDecel(float turn_rate_decel) volatile;
+	void setDebug() volatile;
+
+	float getDistance() volatile;
+	float getAngle() volatile;
+	float getHeading() volatile;
+	float getX() volatile;
+	float getY() volatile;
+	void resetXY() volatile;
+	float getDistanceToPoint(float x, float y) volatile;
 
 	void drivePct(float speed_outer_pct, float turn_rate_pct) volatile;
 	void drive(float speed, float turn_rate) volatile;
@@ -714,21 +743,6 @@ public:
 	void hold() volatile;
 	bool completed() volatile;
 
-	void setSpeedPID(float kp, float ki, float kd) volatile;
-	void setTurnRatePID(float kp, float ki, float kd) volatile;
-	void setSpeedAccel(float speed_accel) volatile;
-	void setSpeedDecel(float speed_decel) volatile;
-	void setTurnRateAccel(float turn_rate_accel) volatile;
-	void setTurnRateDecel(float turn_rate_decel) volatile;
-
-	float getDistance() volatile;
-	float getAngle() volatile;
-	float getHeading() volatile;
-	float getX() volatile;
-	float getY() volatile;
-	void resetXY() volatile;
-	float getDistanceToPoint(float x, float y) volatile;
-
 private:
 	float getTargetDistance() volatile;
 	float getTargetAngle() volatile;
@@ -746,7 +760,7 @@ private:
 	static volatile bool dbs_started[MAX_DB_OBJECTS];
 	static volatile bool timerisr_enabled;
 
-	static void attach_db_interrupt(volatile drivebase_state_t* arg)
+	static void attach_interrupts(volatile drivebase_state_t* arg)
 	{
 		for (int i = 0; i < MAX_DB_OBJECTS; i++)
 		{
@@ -754,6 +768,7 @@ private:
 			{
 				dbArgs[i] = arg;
 				dbs_started[i] = true;
+				arg->id = i + 1;
 				break;
 			}
 		}
@@ -782,18 +797,14 @@ private:
 		if (EVNCoreSync0.core1_timer_isr_enter())
 		{
 			for (int i = 0; i < MAX_DB_OBJECTS; i++)
-			{
 				if (dbs_started[i])
 					if (EVNMotor::ports_started[dbArgs[i]->motor_left->_pid_control.port - 1]
 						&& EVNMotor::ports_started[dbArgs[i]->motor_right->_pid_control.port - 1])
 						pid_update(dbArgs[i]);
-			}
 
 			for (int i = 0; i < EVNMotor::MAX_MOTOR_OBJECTS; i++)
-			{
 				if (EVNMotor::ports_started[i])
 					EVNMotor::pid_update(EVNMotor::pidArgs[i], EVNMotor::encoderArgs[i]);
-			}
 
 			EVNCoreSync0.core1_timer_isr_exit();
 		}
@@ -991,6 +1002,14 @@ private:
 				//non-thread safe write used here, assumed safe because EVNDrivebase and EVNMotor should be on same core
 				arg->motor_left->runSpeed_unsafe(arg->target_motor_left_dps);
 				arg->motor_right->runSpeed_unsafe(arg->target_motor_right_dps);
+
+				if (arg->debug)
+				{
+					Serial.print("Spd_Err:");
+					Serial.print(arg->speed_error);
+					Serial.print(",Ang_Err:");
+					Serial.println(arg->angle_error);
+				}
 			}
 
 			//preserve sign of error between target and end distance/angle

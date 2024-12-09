@@ -45,7 +45,7 @@ Functions
 
 .. function:: void begin()
 
-    Initializes motor object. Call this function before calling the other EVNMotor functions.
+    Initializes motor object. Call this function before calling the other EVNMotor functions (including settings functions).
 
     .. code-block:: cpp
 

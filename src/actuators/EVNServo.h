@@ -63,7 +63,7 @@ public:
 protected:
     static volatile bool timerisr_enabled;
 
-    static void attach_servo_interrupt(volatile servo_state_t* arg)
+    static void attach_interrupts(volatile servo_state_t* arg)
     {
         if (!cservos_enabled[arg->port - 1])
         {
@@ -162,7 +162,7 @@ public:
 protected:
     static volatile bool timerisr_enabled;
 
-    static void attach_servo_interrupt(volatile servo_state_t* arg)
+    static void attach_interrupts(volatile servo_state_t* arg)
     {
         if (!fservos_enabled[arg->port - 1])
         {

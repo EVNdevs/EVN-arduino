@@ -125,6 +125,16 @@ void EVNMotor::begin() volatile
 	EVNCoreSync0.core0_exit();
 }
 
+void EVNMotor::end() volatile
+{
+	if (!timerisr_enabled) return;
+	EVNCoreSync1.core0_enter();
+
+	ports_started[_pid_control.port - 1] = false;
+
+	EVNCoreSync1.core0_exit();
+}
+
 void EVNMotor::setPID(float p, float i, float d) volatile
 {
 	if (!timerisr_enabled) return;
@@ -173,6 +183,16 @@ void EVNMotor::setPPR(uint32_t ppr) volatile
 	EVNCoreSync0.core0_enter();
 
 	_encoder.ppr = ppr;
+
+	EVNCoreSync0.core0_exit();
+}
+
+void EVNMotor::setDebug(bool enable) volatile
+{
+	if (!timerisr_enabled) return;
+	EVNCoreSync0.core0_enter();
+
+	_pid_control.debug = enable;
 
 	EVNCoreSync0.core0_exit();
 }
@@ -463,7 +483,29 @@ EVNDrivebase::EVNDrivebase(float wheel_dia, float axle_track, EVNMotor* motor_le
 	db.speed_decel = fabs(USER_SPEED_DECEL);
 	db.turn_rate_accel = fabs(USER_TURN_RATE_ACCEL);
 	db.turn_rate_decel = fabs(USER_TURN_RATE_DECEL);
+}
 
+void EVNDrivebase::begin() volatile
+{
+	EVNCoreSync0.begin();
+	if (timerisr_enabled || EVNMotor::timerisr_enabled)
+		EVNCoreSync0.core0_enter();
+	else
+		EVNCoreSync0.core0_enter_force();
+
+	attach_interrupts(&db);
+
+	EVNCoreSync0.core0_exit();
+}
+
+void EVNDrivebase::end() volatile
+{
+	if (!timerisr_enabled) return;
+	EVNCoreSync1.core0_enter();
+
+	dbs_started[db.id - 1] = false;
+
+	EVNCoreSync1.core0_exit();
 }
 
 void EVNDrivebase::setSpeedPID(float kp, float ki, float kd) volatile
@@ -530,15 +572,12 @@ void EVNDrivebase::setTurnRateDecel(float turn_rate_decel) volatile
 	EVNCoreSync0.core0_exit();
 }
 
-void EVNDrivebase::begin() volatile
+void EVNDrivebase::setDebug(bool enable) volatile
 {
-	EVNCoreSync0.begin();
-	if (timerisr_enabled || EVNMotor::timerisr_enabled)
-		EVNCoreSync0.core0_enter();
-	else
-		EVNCoreSync0.core0_enter_force();
+	if (!timerisr_enabled) return;
+	EVNCoreSync0.core0_enter();
 
-	attach_db_interrupt(&db);
+	db.debug = enable;
 
 	EVNCoreSync0.core0_exit();
 }

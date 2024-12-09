@@ -35,7 +35,7 @@ Functions
 
 .. function:: void begin();
 
-    Initializes drivebase object. Call this function after calling ``begin()`` on the EVNMotor objects (these still need to be called!), but before calling any other ``EVNDrivebase`` functions.
+    Initializes drivebase object. Call this function after calling ``begin()`` on the EVNMotor objects (which still need to be called!), but before calling any other ``EVNDrivebase`` functions (including settings functions).
 
     .. code-block:: cpp
 

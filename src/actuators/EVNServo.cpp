@@ -11,11 +11,9 @@ EVNServoBase::EVNServoBase(uint8_t port, bool servo_dir, uint16_t min_pulse_us, 
     _servo.servo_dir = servo_dir;
     _servo.min_pulse_us = min_pulse_us;
     _servo.max_pulse_us = max_pulse_us;
+    _servo.port = constrain(port, 1, 4);
 
-    uint8_t portc = constrain(port, 1, 4);
-    _servo.port = portc;
-
-    switch (portc)
+    switch (_servo.port)
     {
     case 1:
         _servo.pin = PIN_SERVO1;
@@ -55,7 +53,7 @@ EVNServo::EVNServo(uint8_t port, bool servo_dir, uint16_t range, float start_pos
 void EVNServo::begin() volatile
 {
     EVNServoBase::begin();
-    attach_servo_interrupt(&_servo);
+    attach_interrupts(&_servo);
 
     float pulse = (float)(_servo.position / _servo.range) * (float)(_servo.max_pulse_us - _servo.min_pulse_us);
     if (_servo.servo_dir == DIRECT)
@@ -123,23 +121,7 @@ void EVNServo::end() volatile
     EVNCoreSync1.core0_enter();
 
     EVNServoBase::end();
-
-    if (!fservos_enabled[0] && !fservos_enabled[1] && !fservos_enabled[2] && !fservos_enabled[3])
-    {
-        if (!EVNContinuousServo::timerisr_enabled)
-        {
-            cancel_repeating_timer(&EVNISRTimer0.sharedISRTimer(0));
-            cancel_repeating_timer(&EVNISRTimer1.sharedISRTimer(0));
-            timerisr_enabled = false;
-        }
-        else if (!cservos_enabled[0] && !cservos_enabled[1] && !cservos_enabled[2] && !cservos_enabled[3])
-        {
-            cancel_repeating_timer(&EVNISRTimer0.sharedISRTimer(1));
-            cancel_repeating_timer(&EVNISRTimer1.sharedISRTimer(1));
-            EVNContinuousServo::timerisr_enabled = false;
-        }
-        timerisr_enabled = false;
-    }
+    fservos_enabled[_servo.port - 1] = false;
 
     EVNCoreSync1.core0_exit();
 }
@@ -147,7 +129,7 @@ void EVNServo::end() volatile
 void EVNContinuousServo::begin() volatile
 {
     EVNServoBase::begin();
-    attach_servo_interrupt(&_servo);
+    attach_interrupts(&_servo);
 
     float pulse = (float)(_servo.max_pulse_us - _servo.min_pulse_us) / 2 + _servo.min_pulse_us;
     this->writeMicroseconds(pulse);
@@ -182,15 +164,7 @@ void EVNContinuousServo::end() volatile
     EVNCoreSync1.core0_enter();
 
     EVNServoBase::end();
-
-    if (!fservos_enabled[0] && !fservos_enabled[1] && !fservos_enabled[2] && !fservos_enabled[3]
-        && !cservos_enabled[0] && !cservos_enabled[1] && !cservos_enabled[2] && !cservos_enabled[3])
-    {
-        cancel_repeating_timer(&EVNISRTimer0.sharedISRTimer(1));
-        cancel_repeating_timer(&EVNISRTimer1.sharedISRTimer(1));
-        timerisr_enabled = false;
-        EVNServo::timerisr_enabled = false;
-    }
+    cservos_enabled[_servo.port - 1] = false;
 
     EVNCoreSync1.core0_exit();
 }
