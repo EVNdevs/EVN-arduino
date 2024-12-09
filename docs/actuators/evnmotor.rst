@@ -58,7 +58,11 @@ Functions
 
 .. note::
     This command should be run on the 2nd core using ``void setup1()``. 
-    However, you can still call the movement functions in ``void loop()`` like a normal program.
+    However, you can still call the movement and settings functions in ``void loop()`` like a normal program.
+
+.. function:: void end()
+
+    Disables any movement functions called afterwards. To re-enable, call ``begin()`` again on either core.
 
 Measurements
 """"""""""""
@@ -234,7 +238,7 @@ Run by a Fixed Amount
 Stopping
 """""""""
 
-.. function::    void stop()
+.. function:: void stop()
 
     Brakes the motor (slow decay).
 
@@ -312,9 +316,15 @@ Control Settings
 
         motor.setPPR(823);
 
+.. function:: void setDebug(bool enable)
+
+    Used to toggle debug mode, where motor will print the error used for PID control over ``Serial``. Can be used to observe or debug PID behaviour.
+
+    :param enable: Whether to enable debug mode
+
 How Our Motor Control Works
 """"""""""""""""""""""""""""
-This is a little technical, but feel free to skip it and move on to the settings functions!
+This is a little technical, but feel free to skip it!
 
 For move functions where the motor rotates by a fixed amount, what we actually do is set a **target position** for the motor to move to. 
 This target position starts out as the motor's **current position**, but **increments over time** until it reaches the **end position** given by the user.

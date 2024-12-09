@@ -54,6 +54,10 @@ Functions
     This command should be run on the 2nd core using ``void setup1()``. 
     However, you can still call the movement functions in ``void loop()`` like a normal program.
 
+.. function:: void end()
+
+    Disables any movement functions called afterwards. To re-enable, call ``begin()`` again on either core.
+
 Measurements
 """"""""""""
 
@@ -411,3 +415,9 @@ To view the default PID and accel/decel values, look at ``src\evn_motor_defs.h``
     .. code-block:: cpp
     
         db.setTurnRateDecel(500);
+
+.. function:: void setDebug(bool enable)
+
+    Used to toggle debug mode, where drivebase will print the errors used for PID control over ``Serial``. Can be used to observe or debug PID behaviour.
+
+    :param enable: Whether to enable debug mode
