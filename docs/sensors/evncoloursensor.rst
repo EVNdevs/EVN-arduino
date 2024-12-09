@@ -84,7 +84,7 @@ Reading Raw RGBC Values
     :param blocking: Block function from returning a value until a new reading is obtained. Defaults to ``true``
     :returns: raw reading
 
-.. function::   uint16_t readClearRaw(bool blocking = true)
+.. function::   uint16_t readClear(bool blocking = true)
 
     Same as ``read(CLEAR, blocking)``
 
@@ -247,7 +247,7 @@ After calling these functions, you can use the ``readNorm()`` function to read n
     :param blocking: Block function from returning a value until a new reading is obtained. Defaults to ``true``
     :returns: normalised Green reading in % (0 - 100)
 
-.. function:: float readBlueNorm()
+.. function:: float readBlueNorm(bool blocking = true)
     
     Same as ``readNorm(BLUE, blocking)``
 
