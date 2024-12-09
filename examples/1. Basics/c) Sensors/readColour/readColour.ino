@@ -19,17 +19,17 @@ void setup()
 
 void loop()
 {
-    int clear = cs.readClear();
-    int red = cs.readRed(false);        //blocking is set to false
-    int green = cs.readGreen(false);    //to ensure that the sensor does not wait for a new reading
-    int blue = cs.readBlue(false);
+    int c = cs.read(CLEAR);
+    int r = cs.read(RED, false);    //blocking is set to false
+    int g = cs.read(GREEN, false);  //to ensure that the sensor does not wait for a new reading
+    int b = cs.read(BLUE, false);
 
-    Serial.print("CLEAR ");
-    Serial.print(clear);
-    Serial.print(" RED ");
-    Serial.print(red);
-    Serial.print(" GREEN ");
-    Serial.print(green);
-    Serial.print(" BLUE ");
-    Serial.println(blue);
+    Serial.print("CLEAR:");
+    Serial.print(c);
+    Serial.print(",RED:");
+    Serial.print(r);
+    Serial.print(",GREEN:");
+    Serial.print(g);
+    Serial.print(",BLUE:");
+    Serial.println(b);
 }

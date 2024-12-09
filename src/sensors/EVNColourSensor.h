@@ -11,27 +11,14 @@
 #define COLOUR_GAIN_X16 (EVNColourSensor::gain::X16)
 #define COLOUR_GAIN_X60 (EVNColourSensor::gain::X60)
 
-struct evn_col
-{
-    uint16_t red;
-    uint16_t green;
-    uint16_t blue;
-    uint16_t clear;
+#define CLEAR   0
+#define RED     1
+#define GREEN   2
+#define BLUE    3
 
-    float red_pct;
-    float green_pct;
-    float blue_pct;
-    float clear_pct;
-
-    float red_norm;
-    float green_norm;
-    float blue_norm;
-    float clear_norm;
-
-    float hue;
-    float saturation;
-    float value;
-};
+#define HUE     0
+#define SAT     1
+#define VAL     2
 
 class EVNColourSensor : private EVNI2CDevice {
 public:
@@ -88,7 +75,7 @@ public:
         _addr = I2C_ADDR;
         _gain = gain;
         _int_cycles = constrain(integration_cycles, 1, 255);
-    };
+    }
 
     bool begin()
     {
@@ -97,9 +84,7 @@ public:
         uint8_t id = read8(TCS34725_COMMAND_BIT | (uint8_t)reg::ID);
 
         if (id != ID_REG_PART_NUMBER && id != ALT_ID_REG_PART_NUMBER)
-        {
             return _sensor_started;
-        };
 
         _sensor_started = true;
 
@@ -111,7 +96,7 @@ public:
         this->setGain(_gain);
 
         return _sensor_started;
-    };
+    }
 
     void setGain(gain gain)
     {
@@ -120,7 +105,7 @@ public:
             _gain = gain;
             write8(TCS34725_COMMAND_BIT | (uint8_t)reg::CONTROL, (uint8_t)_gain);
         }
-    };
+    }
 
     void setIntegrationCycles(uint8_t integration_cycles)
     {
@@ -131,243 +116,187 @@ public:
             write8(TCS34725_COMMAND_BIT | (uint8_t)reg::ATIME, (uint8_t)(255 - (_int_cycles - 1)));
             _int_time_us = _int_cycles * 2400;
         }
-    };
+    }
 
-    void setRedRange(uint16_t low, uint16_t high)
+    void setRange(uint8_t component, uint16_t low, uint16_t high)
     {
-        _r_norm = true;
-        _r_low = low;
-        _r_high = max(low + 1, high);
-    };
+        component = constrain(component, 0, 3);
 
-    void setGreenRange(uint16_t low, uint16_t high)
+        switch (component)
+        {
+        case CLEAR:
+            _c_norm = true;
+            _c_low = low;
+            _c_high = max(low + 1, high);
+            break;
+        case RED:
+            _r_norm = true;
+            _r_low = low;
+            _r_high = max(low + 1, high);
+            break;
+        case GREEN:
+            _g_norm = true;
+            _g_low = low;
+            _g_high = max(low + 1, high);
+            break;
+        case BLUE:
+            _b_norm = true;
+            _b_low = low;
+            _b_high = max(low + 1, high);
+            break;
+        }
+    }
+
+    void setClearRange(uint16_t low, uint16_t high) { setRange(CLEAR, low, high); }
+    void setRedRange(uint16_t low, uint16_t high) { setRange(RED, low, high); }
+    void setGreenRange(uint16_t low, uint16_t high) { setRange(GREEN, low, high); }
+    void setBlueRange(uint16_t low, uint16_t high) { setRange(BLUE, low, high); }
+
+    uint16_t read(uint8_t component, bool blocking = true)
     {
-        _g_norm = true;
-        _g_low = low;
-        _g_high = max(low + 1, high);
-    };
+        component = constrain(component, 0, 3);
 
-    void setBlueRange(uint16_t low, uint16_t high)
-    {
-        _b_norm = true;
-        _b_low = low;
-        _b_high = max(low + 1, high);
-    };
-
-    void setClearRange(uint16_t low, uint16_t high)
-    {
-        _c_norm = true;
-        _c_low = low;
-        _c_high = max(low + 1, high);
-    };
-
-    evn_col readAll(bool blocking = true)
-    {
-        this->update(blocking);
-        convertToPCT();
-
-        evn_col reading;
-
-        reading.red = _r;
-        reading.green = _g;
-        reading.blue = _b;
-        reading.clear = _c;
-
-        reading.red_pct = _r_pct;
-        reading.green_pct = _g_pct;
-        reading.blue_pct = _b_pct;
-        reading.clear_pct = _c_pct;
-
-        reading.red_norm = readRedNorm(false);
-        reading.green_norm = readGreenNorm(false);
-        reading.blue_norm = readBlueNorm(false);
-        reading.clear_norm = readClearNorm(false);
-
-        reading.hue = readHueHSV(false);
-        reading.saturation = readSaturationHSV(false);
-        reading.value = readValueHSV(false);
-
-        return reading;
-    };
-
-    uint16_t read(bool blocking = true)
-    {
-        return this->readClear(blocking);
-    };
-
-    uint16_t readRed(bool blocking = true)
-    {
         if (_sensor_started)
         {
             this->update(blocking);
-            return _r;
+
+            switch (component)
+            {
+            case CLEAR: return _c;
+            case RED: return _r;
+            case GREEN: return _g;
+            case BLUE: return _b;
+            }
         }
         return 0;
-    };
+    }
 
-    uint16_t readGreen(bool blocking = true)
+    uint16_t readRed(bool blocking = true) { return read(RED, blocking); }
+    uint16_t readGreen(bool blocking = true) { return read(GREEN, blocking); }
+    uint16_t readBlue(bool blocking = true) { return read(BLUE, blocking); }
+    uint16_t readClear(bool blocking = true) { return read(CLEAR, blocking); }
+
+    float readPCT(uint8_t component, bool blocking = true)
     {
+        component = constrain(component, 0, 3);
+
         if (_sensor_started)
         {
             this->update(blocking);
-            return _g;
-        }
-        return 0;
-    };
-    uint16_t readBlue(bool blocking = true)
-    {
-        if (_sensor_started)
-        {
-            this->update(blocking);
-            return _b;
-        }
-        return 0;
-    };
+            convertToPCT();
 
-    uint16_t readClear(bool blocking = true)
-    {
-        if (_sensor_started)
-        {
-            this->update(blocking);
-            return _c;
+            switch (component)
+            {
+            case CLEAR: return _c_pct;
+            case RED: return _r_pct;
+            case GREEN: return _g_pct;
+            case BLUE: return _b_pct;
+            }
         }
         return 0;
-    };
+    }
 
-    float readRedNorm(bool blocking = true)
-    {
-        if (_sensor_started)
-        {
-            if (_r_norm)
-                return normalise(this->readRed(blocking), _r_low, _r_high);
-        }
-        return 0;
-    };
+    float readClearPCT(bool blocking = true) { return readPCT(CLEAR, blocking); }
+    float readRedPCT(bool blocking = true) { return readPCT(RED, blocking); }
+    float readGreenPCT(bool blocking = true) { return readPCT(GREEN, blocking); }
+    float readBluePCT(bool blocking = true) { return readPCT(BLUE, blocking); }
 
-    float readGreenNorm(bool blocking = true)
+    float readNorm(uint8_t component, bool blocking = true)
     {
-        if (_sensor_started)
-        {
-            if (_g_norm)
-                return normalise(this->readGreen(blocking), _g_low, _g_high);
-        }
-        return 0;
-    };
+        component = constrain(component, 0, 3);
 
-    float readBlueNorm(bool blocking = true)
-    {
-        if (_sensor_started)
+        switch (component)
         {
-            if (_b_norm)
-                return normalise(this->readBlue(blocking), _b_low, _b_high);
-        }
-        return 0;
-    };
-
-    float readClearNorm(bool blocking = true)
-    {
-        if (_sensor_started)
-        {
+        case CLEAR:
             if (_c_norm)
-                return normalise(this->readClear(blocking), _c_low, _c_high);
+                return normalise(this->read(CLEAR, blocking), _c_low, _c_high);
+        case RED:
+            if (_r_norm)
+                return normalise(this->read(RED, blocking), _r_low, _r_high);
+        case GREEN:
+            if (_g_norm)
+                return normalise(this->read(GREEN, blocking), _g_low, _g_high);
+        case BLUE:
+            if (_b_norm)
+                return normalise(this->read(BLUE, blocking), _b_low, _b_high);
         }
+
         return 0;
-    };
+    }
 
-    float readClearPCT(bool blocking = true)
-    {
-        this->update(blocking);
-        convertToPCT();
-        return _c_pct;
-    };
+    float readClearNorm(bool blocking = true) { return readNorm(CLEAR, blocking); }
+    float readRedNorm(bool blocking = true) { return readNorm(RED, blocking); }
+    float readGreenNorm(bool blocking = true) { return readNorm(GREEN, blocking); }
+    float readBlueNorm(bool blocking = true) { return readNorm(BLUE, blocking); }
 
-    float readRedPCT(bool blocking = true)
-    {
-        this->update(blocking);
-        convertToPCT();
-        return _r_pct;
-    };
+    void useNormForHSV(bool enable) { _use_norm_for_hsv = enable; }
 
-    float readGreenPCT(bool blocking = true)
+    float readHSV(uint8_t component, bool blocking = true)
     {
-        this->update(blocking);
-        convertToPCT();
-        return _g_pct;
-    };
+        component = constrain(component, 0, 2);
 
-    float readBluePCT(bool blocking = true)
-    {
-        this->update(blocking);
-        convertToPCT();
-        return _b_pct;
-    };
-
-    float readHueHSV(bool blocking = true)
-    {
         this->update(blocking);
         convertToPCT();
 
-        float cmax = max(_r_pct, max(_g_pct, _b_pct));
-        float cmin = min(_r_pct, min(_g_pct, _b_pct));
+        float _r_float = _r_pct;
+        float _g_float = _g_pct;
+        float _b_float = _b_pct;
+
+        if (_use_norm_for_hsv)
+        {
+            _r_float = normalise(this->read(RED, false), _r_low, _r_high);
+            _g_float = normalise(this->read(GREEN, false), _g_low, _g_high);
+            _b_float = normalise(this->read(BLUE, false), _b_low, _b_high);
+        }
+
+        float cmax = max(_r_float, max(_g_float, _b_float));
+        float cmin = min(_r_float, min(_g_float, _b_float));
         float cdiff = cmax - cmin;
 
-        float hue = 0;
-        if (cdiff == 0)
-            return 0;
+        switch (component)
+        {
+        case HUE:
+            float hue;
+            if (cdiff == 0)
+                hue = 0;
+            else if (cmax == _r_float)
+                hue = 60 * fmod((_g_float - _b_float) / cdiff, 6);
 
-        else if (cmax == _r_pct)
-            hue = 60 * fmod((_g_pct - _b_pct) / cdiff, 6);
+            else if (cmax == _g_float)
+                hue = 60 * ((_b_float - _r_float) / cdiff + 2);
 
-        else if (cmax == _g_pct)
-            hue = 60 * ((_b_pct - _r_pct) / cdiff + 2);
+            else if (cmax == _b_float)
+                hue = 60 * ((_r_float - _g_float) / cdiff + 4);
+            return hue;
+        case SAT:
+            return cmax ? cdiff / cmax : 0;
+        case VAL:
+            return cmax;
+        }
+    }
 
-        else if (cmax == _b_pct)
-            hue = 60 * ((_r_pct - _g_pct) / cdiff + 4);
-
-        return hue;
-    };
-
-    float readSaturationHSV(bool blocking = true)
-    {
-        this->update(blocking);
-        convertToPCT();
-
-        float cmax = max(_r_pct, max(_g_pct, _b_pct));
-        float cmin = min(_r_pct, min(_g_pct, _b_pct));
-        float cdiff = cmax - cmin;
-
-        if (cmax == 0)
-            return 0;
-        else
-            return cdiff / cmax;
-    };
-
-    float readValueHSV(bool blocking = true)
-    {
-        this->update(blocking);
-        convertToPCT();
-
-        return max(_r_pct, max(_g_pct, _b_pct));
-    };
+    float readHue(bool blocking = true) { return readHSV(HUE, blocking); }
+    float readSaturation(bool blocking = true) { return readHSV(SAT, blocking); }
+    float readValue(bool blocking = true) { return readHSV(VAL, blocking); }
 
 private:
 
     float normalise(uint16_t reading, uint16_t low, uint16_t high)
     {
         return constrain(((float)(reading - low)) / ((float)(high - low)), 0, 1);
-    };
+    }
 
     void convertToPCT()
     {
         if (!_converted_to_pct)
         {
-            _c_pct = (float)_c / (float)_max_count;
-            _r_pct = (float)_r / (float)_max_count;
-            _g_pct = (float)_g / (float)_max_count;
-            _b_pct = (float)_b / (float)_max_count;
+            _c_pct = (float)_c / (float)_max_count * 100;
+            _r_pct = (float)_r / (float)_max_count * 100;
+            _g_pct = (float)_g / (float)_max_count * 100;
+            _b_pct = (float)_b / (float)_max_count * 100;
             _converted_to_pct = true;
         }
-    };
+    }
 
     void update(bool blocking = false)
     {
@@ -390,7 +319,7 @@ private:
                 _converted_to_pct = false;
             }
         }
-    };
+    }
 
     uint8_t _buffer[8] = { 0 };
 
@@ -401,7 +330,7 @@ private:
     gain _gain;
 
     uint16_t _r = 0, _g = 0, _b = 0, _c = 0;
-    bool _converted_to_pct = false;
+    bool _converted_to_pct = false, _use_norm_for_hsv = false;
     float _r_pct = 0, _g_pct = 0, _b_pct = 0, _c_pct = 0;
     bool _r_norm = false, _g_norm = false, _b_norm = false, _c_norm = false;
     uint16_t _r_low, _g_low, _b_low, _c_low;

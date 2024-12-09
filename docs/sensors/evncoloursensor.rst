@@ -63,58 +63,96 @@ Functions
 
     Sets the number of 2.4ms integration cycles used for 1 reading.
 
-    integration time = 2.4ms * integration cycles
+    Integration Time = 2.4ms * Integration Cycles
 
     :param integration_cycles: Number of 2.4ms integration cycles for 1 reading (1-255)
-
-
-.. function:: void writeSettings(uint8_t integration_cycles, gain gain)
-
-    Sets the number of 2.4ms integration cycles used for 1 reading and internal sensor gain.
-
-    :param integration_cycles: Number of 2.4ms integration cycles for 1 reading
-
-    :param gain: Gain applied to readings
-
-        * ``COLOUR_GAIN_X1`` -- 1x gain
-        * ``COLOUR_GAIN_X4`` -- 4x gain
-        * ``COLOUR_GAIN_X16`` -- 16x gain
-        * ``COLOUR_GAIN_X60`` -- 60x gain
 
 Reading Raw RGBC Values
 """""""""""""""""""""""
 
-.. function::   uint16_t readClear(bool blocking = true)
+.. function:: uint16_t read(uint8_t component, bool blocking = true)
 
-    Returns raw clear reading from sensor.
+    Returns raw reading for given component (Clear, Red, Green or Blue).
+
+    :param component: RGBC Component to be returned
+
+        * ``CLEAR``
+        * ``RED``
+        * ``GREEN``
+        * ``BLUE``
 
     :param blocking: Block function from returning a value until a new reading is obtained. Defaults to ``true``
+    :returns: raw reading
 
-    :returns: raw clear reading
+.. function::   uint16_t readClearRaw(bool blocking = true)
+
+    Same as ``read(CLEAR, blocking)``
+
+    :param blocking: Block function from returning a value until a new reading is obtained. Defaults to ``true``
+    :returns: raw Clear reading
 
 .. function:: uint16_t readRed(bool blocking = true)
 
-    Returns raw red reading from sensor.
+    Same as ``read(RED, blocking)``
 
     :param blocking: Block function from returning a value until a new reading is obtained. Defaults to ``true``
-
-    :returns: raw red reading
+    :returns: raw Red reading
 
 .. function:: uint16_t readGreen(bool blocking = true)
 
-    Returns raw green reading from sensor.
+    Same as ``read(GREEN, blocking)``
 
     :param blocking: Block function from returning a value until a new reading is obtained. Defaults to ``true``
-
-    :returns: raw green reading
+    :returns: raw Green reading
 
 .. function:: uint16_t readBlue(bool blocking = true)
 
-    Returns raw blue reading from sensor.
+    Same as ``read(BLUE, blocking)``
 
     :param blocking: Block function from returning a value until a new reading is obtained. Defaults to ``true``
+    :returns: raw Blue reading
 
-    :returns: raw blue reading
+.. function:: float readPCT(bool blocking = true)
+
+    Returns raw reading for given component as a percentage (0 - 100).
+
+    :param component: RGBC Component to be returned
+
+        * ``CLEAR``
+        * ``RED``
+        * ``GREEN``
+        * ``BLUE``
+
+    :param blocking: Block function from returning a value until a new reading is obtained. Defaults to ``true``
+    :returns: raw reading in % (0 - 100)
+
+.. function:: float readClearPCT(bool blocking = true)
+
+    Same as ``readPCT(CLEAR, blocking)``
+
+    :param blocking: Block function from returning a value until a new reading is obtained. Defaults to ``true``
+    :returns: raw Clear reading in % (0 - 100)
+
+.. function:: float readRedPCT(bool blocking = true)
+
+    Same as ``readPCT(RED, blocking)``
+
+    :param blocking: Block function from returning a value until a new reading is obtained. Defaults to ``true``
+    :returns: raw Red reading in % (0 - 100)
+
+.. function:: float readGreenPCT(bool blocking = true)
+
+    Same as ``readPCT(GREEN, blocking)``
+
+    :param blocking: Block function from returning a value until a new reading is obtained. Defaults to ``true``
+    :returns: raw Green reading in % (0 - 100)
+
+.. function:: float readBluePCT(bool blocking = true)
+
+    Same as ``readPCT(BLUE, blocking)``
+
+    :param blocking: Block function from returning a value until a new reading is obtained. Defaults to ``true``
+    :returns: raw Blue reading in % (0 - 100)
 
 Reading Normalised RGBC Values
 """""""""""""""""""""""""""""""
@@ -126,111 +164,141 @@ Normalisation is the process of converting raw readings such that they range fro
 
 Normalised Reading = (Raw Reading - Low) / (High - Low)
 
-Before reading normalised values, you need to call the ``setXXrange()`` function to set the low and high values for a given colour channel first.
+Before reading normalised values, you first need to call the ``setRange()`` function to set the low and high values for a given colour channel.
+
+.. function:: void setRange(uint8_t component, uint16_t low, uint16_t high)
+
+    Set the range of raw values for given colour component.
+
+    If this function is not called for a given colour component, ``readNorm()`` for that colour component will return 0.
+
+    :param component: RGBC Component to be set range for
+
+        * ``CLEAR``
+        * ``RED``
+        * ``GREEN``
+        * ``BLUE``
+
+    :param low: lower bound of readings for colour component
+    :param high: upper bound of readings for colour component
 
 .. function:: void setClearRange(uint16_t low, uint16_t high)
     
-    Sets the range of possible clear values for raw readings
+    Same as ``setRange(CLEAR, low, high)``
 
-    If this function is not called, ``readClearNorm()`` returns 0
-
-    :param low: lower bound of readings for Clear channel
-
-    :param high: upper bound of readings for Clear channel
+    :param low: lower bound of Clear readings
+    :param high: upper bound of Clear readings
 
 .. function:: void setRedRange(uint16_t low, uint16_t high)
     
-    Sets the range of possible red values for raw readings
+    Same as ``setRange(RED, low, high)``
 
-    If this function is not called, ``readRedNorm()`` returns 0
-
-    :param low: lower bound of readings for Red channel
-
-    :param high: upper bound of readings for Red channel
+    :param low: lower bound of Red readings
+    :param high: upper bound of Red readings
 
 .. function:: void setGreenRange(uint16_t low, uint16_t high)
     
-    Sets the range of possible green values for raw readings
+    Same as ``setRange(GREEN, low, high)``
 
-    If this function is not called, ``readGreenNorm()`` returns 0
-
-    :param low: lower bound of readings for Green channel
-
-    :param high: upper bound of readings for Green channel
+    :param low: lower bound of Green readings
+    :param high: upper bound of Green readings
 
 .. function:: void setBlueRange(uint16_t low, uint16_t high)
     
-    Sets the range of possible blue values for raw readings
+    Same as ``setRange(BLUE, low, high)``
 
-    If this function is not called, ``readBlueNorm()`` returns 0
+    :param low: lower bound of Blue readings
+    :param high: upper bound of Blue readings
 
-    :param low: lower bound of readings for Blue channel
+After calling these functions, you can use the ``readNorm()`` function to read normalised readings.
 
-    :param high: upper bound of readings for Blue channel
+.. function:: float readNorm(uint8_t component, bool blocking = true)
 
-After calling these functions, you can use the ``readXXNorm()`` functions to read normalised readings
+    Returns normalised reading for given colour component in % (0 - 100)
+
+    :param component: RGBC Component to be returned
+
+        * ``CLEAR``
+        * ``RED``
+        * ``GREEN``
+        * ``BLUE``
+
+    :param blocking: Block function from returning a value until a new reading is obtained. Defaults to ``true``
+    :returns: normalised reading in % (0 - 100)
 
 .. function:: float readClearNorm(bool blocking = true)
 
-    Returns normalised clear reading from sensor.
+    Same as ``readNorm(CLEAR, blocking)``
 
     :param blocking: Block function from returning a value until a new reading is obtained. Defaults to ``true``
-
-    :returns:
-
-        * if ``setClearRange()`` has been called, normalised clear reading from 0 to 1
-        * -1 otherwise
+    :returns: normalised Clear reading in % (0 - 100)
 
 .. function:: float readRedNorm(bool blocking = true)
     
-    Returns normalised red reading from sensor.
+    Same as ``readNorm(RED, blocking)``
 
     :param blocking: Block function from returning a value until a new reading is obtained. Defaults to ``true``
-
-    :returns:
-
-        * if ``setRedRange()`` has been called, normalised red reading from 0 to 1
-        * -1 otherwise
+    :returns: normalised Red reading in % (0 - 100)
 
 .. function:: float readGreenNorm(bool blocking = true)
     
-    Returns normalised green reading from sensor.
+    Same as ``readNorm(GREEN, blocking)``
 
     :param blocking: Block function from returning a value until a new reading is obtained. Defaults to ``true``
-
-    :returns:
-
-        * if ``setGreenRange()`` has been called, normalised green reading from 0 to 1
-        * -1 otherwise
+    :returns: normalised Green reading in % (0 - 100)
 
 .. function:: float readBlueNorm()
     
-    Returns normalised blue reading from sensor.
+    Same as ``readNorm(BLUE, blocking)``
 
     :param blocking: Block function from returning a value until a new reading is obtained. Defaults to ``true``
-
-    :returns:
-
-        * if ``setBlueRange()`` has been called, normalised blue reading from 0 to 1
-        * -1 otherwise
+    :returns: normalised Blue reading in % (0 - 100)
 
 Reading HSV Values
 """""""""""""""""""
 
-.. function:: float readHue()
+By default, raw readings are used for HSV Colourspace conversion.
 
-    Returns the Hue component of the RGB readings when converted to the HSV colour space.
+One can set HSV conversion to use normalised readings using ``useNormForHSV()``. 
 
-    :returns: Hue component of HSV reading (0-360deg)
+.. function:: void useNormForHSV(bool enable)
 
-.. function:: float readSaturation()
+    :param enable: Whether to use normalised readings for HSV conversion
 
-    Returns the Saturation component of the RGB readings when converted to the HSV colour space.
+.. function:: float readHSV(uint8_t component, bool blocking = true)
 
-    :returns: Saturation component of HSV reading (0-1)
+    Returns given component of reading when converted to HSV (Hue, Saturation or Value)
 
-.. function:: float readValue()
+    :param component: HSV Component to be returned
+
+        * ``HUE``
+        * ``SAT``
+        * ``VAL``
     
-    Returns the Value component of the RGB readings when converted to the HSV colour space.
+    :param blocking: Block function from returning a value until a new reading is obtained. Defaults to ``true``
+    :returns:
 
-    :returns: Value component of HSV reading (0-1)
+        * ``HUE``: Hue component of reading in degrees (0-360)
+        * ``SAT``: Saturation component of reading in % (0-100)
+        * ``VAL``: Value component of reading in % (0-100)
+
+.. function:: float readHue(bool blocking = true)
+
+    Same as ``readHSV(HUE, blocking)``
+
+    :param blocking: Block function from returning a value until a new reading is obtained. Defaults to ``true``
+    :returns: Hue component of reading in degrees (0-360)
+
+.. function:: float readSaturation(bool blocking = true)
+
+    Same as ``readHSV(SAT, blocking)``
+
+    :param blocking: Block function from returning a value until a new reading is obtained. Defaults to ``true``
+    :returns: Saturation component of reading in % (0-100)
+
+.. function:: float readValue(bool blocking = true)
+    
+    Same as ``readHSV(VAL, blocking)``
+
+    :param blocking: Block function from returning a value until a new reading is obtained. Defaults to ``true``
+    :returns: Value component of reading in % (0-100)
