@@ -165,7 +165,7 @@ public:
 	void setDecel(float decel_dps_sq) volatile;
 	void setMaxRPM(float max_rpm) volatile;
 	void setPPR(uint32_t ppr) volatile;
-	void setDebug() volatile;
+	void setDebug(bool enable) volatile;
 
 	float getPosition() volatile;
 	float getHeading() volatile;
@@ -715,7 +715,7 @@ public:
 	void setSpeedDecel(float speed_decel) volatile;
 	void setTurnRateAccel(float turn_rate_accel) volatile;
 	void setTurnRateDecel(float turn_rate_decel) volatile;
-	void setDebug() volatile;
+	void setDebug(bool enable) volatile;
 
 	float getDistance() volatile;
 	float getAngle() volatile;

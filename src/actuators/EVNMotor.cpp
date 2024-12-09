@@ -131,6 +131,8 @@ void EVNMotor::end() volatile
 	EVNCoreSync1.core0_enter();
 
 	ports_started[_pid_control.port - 1] = false;
+	detachInterrupt(_encoder.enca);
+	detachInterrupt(_encoder.encb);
 
 	EVNCoreSync1.core0_exit();
 }
