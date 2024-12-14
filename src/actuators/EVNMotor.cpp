@@ -75,30 +75,38 @@ EVNMotor::EVNMotor(uint8_t port, uint8_t motor_type, uint8_t motor_dir, uint8_t 
 	{
 	case EV3_LARGE:
 		_pid_control.max_rpm = EV3_LARGE_MAX_RPM;
+		_pid_control.pwm_mag = EV3_LARGE_PWM_MAG;
+		_pid_control.pwm_exp = EV3_LARGE_PWM_EXP;
 		_pid_control.accel = EV3_LARGE_ACCEL;
 		_pid_control.decel = EV3_LARGE_DECEL;
-		_pid_control.pos_pid = new PIDController(KP_EV3_LARGE, KI_EV3_LARGE, KD_MAX_EV3_LARGE, DIRECT);
+		_pid_control.pos_pid = new PIDController(EV3_LARGE_KP, 0, EV3_LARGE_KD, DIRECT);
 		_encoder.ppr = LEGO_PPR;
 		break;
 	case NXT_LARGE:
 		_pid_control.max_rpm = NXT_LARGE_MAX_RPM;
+		_pid_control.pwm_mag = NXT_LARGE_PWM_MAG;
+		_pid_control.pwm_exp = NXT_LARGE_PWM_EXP;
 		_pid_control.accel = NXT_LARGE_ACCEL;
 		_pid_control.decel = NXT_LARGE_DECEL;
-		_pid_control.pos_pid = new PIDController(KP_NXT_LARGE, KI_NXT_LARGE, KD_MAX_NXT_LARGE, DIRECT);
+		_pid_control.pos_pid = new PIDController(NXT_LARGE_KP, 0, NXT_LARGE_KD, DIRECT);
 		_encoder.ppr = LEGO_PPR;
 		break;
 	case EV3_MED:
 		_pid_control.max_rpm = EV3_MED_MAX_RPM;
+		_pid_control.pwm_mag = EV3_MED_PWM_MAG;
+		_pid_control.pwm_exp = EV3_MED_PWM_EXP;
 		_pid_control.accel = EV3_MED_ACCEL;
 		_pid_control.decel = EV3_MED_DECEL;
-		_pid_control.pos_pid = new PIDController(KP_EV3_MED, KI_EV3_MED, KD_MAX_EV3_MED, DIRECT);
+		_pid_control.pos_pid = new PIDController(EV3_MED_KP, 0, EV3_MED_KD, DIRECT);
 		_encoder.ppr = LEGO_PPR;
 		break;
 	case CUSTOM_MOTOR:
-		_pid_control.max_rpm = CUSTOM_MOTOR_MAX_RPM;
-		_pid_control.accel = CUSTOM_MOTOR_ACCEL;
-		_pid_control.decel = CUSTOM_MOTOR_DECEL;
-		_pid_control.pos_pid = new PIDController(KP_CUSTOM, KI_CUSTOM, KD_MAX_CUSTOM, DIRECT);
+		_pid_control.max_rpm = CUSTOM_MAX_RPM;
+		_pid_control.pwm_mag = CUSTOM_PWM_MAG;
+		_pid_control.pwm_exp = CUSTOM_PWM_EXP;
+		_pid_control.accel = CUSTOM_ACCEL;
+		_pid_control.decel = CUSTOM_DECEL;
+		_pid_control.pos_pid = new PIDController(CUSTOM_KP, 0, CUSTOM_KD, DIRECT);
 		_encoder.ppr = CUSTOM_PPR;
 		break;
 	}
@@ -137,14 +145,33 @@ void EVNMotor::setMode(bool enable) volatile
 	EVNCoreSync1.core0_exit();
 }
 
-void EVNMotor::setPID(float p, float i, float d) volatile
+void EVNMotor::setKp(float kp) volatile
 {
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
 
-	_pid_control.pos_pid->setKp(p);
-	_pid_control.pos_pid->setKi(i);
-	_pid_control.pos_pid->setKd(d);
+	_pid_control.pos_pid->setKp(kp);
+
+	EVNCoreSync0.core0_exit();
+}
+
+void EVNMotor::setKd(float kd) volatile
+{
+	if (!timerisr_enabled) return;
+	EVNCoreSync0.core0_enter();
+
+	_pid_control.pos_pid->setKd(kd);
+
+	EVNCoreSync0.core0_exit();
+}
+
+void EVNMotor::setPWMMapping(float mag, float exp) volatile
+{
+	if (!timerisr_enabled) return;
+	EVNCoreSync0.core0_enter();
+
+	_pid_control.pwm_mag = max(0, mag);
+	_pid_control.pwm_exp = max(0, exp);
 
 	EVNCoreSync0.core0_exit();
 }
@@ -197,6 +224,30 @@ void EVNMotor::setDebug(bool enable) volatile
 	_pid_control.debug = enable;
 
 	EVNCoreSync0.core0_exit();
+}
+
+float EVNMotor::getError() volatile
+{
+	if (!timerisr_enabled) return 0;
+	EVNCoreSync0.core0_enter();
+
+	float output = _pid_control.error;
+
+	EVNCoreSync0.core0_exit();
+
+	return output;
+}
+
+float EVNMotor::getMaxRPM() volatile
+{
+	if (!timerisr_enabled) return 0;
+	EVNCoreSync0.core0_enter();
+
+	float output = _pid_control.max_rpm;
+
+	EVNCoreSync0.core0_exit();
+
+	return output;
 }
 
 float EVNMotor::getPosition() volatile
@@ -478,8 +529,8 @@ EVNDrivebase::EVNDrivebase(float wheel_dia, float axle_track, EVNMotor* motor_le
 	db.max_distance_error = USER_DRIVE_POS_MIN_ERROR_MOTOR_DEG * db.wheel_dia * M_PI / 360;
 	db.max_angle_error = USER_DRIVE_POS_MIN_ERROR_MOTOR_DEG * db.wheel_dia / db.axle_track;
 
-	db.turn_rate_pid = new PIDController(DRIVEBASE_KP_TURN_RATE, DRIVEBASE_KI_TURN_RATE, DRIVEBASE_KD_TURN_RATE, DIRECT);
-	db.speed_pid = new PIDController(DRIVEBASE_KP_SPEED, DRIVEBASE_KI_SPEED, DRIVEBASE_KD_SPEED, DIRECT);
+	db.turn_rate_pid = new PIDController(DRIVEBASE_KP_TURN_RATE, 0, DRIVEBASE_KD_TURN_RATE, DIRECT);
+	db.speed_pid = new PIDController(DRIVEBASE_KP_SPEED, 0, DRIVEBASE_KD_SPEED, DIRECT);
 
 	db.speed_accel = fabs(USER_SPEED_ACCEL);
 	db.speed_decel = fabs(USER_SPEED_DECEL);
@@ -510,25 +561,23 @@ void EVNDrivebase::setMode(bool enable) volatile
 	EVNCoreSync1.core0_exit();
 }
 
-void EVNDrivebase::setSpeedPID(float kp, float ki, float kd) volatile
+void EVNDrivebase::setSpeedPD(float kp, float kd) volatile
 {
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
 
 	db.speed_pid->setKp(kp);
-	db.speed_pid->setKi(ki);
 	db.speed_pid->setKd(kd);
 
 	EVNCoreSync0.core0_exit();
 }
 
-void EVNDrivebase::setTurnRatePID(float kp, float ki, float kd) volatile
+void EVNDrivebase::setTurnRatePD(float kp, float kd) volatile
 {
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
 
 	db.turn_rate_pid->setKp(kp);
-	db.turn_rate_pid->setKi(ki);
 	db.turn_rate_pid->setKd(kd);
 
 	EVNCoreSync0.core0_exit();
@@ -574,12 +623,12 @@ void EVNDrivebase::setTurnRateDecel(float turn_rate_decel) volatile
 	EVNCoreSync0.core0_exit();
 }
 
-void EVNDrivebase::setDebug(bool enable) volatile
+void EVNDrivebase::setDebug(uint8_t type) volatile
 {
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
 
-	db.debug = enable;
+	db.debug = constrain(type, 0, 2);
 
 	EVNCoreSync0.core0_exit();
 }
@@ -679,6 +728,30 @@ float EVNDrivebase::getDistanceToPoint(float x, float y) volatile
 		return 0;
 
 	return sqrt(pow(px - x, 2) + pow(py - y, 2));
+}
+
+float EVNDrivebase::getMaxSpeed() volatile
+{
+	if (!timerisr_enabled) return 0;
+	EVNCoreSync0.core0_enter();
+
+	float output = db.max_speed;
+
+	EVNCoreSync0.core0_exit();
+
+	return output;
+}
+
+float EVNDrivebase::getMaxTurnRate() volatile
+{
+	if (!timerisr_enabled) return 0;
+	EVNCoreSync0.core0_enter();
+
+	float output = db.max_speed;
+
+	EVNCoreSync0.core0_exit();
+
+	return output;
 }
 
 float EVNDrivebase::clean_input_turn_rate(float turn_rate) volatile
