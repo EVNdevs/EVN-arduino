@@ -66,13 +66,19 @@ def plot():
         fig, ax = plt.subplots()
         ax.plot(x, y, linewidth = 2)
         ax.plot(x, y2, linewidth = 2)
-        plt.ylim(-100, 100)
+        plt.ylim(-25, 25)
         plt.show()
 
 if __name__ == "__main__":
 
-    # DB straight
+    # DB speed
     # test(36, 0, 25)
-    test(29, 252, 25)
+    # period 80
+
+    # DB turn rate
+    # test(36, 0, 25)
+    # period 80
+
+    # use Ku=34 to lower chances of oscillation
 
     plot()

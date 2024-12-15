@@ -40,19 +40,19 @@
 #define EV3_MED_DECEL                   245 * 600
 
 //TUNING FOR EVNMOTOR CLASS
-#define USER_RUN_DEGREES_MIN_ERROR_MOTOR_DEG    0.5
+#define MOTOR_MIN_ERROR_MOTOR_DEG       0.5
 
 //TUNING FOR EVNDRIVEBASE CLASS
-#define USER_DRIVE_POS_MIN_ERROR_MOTOR_DEG      2
-#define USER_DRIVE_STOP_CHECK_THRESHOLD_DPS     20
-#define USER_DRIVE_STOP_CHECK_TIMEOUT_US        500000
+#define DRIVEBASE_POS_MIN_ERROR_MOTOR_DEG   2
+#define DRIVEBASE_STOP_CHECK_THRESHOLD_DPS  20
+#define DRIVEBASE_STOP_CHECK_TIMEOUT_US     500000
 
-#define DRIVEBASE_KP_SPEED                      29
-#define DRIVEBASE_KD_SPEED                      0.252
-#define DRIVEBASE_KP_TURN_RATE                  29
-#define DRIVEBASE_KD_TURN_RATE                  0.252
+#define DRIVEBASE_KP_SPEED                  27.2
+#define DRIVEBASE_KD_SPEED                  0.272
+#define DRIVEBASE_KP_TURN_RATE              27.2
+#define DRIVEBASE_KD_TURN_RATE              0.272
 
-#define USER_SPEED_ACCEL                        1000
-#define USER_SPEED_DECEL                        1000
-#define USER_TURN_RATE_ACCEL                    1000
-#define USER_TURN_RATE_DECEL                    1000
+#define DRIVEBASE_SPEED_ACCEL               1000
+#define DRIVEBASE_SPEED_DECEL               1000
+#define DRIVEBASE_TURN_RATE_ACCEL           1000
+#define DRIVEBASE_TURN_RATE_DECEL           1000

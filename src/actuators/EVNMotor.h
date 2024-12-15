@@ -9,7 +9,7 @@
 #include "../evn_pins_defs.h"
 #include "../helper/EVNCoreSync.h"
 
-// TODO: Allow motor functions to be called even when EVNDrivebase is active
+// TODO: Allow EVNMotor functions to be called even after EVNDrivebase is initialized
 
 //INPUT PARAMETER MACROS
 #define DIRECT	1
@@ -196,7 +196,7 @@ public:
 	bool completed() volatile;
 	bool stalled() volatile;
 
-protected:
+private:
 	float getTargetPosition() volatile;
 	float getTargetHeading() volatile;
 
@@ -295,8 +295,10 @@ protected:
 		//keep at most recent state
 		pidArg->target_dps_constrained = dps;
 
+		bool run_pos = pidArg->run_pos;
+		bool no_loop_control_enabled = !loop_control_enabled(pidArg);
+
 		//reset PID controller, stop loop control
-		pidArg->pos_pid->reset();
 		pidArg->run_pwm = false;
 		pidArg->run_speed = false;
 		pidArg->run_pos = false;
@@ -307,18 +309,20 @@ protected:
 		switch (pidArg->stop_action)
 		{
 		case STOP_COAST:
+			pidArg->target_pos = pos;
 			digitalWrite(pidArg->motora, LOW);
 			digitalWrite(pidArg->motorb, LOW);
-			pidArg->target_pos = pos;
 			break;
 		case STOP_BRAKE:
+			pidArg->target_pos = pos;
 			digitalWrite(pidArg->motora, HIGH);
 			digitalWrite(pidArg->motorb, HIGH);
-			pidArg->target_pos = pos;
 			break;
 		case STOP_HOLD:
-			pidArg->target_dps_constrained = 0;
-			pidArg->target_pos = pidArg->end_pos;
+			if (no_loop_control_enabled)
+				pidArg->target_pos = getPosition_static(encoderArg);
+			else if (run_pos)
+				pidArg->target_pos = pidArg->end_pos;
 			pidArg->target_dps = 0;
 			pidArg->run_speed = true;
 			break;
@@ -462,7 +466,7 @@ protected:
 					if (old_sign != new_sign)
 						pidArg->target_pos = pidArg->end_pos;
 
-					if (fabs(pidArg->end_pos - pos) <= USER_RUN_DEGREES_MIN_ERROR_MOTOR_DEG)
+					if (fabs(pidArg->end_pos - pos) <= MOTOR_MIN_ERROR_MOTOR_DEG)
 					{
 						stopAction_static(pidArg, encoderArg, pos, dps);
 						return;
@@ -475,7 +479,7 @@ protected:
 			pidArg->error = pidArg->target_pos - pos;
 			pidArg->output = pidArg->pos_pid->compute(pidArg->error);
 
-			if (pidArg->pwm_exp > 0 && pidArg->pwm_mag > 0)
+			if (pidArg->error != 0 && pidArg->pwm_exp > 0 && pidArg->pwm_mag > 0)
 				pidArg->output = (pidArg->output > 0 ? 1 : -1) * pidArg->pwm_mag * exp(fabs(pidArg->output) * pidArg->pwm_exp);
 
 			runPWM_static(pidArg, pidArg->output);
@@ -694,6 +698,8 @@ public:
 	static const uint8_t MAX_DB_OBJECTS = 2;
 	static const uint16_t PID_TIMER_INTERVAL_US = 2500;
 
+	friend class EVNMotor;
+
 	EVNDrivebase(float wheel_dia, float axle_track, EVNMotor* motor_left, EVNMotor* motor_right);
 	void begin() volatile;
 	void setMode(bool enable) volatile;
@@ -823,23 +829,16 @@ private:
 			arg->motor_right->coast_unsafe();
 			break;
 		case STOP_HOLD:
-			arg->motor_left->_pid_control.target_dps_constrained = 0;
-			arg->motor_right->_pid_control.target_dps_constrained = 0;
 			arg->motor_left->runSpeed_unsafe(0);
 			arg->motor_right->runSpeed_unsafe(0);
 			break;
 		}
 
-		// we shouldn't assume drivebase speed and turn rate become 0...
-		// but as of right now I have no way to get a good estimate
-		arg->target_speed_constrained = 0;
-		arg->target_turn_rate_constrained = 0;
+		arg->target_speed_constrained = (arg->motor_right->getDPS_static(&arg->motor_right->_encoder) + arg->motor_left->getDPS_static(&arg->motor_left->_encoder)) * arg->wheel_dia * M_PI / 720;
+		arg->target_turn_rate_constrained = (arg->motor_right->getDPS_static(&arg->motor_right->_encoder) - arg->motor_left->getDPS_static(&arg->motor_left->_encoder)) * arg->wheel_dia / (2 * arg->axle_track);
 
 		arg->target_angle = arg->current_angle;
 		arg->target_distance = arg->current_distance;
-
-		arg->turn_rate_pid->reset();
-		arg->speed_pid->reset();
 
 		arg->drive = false;
 		arg->drive_position = false;
@@ -860,8 +859,8 @@ private:
 
 	static float motorsStopped_static(volatile drivebase_state_t* arg)
 	{
-		return (arg->motor_right->getDPS_static(&arg->motor_right->_encoder) <= USER_DRIVE_STOP_CHECK_THRESHOLD_DPS
-			&& arg->motor_left->getDPS_static(&arg->motor_left->_encoder) <= USER_DRIVE_STOP_CHECK_THRESHOLD_DPS);
+		return (arg->motor_right->getDPS_static(&arg->motor_right->_encoder) <= DRIVEBASE_STOP_CHECK_THRESHOLD_DPS
+			&& arg->motor_left->getDPS_static(&arg->motor_left->_encoder) <= DRIVEBASE_STOP_CHECK_THRESHOLD_DPS);
 	}
 
 	static void pos_update(volatile drivebase_state_t* arg)
@@ -888,7 +887,7 @@ private:
 
 		if (arg->stall_until_stop)
 		{
-			if (motorsStopped_static(arg) || (now - arg->stop_time) > USER_DRIVE_STOP_CHECK_TIMEOUT_US)
+			if (motorsStopped_static(arg) || (now - arg->stop_time) > DRIVEBASE_STOP_CHECK_TIMEOUT_US)
 				arg->stall_until_stop = false;
 			else
 				return;

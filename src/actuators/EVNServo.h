@@ -60,7 +60,7 @@ public:
     float getMaxDPS() volatile { return _servo.max_dps; };
     void setMode(bool enable) volatile;
 
-protected:
+private:
     static volatile bool timerisr_enabled;
 
     static void attach_interrupts(volatile servo_state_t* arg)
@@ -161,7 +161,7 @@ public:
     void writeMicroseconds(uint16_t pulse_us) volatile;
     void setMode(bool enable) volatile;
 
-protected:
+private:
     static volatile bool timerisr_enabled;
 
     static void attach_interrupts(volatile servo_state_t* arg)

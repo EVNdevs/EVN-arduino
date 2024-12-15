@@ -444,7 +444,6 @@ void EVNMotor::coast_unsafe() volatile
 
 void EVNMotor::hold_unsafe() volatile
 {
-	_pid_control.end_pos = getPosition_static(&_encoder);
 	_pid_control.stop_action = STOP_HOLD;
 	stopAction_static(&_pid_control, &_encoder, getPosition_static(&_encoder), getDPS_static(&_encoder));
 }
@@ -526,16 +525,16 @@ EVNDrivebase::EVNDrivebase(float wheel_dia, float axle_track, EVNMotor* motor_le
 	db.max_speed = db.max_rpm / 60 * db.wheel_dia * M_PI;
 	db.max_turn_rate = db.max_rpm * 6 * db.wheel_dia / db.axle_track;
 	db.max_dps = db.max_rpm * 6;
-	db.max_distance_error = USER_DRIVE_POS_MIN_ERROR_MOTOR_DEG * db.wheel_dia * M_PI / 360;
-	db.max_angle_error = USER_DRIVE_POS_MIN_ERROR_MOTOR_DEG * db.wheel_dia / db.axle_track;
+	db.max_distance_error = DRIVEBASE_POS_MIN_ERROR_MOTOR_DEG * db.wheel_dia * M_PI / 360;
+	db.max_angle_error = DRIVEBASE_POS_MIN_ERROR_MOTOR_DEG * db.wheel_dia / db.axle_track;
 
 	db.turn_rate_pid = new PIDController(DRIVEBASE_KP_TURN_RATE, 0, DRIVEBASE_KD_TURN_RATE, DIRECT);
 	db.speed_pid = new PIDController(DRIVEBASE_KP_SPEED, 0, DRIVEBASE_KD_SPEED, DIRECT);
 
-	db.speed_accel = fabs(USER_SPEED_ACCEL);
-	db.speed_decel = fabs(USER_SPEED_DECEL);
-	db.turn_rate_accel = fabs(USER_TURN_RATE_ACCEL);
-	db.turn_rate_decel = fabs(USER_TURN_RATE_DECEL);
+	db.speed_accel = fabs(DRIVEBASE_SPEED_ACCEL);
+	db.speed_decel = fabs(DRIVEBASE_SPEED_DECEL);
+	db.turn_rate_accel = fabs(DRIVEBASE_TURN_RATE_ACCEL);
+	db.turn_rate_decel = fabs(DRIVEBASE_TURN_RATE_DECEL);
 }
 
 void EVNDrivebase::begin() volatile
