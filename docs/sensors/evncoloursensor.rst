@@ -112,7 +112,7 @@ Reading Raw RGBC Values
     :param blocking: Block function from returning a value until a new reading is obtained. Defaults to ``true``
     :returns: raw Blue reading
 
-.. function:: float readPCT(bool blocking = true)
+.. function:: float readPct(bool blocking = true)
 
     Returns raw reading for given component as a percentage (0 - 100).
 
@@ -126,30 +126,30 @@ Reading Raw RGBC Values
     :param blocking: Block function from returning a value until a new reading is obtained. Defaults to ``true``
     :returns: raw reading in % (0 - 100)
 
-.. function:: float readClearPCT(bool blocking = true)
+.. function:: float readClearPct(bool blocking = true)
 
-    Same as ``readPCT(CLEAR, blocking)``
+    Same as ``readPct(CLEAR, blocking)``
 
     :param blocking: Block function from returning a value until a new reading is obtained. Defaults to ``true``
     :returns: raw Clear reading in % (0 - 100)
 
-.. function:: float readRedPCT(bool blocking = true)
+.. function:: float readRedPct(bool blocking = true)
 
-    Same as ``readPCT(RED, blocking)``
+    Same as ``readPct(RED, blocking)``
 
     :param blocking: Block function from returning a value until a new reading is obtained. Defaults to ``true``
     :returns: raw Red reading in % (0 - 100)
 
-.. function:: float readGreenPCT(bool blocking = true)
+.. function:: float readGreenPct(bool blocking = true)
 
-    Same as ``readPCT(GREEN, blocking)``
+    Same as ``readPct(GREEN, blocking)``
 
     :param blocking: Block function from returning a value until a new reading is obtained. Defaults to ``true``
     :returns: raw Green reading in % (0 - 100)
 
-.. function:: float readBluePCT(bool blocking = true)
+.. function:: float readBluePct(bool blocking = true)
 
-    Same as ``readPCT(BLUE, blocking)``
+    Same as ``readPct(BLUE, blocking)``
 
     :param blocking: Block function from returning a value until a new reading is obtained. Defaults to ``true``
     :returns: raw Blue reading in % (0 - 100)
