@@ -703,7 +703,7 @@ public:
 	void setSpeedDecel(float speed_decel) volatile;
 	void setTurnRateAccel(float turn_rate_accel) volatile;
 	void setTurnRateDecel(float turn_rate_decel) volatile;
-	void setDebug(uint8_t type) volatile;
+	void setDebug(uint8_t debug_type) volatile;
 
 	float getDistance() volatile;
 	float getAngle() volatile;

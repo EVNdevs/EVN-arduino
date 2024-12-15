@@ -176,14 +176,14 @@ public:
     uint16_t readBlue(bool blocking = true) { return read(BLUE, blocking); }
     uint16_t readClear(bool blocking = true) { return read(CLEAR, blocking); }
 
-    float readPCT(uint8_t component, bool blocking = true)
+    float readPct(uint8_t component, bool blocking = true)
     {
         component = constrain(component, 0, 3);
 
         if (_sensor_started)
         {
             this->update(blocking);
-            convertToPCT();
+            convertToPct();
 
             switch (component)
             {
@@ -196,10 +196,10 @@ public:
         return 0;
     }
 
-    float readClearPCT(bool blocking = true) { return readPCT(CLEAR, blocking); }
-    float readRedPCT(bool blocking = true) { return readPCT(RED, blocking); }
-    float readGreenPCT(bool blocking = true) { return readPCT(GREEN, blocking); }
-    float readBluePCT(bool blocking = true) { return readPCT(BLUE, blocking); }
+    float readClearPct(bool blocking = true) { return readPct(CLEAR, blocking); }
+    float readRedPct(bool blocking = true) { return readPct(RED, blocking); }
+    float readGreenPct(bool blocking = true) { return readPct(GREEN, blocking); }
+    float readBluePct(bool blocking = true) { return readPct(BLUE, blocking); }
 
     float readNorm(uint8_t component, bool blocking = true)
     {
@@ -236,7 +236,7 @@ public:
         component = constrain(component, 0, 2);
 
         this->update(blocking);
-        convertToPCT();
+        convertToPct();
 
         float _r_float = _r_pct;
         float _g_float = _g_pct;
@@ -286,7 +286,7 @@ private:
         return constrain(((float)(reading - low)) / ((float)(high - low)), 0, 1);
     }
 
-    void convertToPCT()
+    void convertToPct()
     {
         if (!_converted_to_pct)
         {

@@ -623,12 +623,12 @@ void EVNDrivebase::setTurnRateDecel(float turn_rate_decel) volatile
 	EVNCoreSync0.core0_exit();
 }
 
-void EVNDrivebase::setDebug(uint8_t type) volatile
+void EVNDrivebase::setDebug(uint8_t debug_type) volatile
 {
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
 
-	db.debug = constrain(type, 0, 2);
+	db.debug = constrain(debug_type, 0, 2);
 
 	EVNCoreSync0.core0_exit();
 }
