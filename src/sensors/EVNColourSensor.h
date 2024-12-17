@@ -260,7 +260,7 @@ public:
             if (cdiff == 0)
                 hue = 0;
             else if (cmax == _r_float)
-                hue = 60 * fmod((_g_float - _b_float) / cdiff, 6);
+                hue = 60 * fmod((_g_float - _b_float) / cdiff + 6, 6);
 
             else if (cmax == _g_float)
                 hue = 60 * ((_b_float - _r_float) / cdiff + 2);
