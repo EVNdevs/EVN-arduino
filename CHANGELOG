@@ -1,3 +1,27 @@
+1.2.1 (18/12/24)
+
+More breaking changes...we'll try to keep them to a minimum in the future.
+
+On the bright side, the re-tuned motor and drivebase profiles have been added! We're working on a possible auto-tuner and of course, a relevant guide for 3rd party motors.
+
+-- Features --
+
+EVNMotor, EVNDrivebase: We've tuned the motor profiles to have better performance, and added a bunch more helper functions as well.
+
+EVNColourSensor: New functions for reading raw values in % were added, and new versions of all reading functions were added; these new versions can receive colour as an input were added, so the same function can be used to read different colour channels or HSV components.
+
+-- BREAKING Changes --
+
+EVNColourSensor: readXXNorm() functions now return a range of values from 0-100, instead of 0-1
+
+EVNServo, EVNContinuousServo: end() has been renamed to setMode()
+
+-- Bugfixes --
+
+EVNColourSensor: readHue(), readSaturation(), and readValue() were named as such in the docs, but not in code; code has been changed to reflect docs properly. writeSettings() was also in docs but not in code; it has been removed from docs.
+
+EVNServo: Issue with servo returning to original position once sweep is finished has been fixed
+
 1.2.0 (08/12/24)
 
 In this update, we've made several changes (some of them breaking) to the sensor classes in the hopes of making them more approachable for end-users, despite the many sensor settings options made available for them. Additionally, this update fixes urgent bugs for EVNDrivebase (on the latest versions of the Arduino-Pico core) and EVNContinuousServo.
