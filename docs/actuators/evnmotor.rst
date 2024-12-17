@@ -45,7 +45,7 @@ Functions
 
 .. function:: void begin()
 
-    Initializes motor object. Call this function before calling the other EVNMotor functions.
+    Initializes motor object. Call this function before calling the other EVNMotor functions (including settings functions).
 
     .. code-block:: cpp
 
@@ -58,7 +58,7 @@ Functions
 
 .. note::
     This command should be run on the 2nd core using ``void setup1()``. 
-    However, you can still call the movement functions in ``void loop()`` like a normal program.
+    However, you can still call the movement and settings functions in ``void loop()`` like a normal program.
 
 Measurements
 """"""""""""
@@ -115,6 +115,10 @@ Measurements
 
         bool is_motor_stalled = motor.stalled();
 
+.. function:: float getMaxRPM()
+
+    :returns: Maximum RPM (revolutions per minute) of motor
+    
 Run Forever
 """""""""""
 
@@ -234,7 +238,7 @@ Run by a Fixed Amount
 Stopping
 """""""""
 
-.. function::    void stop()
+.. function:: void stop()
 
     Brakes the motor (slow decay).
 
@@ -260,19 +264,38 @@ Stopping
 
 Control Settings
 """"""""""""""""
-.. function:: void setPID(float p, float i, float d)
 
-    Sets PID gain values for the speed controller (controls rotational/angular velocity of motor shaft).
+To view the default PD and accel/decel values, look at ``src\evn_motor_defs.h`` in the Github repository.
+
+.. function:: void setMode(bool enable)
+
+    Disables any movement functions called afterwards. Does not disable odometry or wipe settings.
+
+    :param enable: Whether drivebase movement should be enabled
+
+.. function:: void setKp(float kp)
+
+    Sets proportional gain values for the PD controller (controls rotational/angular velocity of motor shaft).
 
     The error for the controller is the difference between the robot's target amount of rotations (which increases over time) and the angle the robot has currently rotated by.
 
     :param kp: Proportional gain
-    :param ki: Integral gain
+
+    .. code-block:: cpp
+
+        motor.setKp(0.2);
+
+.. function:: void setKd(float kd)
+
+    Sets derivative gain values for the PD controller (controls rotational/angular velocity of motor shaft).
+
+    The error for the controller is the difference between the robot's target amount of rotations (which increases over time) and the angle the robot has currently rotated by.
+
     :param kd: Derivative gain
 
     .. code-block:: cpp
 
-        motor.setPID(0.4, 0.03, 2);
+        motor.setKd(0.00600);
 
 .. function:: void setAccel(float accel_dps_sq)
 
@@ -312,9 +335,15 @@ Control Settings
 
         motor.setPPR(823);
 
+.. function:: void setDebug(bool enable)
+
+    Used to toggle debug mode, where motor will print the error used for PD control over ``Serial``. Can be used to observe or tune PD controller behaviour.
+
+    :param enable: Whether to enable debug mode
+
 How Our Motor Control Works
 """"""""""""""""""""""""""""
-This is a little technical, but feel free to skip it and move on to the settings functions!
+This is a little technical, but feel free to skip it!
 
 For move functions where the motor rotates by a fixed amount, what we actually do is set a **target position** for the motor to move to. 
 This target position starts out as the motor's **current position**, but **increments over time** until it reaches the **end position** given by the user.
@@ -322,9 +351,7 @@ This target position starts out as the motor's **current position**, but **incre
 It increments at the speed given by the user, so if the user wants to run their motor at 30DPS, the position signal increases at a rate of 30 degrees per second.
 
 Now that we have the position signal, we need a way to command our motor to follow this position signal closely (thus moving at the desired speed to the desired endpoint).
-We use a **Proportional-Integral-Derivative (PID) controller** to do so. It receives the **error** between our motor's current position and the target position signal, and **outputs the required duty cycle** we need to run our motor at.
+We use a **Proportional-Derivative (PD) controller** to do so. It receives the **error** between our motor's current position and the target position signal, and **outputs the required duty cycle** we need to run our motor at.
 
-However, this approach usually requires one to **tune** the PID controller's settings to ensure the motor follows the position signal closely, without being too slow or oscillating. 
+However, this approach usually requires one to **tune** the PD controller's settings to ensure the motor follows the position signal closely, without being too slow or oscillating. 
 Tuning motor PIDs is a bit tricky (you won't have to do it for LEGO motors), but we will be creating a guide for it soon!
-
-For move functions where the motor runs for a fixed time or runs forever, we eliminate the I component to avoid exceeding the user-input target speed. In other words, not exceeding the target speed is prioritized over achieving the correct average speed (distance over time).

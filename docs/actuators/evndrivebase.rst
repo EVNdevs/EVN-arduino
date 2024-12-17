@@ -35,7 +35,7 @@ Functions
 
 .. function:: void begin();
 
-    Initializes drivebase object. Call this function after calling ``begin()`` on the EVNMotor objects (these still need to be called!), but before calling any other ``EVNDrivebase`` functions.
+    Initializes drivebase object. Call this function after calling ``begin()`` on the EVNMotor objects (which still need to be called!), but before calling any other ``EVNDrivebase`` functions (including settings functions).
 
     .. code-block:: cpp
 
@@ -114,6 +114,14 @@ Measurements
 
         //if drivebase is at origin, the distance to point will be 4
         float distance_to_point = db.getDistanceToPoint(3,2);
+
+.. function:: float getMaxSpeed()
+
+    :returns: Maximum speed of drivebase (in mm/s)
+
+.. function:: float getMaxTurnRate()
+
+    :returns: Maximum turning rate of drivebase (in deg/s)
 
 Move Forever
 """"""""""""
@@ -344,41 +352,65 @@ Stopping
 Control Settings
 """"""""""""""""
 
-To view the default PID and accel/decel values, look at ``src\evn_motor_defs.h`` in the Github repository.
+To view the default PD and accel/decel values, look at ``src\evn_motor_defs.h`` in the Github repository.
 
-.. function:: void setSpeedPID(float kp, float ki, float kd);
+.. function:: void setMode(bool enable)
 
-    Sets PID gain values for the speed controller (controls average drivebase speed).
+    Disables any movement functions called afterwards. Does not disable odometry or wipe settings.
+
+    :param enable: Whether drivebase movement should be enabled
+
+.. function:: void setSpeedKp(float kp);
+
+    Sets proportional gain values for the speed controller (controls average drivebase speed).
 
     The error for the controller is the difference between the robot's target distance travelled (which increases over time) and the robot's current distance travelled.
 
-    If your robot fails to consistently hit its desired speed, consider increasing kp. However, increasing it too much may cause the drivebase to jitter instead of moving smoothly.
-
     :param kp: Proportional gain
-    :param ki: Integral gain
+
+    .. code-block:: cpp
+    
+        db.setSpeedKp(20);
+
+.. function:: void setSpeedKd(float kd);
+
+    Sets derivative gain values for the speed controller (controls average drivebase speed).
+
+    The error for the controller is the difference between the robot's target distance travelled (which increases over time) and the robot's current distance travelled.
+
     :param kd: Derivative gain
 
     .. code-block:: cpp
     
-        db.setSpeedPID(0.4, 0.04, 2);
+        db.setSpeedKd(0.2);
 
-.. function:: void setTurnRatePID(float kp, float ki, float kd);
+.. function:: void setTurnRateKp(float kp);
 
-    Sets PID gain values for the turn rate controller (controls rate of turning of drivebase).
+    Sets proportional gain values for the turn rate controller (controls rate of turning of drivebase).
 
     The error for the controller is the difference between the robot's target angle (which shifts over time if travelling in a curve) and the robot's current angle.
 
-    This controller serves 2 purposes: to ensure the robot turns at the correct rate during movements, and to stop either motor if the other is stalled, essentially syncing their movement.
-
-    If your robot jitters, consider lowering kp and kd. However, lowering kp and kd will mean that the motor sync will have a greater delay, making it less responsive.
+    This controller serves 2 purposes: to ensure the drivebase turns at the correct rate, and to stop either motor if the other is stalled, syncing their movement.
 
     :param kp: Proportional gain
-    :param ki: Integral gain
+
+    .. code-block:: cpp
+    
+        db.setTurnRateKp(20);
+
+.. function:: void setTurnRateKd(float kd);
+
+    Sets derivative gain values for the turn rate controller (controls rate of turning of drivebase).
+
+    The error for the controller is the difference between the robot's target angle (which shifts over time if travelling in a curve) and the robot's current angle.
+
+    This controller serves 2 purposes: to ensure the drivebase turns at the correct rate, and to stop either motor if the other is stalled, syncing their movement.
+
     :param kd: Derivative gain
 
     .. code-block:: cpp
     
-        db.setTurnRatePID(0.4, 0.04, 2);
+        db.setTurnRateKd(0.2);
 
 .. function:: void setSpeedAccel(float speed_accel);
 
@@ -411,3 +443,13 @@ To view the default PID and accel/decel values, look at ``src\evn_motor_defs.h``
     .. code-block:: cpp
     
         db.setTurnRateDecel(500);
+
+.. function:: void setDebug(uint8_t debug_type)
+
+    Used to toggle debug mode, where drivebase will print the error for either speed or turn rate PD control over ``Serial``. Can be used to observe or tune PD controller behaviour.
+
+    :param debug_type: Type of debug mode to run
+
+        * ``DEBUG_OFF``
+        * ``DEBUG_SPEED``
+        * ``DEBUG_TURN_RATE``

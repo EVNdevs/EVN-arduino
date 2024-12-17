@@ -58,12 +58,12 @@ public:
     void writeMicroseconds(uint16_t pulse_us, uint16_t wait_time_ms = 0) volatile;
     uint16_t getRange() volatile { return _servo.range; };
     float getMaxDPS() volatile { return _servo.max_dps; };
-    void end() volatile;
+    void setMode(bool enable) volatile;
 
-protected:
+private:
     static volatile bool timerisr_enabled;
 
-    static void attach_servo_interrupt(volatile servo_state_t* arg)
+    static void attach_interrupts(volatile servo_state_t* arg)
     {
         if (!cservos_enabled[arg->port - 1])
         {
@@ -121,22 +121,24 @@ protected:
                     if (arg->position > arg->end_position)
                     {
                         arg->position -= deg_per_loop;
-                        if (arg->position < arg->end_position) arg->position = arg->end_position;
+                        if (arg->position < arg->end_position)
+                            arg->position = arg->end_position;
                     }
 
                     if (arg->position < arg->end_position)
                     {
                         arg->position += deg_per_loop;
-                        if (arg->position > arg->end_position) arg->position = arg->end_position;
+                        if (arg->position > arg->end_position)
+                            arg->position = arg->end_position;
                     }
 
-                    float pulse = (float)(arg->position / arg->range) * (float)(arg->max_pulse_us - arg->min_pulse_us);
+                    arg->pulse = (float)(arg->position / arg->range) * (float)(arg->max_pulse_us - arg->min_pulse_us);
                     if (arg->servo_dir == DIRECT)
-                        pulse = (float)arg->min_pulse_us + pulse;
+                        arg->pulse = (float)arg->min_pulse_us + arg->pulse;
                     else
-                        pulse = (float)arg->max_pulse_us - pulse;
+                        arg->pulse = (float)arg->max_pulse_us - arg->pulse;
 
-                    arg->servo->writeMicroseconds(pulse);
+                    arg->servo->writeMicroseconds(arg->pulse);
                 }
             }
             else
@@ -157,12 +159,12 @@ public:
     void begin() volatile;
     void write(float duty_cycle_pct) volatile;
     void writeMicroseconds(uint16_t pulse_us) volatile;
-    void end() volatile;
+    void setMode(bool enable) volatile;
 
-protected:
+private:
     static volatile bool timerisr_enabled;
 
-    static void attach_servo_interrupt(volatile servo_state_t* arg)
+    static void attach_interrupts(volatile servo_state_t* arg)
     {
         if (!fservos_enabled[arg->port - 1])
         {

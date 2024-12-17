@@ -546,7 +546,7 @@ public:
             _right_axis = AXIS_Y;
     };
 
-protected:
+private:
     void update(bool blocking = true)
     {
         if (_sensor_started)

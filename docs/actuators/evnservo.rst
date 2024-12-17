@@ -74,10 +74,6 @@ Functions
 .. note::
     For best performance, run this on the 2nd core using ``void setup1()``
 
-.. function:: void end()
-
-    Deinitializes servo and releases PIO state machine consumed by it. 
-
 .. function:: float getMaxDPS()
 
     :returns: Maximum angular rotation of servo shaft (in degrees per second).
@@ -118,3 +114,9 @@ Functions
         
         //write 1500us pulse to servo, and wait 3 seconds
         servo.writeMicroseconds(1500, 3000);
+
+.. function:: void setMode(bool enable)
+
+    Enable/disable servo. When disabled, the servo will no longer hold its position, and the PIO state machine consumed by the EVNServo object is released.
+
+    :param enable: Whether to enable servo operation
