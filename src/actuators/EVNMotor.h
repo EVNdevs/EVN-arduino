@@ -703,8 +703,10 @@ public:
 	EVNDrivebase(float wheel_dia, float axle_track, EVNMotor* motor_left, EVNMotor* motor_right);
 	void begin() volatile;
 	void setMode(bool enable) volatile;
-	void setSpeedPD(float kp, float kd) volatile;
-	void setTurnRatePD(float kp, float kd) volatile;
+	void setSpeedKp(float kp) volatile;
+	void setSpeedKd(float kd) volatile;
+	void setTurnRateKp(float kp) volatile;
+	void setTurnRateKd(float kd) volatile;
 	void setSpeedAccel(float speed_accel) volatile;
 	void setSpeedDecel(float speed_decel) volatile;
 	void setTurnRateAccel(float turn_rate_accel) volatile;

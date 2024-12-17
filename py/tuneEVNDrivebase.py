@@ -79,6 +79,6 @@ if __name__ == "__main__":
     # test(36, 0, 25)
     # period 80
 
-    # use Ku=34 to lower chances of oscillation
+    # we will use Ku=34 to lower chances of oscillation
 
     plot()

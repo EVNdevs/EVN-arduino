@@ -115,6 +115,10 @@ Measurements
 
         bool is_motor_stalled = motor.stalled();
 
+.. function:: float getMaxRPM()
+
+    :returns: Maximum RPM (revolutions per minute) of motor
+    
 Run Forever
 """""""""""
 

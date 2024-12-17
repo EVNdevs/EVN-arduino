@@ -115,6 +115,14 @@ Measurements
         //if drivebase is at origin, the distance to point will be 4
         float distance_to_point = db.getDistanceToPoint(3,2);
 
+.. function:: float getMaxSpeed()
+
+    :returns: Maximum speed of drivebase (in mm/s)
+
+.. function:: float getMaxTurnRate()
+
+    :returns: Maximum turning rate of drivebase (in deg/s)
+
 Move Forever
 """"""""""""
 
@@ -352,33 +360,57 @@ To view the default PD and accel/decel values, look at ``src\evn_motor_defs.h`` 
 
     :param enable: Whether drivebase movement should be enabled
 
-.. function:: void setSpeedPD(float kp, float kd);
+.. function:: void setSpeedKp(float kp);
 
-    Sets PD gain values for the speed controller (controls average drivebase speed).
+    Sets proportional gain values for the speed controller (controls average drivebase speed).
 
     The error for the controller is the difference between the robot's target distance travelled (which increases over time) and the robot's current distance travelled.
 
     :param kp: Proportional gain
+
+    .. code-block:: cpp
+    
+        db.setSpeedKp(20);
+
+.. function:: void setSpeedKd(float kd);
+
+    Sets derivative gain values for the speed controller (controls average drivebase speed).
+
+    The error for the controller is the difference between the robot's target distance travelled (which increases over time) and the robot's current distance travelled.
+
     :param kd: Derivative gain
 
     .. code-block:: cpp
     
-        db.setSpeedPD(20, 0.2);
+        db.setSpeedKd(0.2);
 
-.. function:: void setTurnRatePD(float kp, float kd);
+.. function:: void setTurnRateKp(float kp);
 
-    Sets PD gain values for the turn rate controller (controls rate of turning of drivebase).
+    Sets proportional gain values for the turn rate controller (controls rate of turning of drivebase).
 
     The error for the controller is the difference between the robot's target angle (which shifts over time if travelling in a curve) and the robot's current angle.
 
     This controller serves 2 purposes: to ensure the drivebase turns at the correct rate, and to stop either motor if the other is stalled, syncing their movement.
 
     :param kp: Proportional gain
+
+    .. code-block:: cpp
+    
+        db.setTurnRateKp(20);
+
+.. function:: void setTurnRateKd(float kd);
+
+    Sets derivative gain values for the turn rate controller (controls rate of turning of drivebase).
+
+    The error for the controller is the difference between the robot's target angle (which shifts over time if travelling in a curve) and the robot's current angle.
+
+    This controller serves 2 purposes: to ensure the drivebase turns at the correct rate, and to stop either motor if the other is stalled, syncing their movement.
+
     :param kd: Derivative gain
 
     .. code-block:: cpp
     
-        db.setTurnRatePD(20, 0.2);
+        db.setTurnRateKd(0.2);
 
 .. function:: void setSpeedAccel(float speed_accel);
 

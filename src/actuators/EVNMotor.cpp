@@ -560,23 +560,41 @@ void EVNDrivebase::setMode(bool enable) volatile
 	EVNCoreSync1.core0_exit();
 }
 
-void EVNDrivebase::setSpeedPD(float kp, float kd) volatile
+void EVNDrivebase::setSpeedKp(float kp) volatile
 {
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
 
 	db.speed_pid->setKp(kp);
+
+	EVNCoreSync0.core0_exit();
+}
+
+void EVNDrivebase::setSpeedKd(float kd) volatile
+{
+	if (!timerisr_enabled) return;
+	EVNCoreSync0.core0_enter();
+
 	db.speed_pid->setKd(kd);
 
 	EVNCoreSync0.core0_exit();
 }
 
-void EVNDrivebase::setTurnRatePD(float kp, float kd) volatile
+void EVNDrivebase::setTurnRateKp(float kp) volatile
 {
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
 
 	db.turn_rate_pid->setKp(kp);
+
+	EVNCoreSync0.core0_exit();
+}
+
+void EVNDrivebase::setTurnRateKd(float kd) volatile
+{
+	if (!timerisr_enabled) return;
+	EVNCoreSync0.core0_enter();
+
 	db.turn_rate_pid->setKd(kd);
 
 	EVNCoreSync0.core0_exit();
