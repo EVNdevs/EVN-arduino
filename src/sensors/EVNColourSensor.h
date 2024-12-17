@@ -269,10 +269,12 @@ public:
                 hue = 60 * ((_r_float - _g_float) / cdiff + 4);
             return hue;
         case SAT:
-            return cmax ? cdiff / cmax : 0;
+            return cmax ? (100 * cdiff / cmax) : 0;
         case VAL:
             return cmax;
         }
+
+        return 0;
     }
 
     float readHue(bool blocking = true) { return readHSV(HUE, blocking); }
@@ -283,7 +285,7 @@ private:
 
     float normalise(uint16_t reading, uint16_t low, uint16_t high)
     {
-        return constrain(((float)(reading - low)) / ((float)(high - low)), 0, 1);
+        return constrain(((float)((reading - low) * 100)) / ((float)(high - low)), 0, 100);
     }
 
     void convertToPct()
