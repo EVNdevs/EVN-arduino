@@ -164,7 +164,6 @@ public:
 
 	EVNMotor(uint8_t port, uint8_t motor_type = EV3_LARGE, uint8_t motor_dir = DIRECT, uint8_t enc_dir = DIRECT);
 	void begin() volatile;
-	void setMode(bool enable) volatile;
 	void setKp(float kp) volatile;
 	void setKd(float kd) volatile;
 	void setPWMMapping(float mag, float exp) volatile;
@@ -174,7 +173,16 @@ public:
 	void setPPR(uint32_t ppr) volatile;
 	void setDebug(bool enable) volatile;
 
+	// float getKp();
+	// float getKd();
+	// float getPWMMag();
+	// float getPWMExp();
+	// float getAccel() volatile;
+	// float getDecel() volatile;
 	float getMaxRPM() volatile;
+	// uint32_t getPPR() volatile;
+	// bool getDebug() volatile;
+
 	float getError() volatile;
 	float getPosition() volatile;
 	float getHeading() volatile;
@@ -197,9 +205,9 @@ public:
 	bool stalled() volatile;
 
 private:
-	float getTargetPosition() volatile;
-	float getTargetHeading() volatile;
-
+	float get_target_position() volatile;
+	float get_target_heading() volatile;
+	void disable_connected_drivebase() volatile;
 	void runSpeed_unsafe(float dps) volatile;
 	void stop_unsafe() volatile;
 	void coast_unsafe() volatile;
@@ -262,11 +270,9 @@ private:
 			arg->position--;
 			arg->dir = -1;
 			return;
-			// below case occurs due to skipped pulse, which can occur when the ISR is delayed for too long
-			// when this happens, we assume that direction is the same and increment by 2
-			// however, since timer interrupts are lower priority than pin change (set in EVNISRTimer)
-			// these cases should rarely (hopefully NEVER) happen
 		case 3: case 12: case 6: case 9:
+			// since timer interrupts are lower priority than pin change (configured in EVNISRTimer)
+			// this case should rarely (if not NEVER) happen
 			arg->position += 2 * arg->dir;
 			return;
 		}
@@ -702,7 +708,7 @@ public:
 
 	EVNDrivebase(float wheel_dia, float axle_track, EVNMotor* motor_left, EVNMotor* motor_right);
 	void begin() volatile;
-	void setMode(bool enable) volatile;
+
 	void setSpeedKp(float kp) volatile;
 	void setSpeedKd(float kd) volatile;
 	void setTurnRateKp(float kp) volatile;
@@ -712,6 +718,22 @@ public:
 	void setTurnRateAccel(float turn_rate_accel) volatile;
 	void setTurnRateDecel(float turn_rate_decel) volatile;
 	void setDebug(uint8_t debug_type) volatile;
+	void setAxleTrack(float axle_track) volatile;
+	void setWheelDia(float wheel_dia) volatile;
+
+	// float getSpeedKp() volatile;
+	// float getSpeedKd() volatile;
+	// float getTurnRateKp() volatile;
+	// float getTurnRateKd() volatile;
+	// float getSpeedAccel() volatile;
+	// float getSpeedDecel() volatile;
+	// float getTurnRateAccel() volatile;
+	// float getTurnRateDecel() volatile;
+	// uint8_t getDebug() volatile;
+	// float getAxleTrack() volatile;
+	// float getWheelDia() volatile;
+	float getMaxSpeed() volatile;
+	float getMaxTurnRate() volatile;
 
 	float getDistance() volatile;
 	float getAngle() volatile;
@@ -720,8 +742,6 @@ public:
 	float getY() volatile;
 	void resetXY() volatile;
 	float getDistanceToPoint(float x, float y) volatile;
-	float getMaxSpeed() volatile;
-	float getMaxTurnRate() volatile;
 
 	void drivePct(float speed_outer_pct, float turn_rate_pct) volatile;
 	void drive(float speed, float turn_rate) volatile;
@@ -742,10 +762,8 @@ public:
 	bool completed() volatile;
 
 private:
-	float getTargetDistance() volatile;
-	float getTargetAngle() volatile;
-	float getTargetHeading() volatile;
-
+	float get_target_angle() volatile;
+	float get_target_heading() volatile;
 	float clean_input_turn_rate(float turn_rate) volatile;
 	float clean_input_speed(float speed, float turn_rate) volatile;
 	uint8_t clean_input_stop_action(uint8_t stop_action) volatile;
@@ -759,6 +777,20 @@ private:
 	static volatile bool odom_enabled[MAX_DB_OBJECTS];
 	static volatile bool timerisr_enabled;
 
+	static void set_mode_unsafe(uint8_t idx, bool enable)
+	{
+		if (odom_enabled[idx])
+		{
+			if (!dbs_enabled[idx] == enable)
+			{
+				dbArgs[idx]->stop_action = STOP_BRAKE;
+				stopAction_static(dbArgs[idx]);
+			}
+
+			dbs_enabled[idx] = enable;
+		}
+	}
+
 	static void attach_interrupts(volatile drivebase_state_t* arg)
 	{
 		for (int i = 0; i < MAX_DB_OBJECTS; i++)
@@ -768,7 +800,7 @@ private:
 				dbArgs[i] = arg;
 				dbs_enabled[i] = true;
 				odom_enabled[i] = true;
-				arg->id = i + 1;
+				arg->id = i;
 				break;
 			}
 		}
@@ -836,8 +868,12 @@ private:
 			break;
 		}
 
-		arg->target_speed_constrained = (arg->motor_right->getDPS_static(&arg->motor_right->_encoder) + arg->motor_left->getDPS_static(&arg->motor_left->_encoder)) * arg->wheel_dia * M_PI / 720;
-		arg->target_turn_rate_constrained = (arg->motor_right->getDPS_static(&arg->motor_right->_encoder) - arg->motor_left->getDPS_static(&arg->motor_left->_encoder)) * arg->wheel_dia / (2 * arg->axle_track);
+		// can consider using this for "smart coast" in future
+		// arg->target_speed_constrained = (arg->motor_right->getDPS_static(&arg->motor_right->_encoder) + arg->motor_left->getDPS_static(&arg->motor_left->_encoder)) * arg->wheel_dia * M_PI / 720;
+		// arg->target_turn_rate_constrained = (arg->motor_right->getDPS_static(&arg->motor_right->_encoder) - arg->motor_left->getDPS_static(&arg->motor_left->_encoder)) * arg->wheel_dia / (2 * arg->axle_track);
+
+		arg->target_speed_constrained = 0;
+		arg->target_turn_rate_constrained = 0;
 
 		arg->target_angle = arg->current_angle;
 		arg->target_distance = arg->current_distance;
@@ -1091,84 +1127,78 @@ private:
 				}
 			}
 
-			// only run motors if target is "ahead" of the current position
-			// otherwise, wait for target to update itself
-			if (((arg->target_turn_rate >= 0 && (arg->target_angle - arg->current_angle) >= 0) || (arg->target_turn_rate <= 0 && (arg->current_angle - arg->target_angle) >= 0)) &&
-				((arg->target_speed >= 0 && (arg->target_distance - arg->current_distance) >= 0) || (arg->target_speed <= 0 && (arg->current_distance - arg->target_distance) >= 0)))
+			//angle error -> difference between the robot's current angle and the angle it should travel at
+			arg->angle_error = arg->target_angle - arg->current_angle;
+			if (arg->angle_error > 180)
+				arg->angle_error -= 360;
+			if (arg->angle_error < -180)
+				arg->angle_error += 360;
+			arg->angle_error = arg->angle_error / arg->wheel_dia * arg->axle_track;	//in motor degrees
+			arg->angle_output = arg->turn_rate_pid->compute(arg->angle_error);
+
+			//speed error -> distance between the db position and its target
+			arg->speed_error = arg->target_distance - arg->current_distance;
+			arg->speed_error = arg->speed_error / M_PI / arg->wheel_dia * 360;		//in motor degrees
+			arg->speed_output = arg->speed_pid->compute(arg->speed_error);
+
+			//calculate motor speeds
+			//speed PID output   -> average speed
+			//angle PID output -> difference between speeds
+
+			if (arg->debug == DEBUG_SPEED)
 			{
-				//angle error -> difference between the robot's current angle and the angle it should travel at
-				arg->angle_error = arg->target_angle - arg->current_angle;
-				if (arg->angle_error > 180)
-					arg->angle_error -= 360;
-				if (arg->angle_error < -180)
-					arg->angle_error += 360;
-				arg->angle_error = arg->angle_error / arg->wheel_dia * arg->axle_track;	//in motor degrees
-				arg->angle_output = arg->turn_rate_pid->compute(arg->angle_error);
+				arg->target_motor_left_dps = arg->speed_output;
+				arg->target_motor_right_dps = arg->speed_output;
+			}
+			else if (arg->debug == DEBUG_TURN_RATE)
+			{
+				arg->target_motor_left_dps = -arg->angle_output;
+				arg->target_motor_right_dps = arg->angle_output;
+			}
+			else
+			{
+				arg->target_motor_left_dps = arg->speed_output - arg->angle_output;
+				arg->target_motor_right_dps = arg->speed_output + arg->angle_output;
+			}
 
-				//speed error -> distance between the db position and its target
-				arg->speed_error = arg->target_distance - arg->current_distance;
-				arg->speed_error = arg->speed_error / M_PI / arg->wheel_dia * 360;		//in motor degrees
-				arg->speed_output = arg->speed_pid->compute(arg->speed_error);
-
-				//calculate motor speeds
-				//speed PID output   -> average speed
-				//angle PID output -> difference between speeds
-
-				if (arg->debug == DEBUG_SPEED)
+			//maintain ratio between speeds when either exceeds motor limits
+			if (arg->target_motor_left_dps != 0 && arg->target_motor_right_dps != 0)
+			{
+				if (fabs(arg->target_motor_left_dps) > arg->max_dps)
 				{
-					arg->target_motor_left_dps = arg->speed_output;
-					arg->target_motor_right_dps = arg->speed_output;
-				}
-				else if (arg->debug == DEBUG_TURN_RATE)
-				{
-					arg->target_motor_left_dps = -arg->angle_output;
-					arg->target_motor_right_dps = arg->angle_output;
-				}
-				else
-				{
-					arg->target_motor_left_dps = arg->speed_output - arg->angle_output;
-					arg->target_motor_right_dps = arg->speed_output + arg->angle_output;
+					float ratio = arg->target_motor_right_dps / arg->target_motor_left_dps;
+					if (arg->target_motor_left_dps > 0)
+						arg->target_motor_left_dps = arg->max_dps;
+					else
+						arg->target_motor_left_dps = -arg->max_dps;
+					arg->target_motor_right_dps = arg->target_motor_left_dps * ratio;
 				}
 
-				//maintain ratio between speeds when either exceeds motor limits
-				if (arg->target_motor_left_dps != 0 && arg->target_motor_right_dps != 0)
+				if (fabs(arg->target_motor_right_dps) > arg->max_dps)
 				{
-					if (fabs(arg->target_motor_left_dps) > arg->max_dps)
-					{
-						float ratio = arg->target_motor_right_dps / arg->target_motor_left_dps;
-						if (arg->target_motor_left_dps > 0)
-							arg->target_motor_left_dps = arg->max_dps;
-						else
-							arg->target_motor_left_dps = -arg->max_dps;
-						arg->target_motor_right_dps = arg->target_motor_left_dps * ratio;
-					}
-
-					if (fabs(arg->target_motor_right_dps) > arg->max_dps)
-					{
-						float ratio = arg->target_motor_left_dps / arg->target_motor_right_dps;
-						if (arg->target_motor_right_dps > 0)
-							arg->target_motor_right_dps = arg->max_dps;
-						else
-							arg->target_motor_right_dps = -arg->max_dps;
-						arg->target_motor_left_dps = arg->target_motor_right_dps * ratio;
-					}
+					float ratio = arg->target_motor_left_dps / arg->target_motor_right_dps;
+					if (arg->target_motor_right_dps > 0)
+						arg->target_motor_right_dps = arg->max_dps;
+					else
+						arg->target_motor_right_dps = -arg->max_dps;
+					arg->target_motor_left_dps = arg->target_motor_right_dps * ratio;
 				}
+			}
 
-				//write speeds to motors
-				//non-thread safe write used here, assumed safe because EVNDrivebase and EVNMotor should be on same core
-				arg->motor_left->runSpeed_unsafe(arg->target_motor_left_dps);
-				arg->motor_right->runSpeed_unsafe(arg->target_motor_right_dps);
+			//write speeds to motors
+			//non-thread safe write used here, assumed safe because EVNDrivebase and EVNMotor should be on same core
+			arg->motor_left->runSpeed_unsafe(arg->target_motor_left_dps);
+			arg->motor_right->runSpeed_unsafe(arg->target_motor_right_dps);
 
-				if (arg->debug == DEBUG_SPEED)
-				{
-					Serial.print("Spd_Err:");
-					Serial.println(arg->speed_error);
-				}
-				else if (arg->debug == DEBUG_TURN_RATE)
-				{
-					Serial.print("Turn_Err:");
-					Serial.println(arg->angle_error);
-				}
+			if (arg->debug == DEBUG_SPEED)
+			{
+				Serial.print("Spd_Err:");
+				Serial.println(arg->speed_error);
+			}
+			else if (arg->debug == DEBUG_TURN_RATE)
+			{
+				Serial.print("Turn_Err:");
+				Serial.println(arg->angle_error);
 			}
 		}
 		else
