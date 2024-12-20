@@ -1,3 +1,18 @@
+1.2.2 (20/12/24)
+
+-- Features --
+
+EVNDrivebase: Even after drivebase is instantiated, EVNMotor functions can now be called on the drivebase motors! Doing so while EVNDrivebase commands are running will automatically brake the drivebase, before carrying out the given EVNotor command. Likewise, calling EVNDrivebase commands while an EVNMotor command is running will brake the drivebase before performing the command.
+
+-- Bugfixes --
+
+EVNDrivebase: Fixed bug where drivebase seems to be unresponsive at low turning rates (particularly evident when running drivePct() with sub-1% turning rate)
+
+-- Breaking Changes --
+
+EVNMotor: setMode() function removed
+EVNDrivebase: setMode() function removed
+
 1.2.1 (18/12/24)
 
 More breaking changes...we'll try to keep them to a minimum in the future.
