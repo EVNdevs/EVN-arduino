@@ -354,12 +354,6 @@ Control Settings
 
 To view the default PD and accel/decel values, look at ``src\evn_motor_defs.h`` in the Github repository.
 
-.. function:: void setMode(bool enable)
-
-    Disables any movement functions called afterwards. Does not disable odometry or wipe settings.
-
-    :param enable: Whether drivebase movement should be enabled
-
 .. function:: void setSpeedKp(float kp);
 
     Sets proportional gain values for the speed controller (controls average drivebase speed).

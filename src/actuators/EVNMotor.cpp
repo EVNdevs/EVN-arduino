@@ -135,16 +135,6 @@ void EVNMotor::begin() volatile
 	EVNCoreSync0.core0_exit();
 }
 
-void EVNMotor::setMode(bool enable) volatile
-{
-	if (!timerisr_enabled) return;
-	EVNCoreSync1.core0_enter();
-
-	ports_enabled[_pid_control.port - 1] = enable;
-
-	EVNCoreSync1.core0_exit();
-}
-
 void EVNMotor::setKp(float kp) volatile
 {
 	if (!timerisr_enabled) return;
@@ -262,7 +252,7 @@ float EVNMotor::getPosition() volatile
 	return output;
 }
 
-float EVNMotor::getTargetPosition() volatile
+float EVNMotor::get_target_position() volatile
 {
 	if (!timerisr_enabled) return 0;
 	EVNCoreSync0.core0_enter();
@@ -279,9 +269,17 @@ float EVNMotor::getHeading() volatile
 	return fmod(fmod(getPosition(), 360) + 360, 360);
 }
 
-float EVNMotor::getTargetHeading() volatile
+float EVNMotor::get_target_heading() volatile
 {
-	return fmod(fmod(getTargetPosition(), 360) + 360, 360);
+	return fmod(fmod(get_target_position(), 360) + 360, 360);
+}
+
+void EVNMotor::disable_connected_drivebase() volatile
+{
+	for (int i = 0; i < EVNDrivebase::MAX_DB_OBJECTS; i++)
+		if (EVNDrivebase::dbs_enabled[i])
+			if (EVNDrivebase::dbArgs[i]->motor_left == this || EVNDrivebase::dbArgs[i]->motor_right == this)
+				EVNDrivebase::set_mode_unsafe(i, false);
 }
 
 void EVNMotor::setPosition(float position) volatile
@@ -294,10 +292,7 @@ void EVNMotor::setPosition(float position) volatile
 	EVNCoreSync0.core0_exit();
 }
 
-void EVNMotor::resetPosition() volatile
-{
-	this->setPosition(0);
-}
+void EVNMotor::resetPosition() volatile { this->setPosition(0); }
 
 float EVNMotor::getSpeed() volatile
 {
@@ -330,6 +325,7 @@ void EVNMotor::runPWM(float duty_cycle_pct) volatile
 {
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
+	disable_connected_drivebase();
 
 	duty_cycle_pct = constrain(duty_cycle_pct, -100, 100) / 100;
 
@@ -347,6 +343,7 @@ void EVNMotor::runSpeed(float dps) volatile
 {
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
+	disable_connected_drivebase();
 
 	runSpeed_unsafe(dps);
 
@@ -368,6 +365,7 @@ void EVNMotor::runPosition(float dps, float position, uint8_t stop_action, bool 
 {
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
+	disable_connected_drivebase();
 
 	_pid_control.target_dps = clean_input_dps(dps);
 	_pid_control.end_pos = position;
@@ -394,13 +392,13 @@ void EVNMotor::runAngle(float dps, float degrees, uint8_t stop_action, bool wait
 		degrees = -fabs(degrees);
 	}
 
-	this->runPosition(dps, this->getTargetPosition() + degrees, stop_action, wait);
+	this->runPosition(dps, this->get_target_position() + degrees, stop_action, wait);
 }
 
 void EVNMotor::runHeading(float dps, float heading, uint8_t stop_action, bool wait) volatile
 {
 	heading = constrain(heading, 0, 360);
-	float degrees = heading - this->getTargetHeading();
+	float degrees = heading - this->get_target_heading();
 	if (degrees > 180)
 		degrees -= 360;
 	if (degrees < -180)
@@ -413,6 +411,7 @@ void EVNMotor::runTime(float dps, uint32_t time_ms, uint8_t stop_action, bool wa
 {
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
+	disable_connected_drivebase();
 
 	_pid_control.target_dps = clean_input_dps(dps);
 	_pid_control.run_dir = clean_input_dir(dps);
@@ -452,6 +451,7 @@ void EVNMotor::stop() volatile
 {
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
+	disable_connected_drivebase();
 
 	stop_unsafe();
 
@@ -462,6 +462,7 @@ void EVNMotor::coast() volatile
 {
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
+	disable_connected_drivebase();
 
 	coast_unsafe();
 
@@ -472,6 +473,7 @@ void EVNMotor::hold() volatile
 {
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
+	disable_connected_drivebase();
 
 	hold_unsafe();
 
@@ -548,16 +550,6 @@ void EVNDrivebase::begin() volatile
 	attach_interrupts(&db);
 
 	EVNCoreSync0.core0_exit();
-}
-
-void EVNDrivebase::setMode(bool enable) volatile
-{
-	if (!timerisr_enabled) return;
-	EVNCoreSync1.core0_enter();
-
-	dbs_enabled[db.id - 1] = enable;
-
-	EVNCoreSync1.core0_exit();
 }
 
 void EVNDrivebase::setSpeedKp(float kp) volatile
@@ -674,7 +666,7 @@ float EVNDrivebase::getAngle() volatile
 	return output;
 }
 
-float EVNDrivebase::getTargetAngle() volatile
+float EVNDrivebase::get_target_angle() volatile
 {
 	if (!timerisr_enabled) return 0;
 	EVNCoreSync0.core0_enter();
@@ -691,9 +683,9 @@ float EVNDrivebase::getHeading() volatile
 	return fmod(fmod(getAngle(), 360) + 360, 360);
 }
 
-float EVNDrivebase::getTargetHeading() volatile
+float EVNDrivebase::get_target_heading() volatile
 {
-	return fmod(fmod(getTargetAngle(), 360) + 360, 360);
+	return fmod(fmod(get_target_angle(), 360) + 360, 360);
 }
 
 float EVNDrivebase::getX() volatile
@@ -827,10 +819,15 @@ void EVNDrivebase::drive(float speed, float turn_rate) volatile
 
 void EVNDrivebase::drivePct(float speed_outer_pct, float turn_rate_pct) volatile
 {
+	if (!timerisr_enabled) return;
+	EVNCoreSync0.core0_enter();
+
 	turn_rate_pct = constrain(turn_rate_pct, -100, 100) / 100;
 	speed_outer_pct = constrain(speed_outer_pct, -100, 100) / 100;
 	float speed_inner_pct = speed_outer_pct * (1 - 2 * fabs(turn_rate_pct));
 	float speed = (speed_outer_pct + speed_inner_pct) / 2 * db.max_speed;
+
+	EVNCoreSync0.core0_exit();
 
 	//drive straight
 	if (turn_rate_pct == 0)
@@ -859,6 +856,7 @@ void EVNDrivebase::driveTurnRate(float speed, float turn_rate) volatile
 
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
+	set_mode_unsafe(db.id, true);
 
 	db.target_speed = speed;
 	db.target_turn_rate = turn_rate;
@@ -896,6 +894,7 @@ void EVNDrivebase::straight(float speed, float distance, uint8_t stop_action, bo
 
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
+	set_mode_unsafe(db.id, true);
 
 	db.end_angle = db.target_angle;
 	db.end_distance = db.target_distance + distance;
@@ -951,6 +950,7 @@ void EVNDrivebase::curveTurnRate(float speed, float turn_rate, float angle, uint
 
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
+	set_mode_unsafe(db.id, true);
 
 	db.end_angle = db.target_angle + angle;
 	db.end_distance = db.target_distance + distance;
@@ -982,7 +982,7 @@ void EVNDrivebase::turnDegrees(float turn_rate, float degrees, uint8_t stop_acti
 void EVNDrivebase::turnHeading(float turn_rate, float heading, uint8_t stop_action, bool wait) volatile
 {
 	heading = constrain(heading, 0, 360);
-	float turn_angle = heading - getTargetHeading();
+	float turn_angle = heading - get_target_heading();
 	if (turn_angle > 180)
 		turn_angle -= 360;
 	if (turn_angle < -180)
@@ -998,7 +998,7 @@ void EVNDrivebase::driveToXY(float speed, float turn_rate, float x, float y, uin
 	if (angle_to_target < 0)
 		angle_to_target += 360;
 
-	float initial_heading = getTargetHeading();
+	float initial_heading = get_target_heading();
 	this->turnHeading(turn_rate, angle_to_target, stop_action, true);
 	this->straight(speed, this->getDistanceToPoint(x, y), stop_action, true);
 	if (restore_initial_heading)
@@ -1009,6 +1009,8 @@ void EVNDrivebase::stop() volatile
 {
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
+
+	set_mode_unsafe(db.id, true);
 
 	db.stop_action = STOP_BRAKE;
 	stopAction_static(&db);
@@ -1023,6 +1025,8 @@ void EVNDrivebase::coast() volatile
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
 
+	set_mode_unsafe(db.id, true);
+
 	db.stop_action = STOP_COAST;
 	stopAction_static(&db);
 
@@ -1035,6 +1039,8 @@ void EVNDrivebase::hold() volatile
 {
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
+
+	set_mode_unsafe(db.id, true);
 
 	db.stop_action = STOP_HOLD;
 	stopAction_static(&db);
