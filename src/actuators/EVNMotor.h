@@ -9,8 +9,6 @@
 #include "../evn_pins_defs.h"
 #include "../helper/EVNCoreSync.h"
 
-// TODO: Allow EVNMotor functions to be called even after EVNDrivebase is initialized
-
 //INPUT PARAMETER MACROS
 #define DIRECT	1
 #define REVERSE	0
@@ -38,11 +36,13 @@ typedef struct
 	//POSITION MEASUREMENT
 	uint8_t enca;
 	uint8_t encb;
+	int32_t count;
 	bool enca_state;
 	bool encb_state;
 	int8_t dir;
 	uint8_t state;
 	float ppr;
+	bool pos_calculated;
 	float position;
 	float position_offset;
 
@@ -53,6 +53,10 @@ typedef struct
 	bool obtained_one_pulse;
 	float avg_dps;
 	float avg_pulse_width;
+
+	//DERIVED VALUES
+	float _90_div_ppr;
+	float _360000000_div_ppr;
 } encoder_state_t;
 
 typedef struct
@@ -65,6 +69,7 @@ typedef struct
 	uint8_t motora;
 	uint8_t motorb;
 	float max_rpm;
+	bool max_rpm_calculated;
 	float accel;
 	float decel;
 
@@ -79,7 +84,7 @@ typedef struct
 	bool run_pos;
 	float end_pos;
 	bool run_time;
-	uint32_t run_time_ms;
+	uint32_t run_time_us;
 	uint8_t stop_action;
 	bool debug;
 
@@ -92,6 +97,11 @@ typedef struct
 	float output;
 	uint32_t start_time_us;
 	bool stalled;
+
+	//DERIVED VALUES
+	float _target_dps_sq_div_decel_div_2; 		//only used by runPosition
+	float _target_dps_div_decel_mul_1000000;	//only used by runTime
+	float _decel_div_1000000;					//only used by runTime
 } pid_control_t;
 
 typedef struct
@@ -148,6 +158,20 @@ typedef struct
 	float target_motor_right_dps;
 	bool stall_until_stop;
 	uint32_t stop_time;
+
+	//DERIVED VARIABLES
+	float _wheel_dia_mul_pi_div_720;
+	float _wheel_dia_mul_pi_div_360;
+	float _wheel_dia_mul_pi_div_360_div_axle_track;
+	float _360_div_pi_div_wheel_dia;
+	float _axle_track_div_wheel_dia;
+	float _wheel_dia_div_axle_track;
+	float _var1_fabs_target_speed_div_speed_decel;			//only used by straight/curve
+	float _var2_fabs_target_turn_rate_div_turn_rate_decel;	//only used by straight/curve
+	float _turn_rate_decel_mul_var2_div_var1;				//only used by straight/curve
+	float _speed_decel_mul_var1_div_var2;					//only used by straight/curve
+	float _target_speed_sq_div_2;							//only used by straight/curve
+	float _target_turn_rate_sq_div_2;						//only used by straight/curve
 } drivebase_state_t;
 
 class EVNMotor
@@ -155,7 +179,7 @@ class EVNMotor
 public:
 	static const uint32_t PWM_FREQ = 20000;
 	static const uint32_t PWM_MAX_VAL = 255;
-	static const uint16_t PID_TIMER_INTERVAL_US = 2500;
+	static const uint16_t PID_TIMER_INTERVAL_US = 1000;
 	static const uint32_t ENCODER_PULSE_TIMEOUT_US = 166667 * 2;
 	static const uint8_t MAX_MOTOR_OBJECTS = 4;
 
@@ -252,6 +276,7 @@ private:
 
 	static void pos_update(volatile encoder_state_t* arg)
 	{
+		arg->pos_calculated = false;
 		uint8_t state = arg->state & 3;
 
 		if (arg->enca_state)
@@ -263,17 +288,17 @@ private:
 		switch (state)
 		{
 		case 1: case 7: case 8: case 14:
-			arg->position++;
+			arg->count++;
 			arg->dir = 1;
 			return;
 		case 2: case 4: case 11: case 13:
-			arg->position--;
+			arg->count--;
 			arg->dir = -1;
 			return;
 		case 3: case 12: case 6: case 9:
 			// since timer interrupts are lower priority than pin change (configured in EVNISRTimer)
 			// this case should rarely (if not NEVER) happen
-			arg->position += 2 * arg->dir;
+			arg->count += 2 * arg->dir;
 			return;
 		}
 	}
@@ -338,7 +363,13 @@ private:
 	static float getPosition_static(volatile encoder_state_t* arg)
 	{
 		// resolution of encoder readout is in CPR (4 * PPR)
-		return ((float)arg->position * 90.0 / arg->ppr) - arg->position_offset;
+		if (!arg->pos_calculated)
+		{
+			arg->position = ((float)arg->count * arg->_90_div_ppr) - arg->position_offset;
+			arg->pos_calculated = true;
+		}
+
+		return arg->position;
 	}
 
 	static float getDPS_static(volatile encoder_state_t* arg)
@@ -364,7 +395,7 @@ private:
 				float pulse_dps = 0;
 				if (pulse_width > 0)
 				{
-					pulse_dps = 360000000.0 / pulse_width / arg->ppr;
+					pulse_dps = arg->_360000000_div_ppr / pulse_width;
 					number_of_pulses++;
 				}
 
@@ -382,7 +413,7 @@ private:
 		// this occurs when the motor is slowing down (pulses get longer and longer)
 		else if (last_pulse_width > last_full_pulse_width)
 		{
-			float final_dps = 360000000.0 / last_pulse_width / arg->ppr;
+			float final_dps = arg->_360000000_div_ppr / last_pulse_width;
 			return final_dps * (float)arg->dir;
 		}
 		else
@@ -394,7 +425,7 @@ private:
 		uint32_t now = micros();
 		float pos = getPosition_static(encoderArg);
 		float dps = getDPS_static(encoderArg);
-		float time_since_last_loop = ((float)(now - pidArg->last_update)) / 1000000;	//seconds
+		float time_since_last_loop = ((float)(now - pidArg->last_update)) * 0.000001F;	//seconds
 		pidArg->last_update = now;
 
 		if (time_since_last_loop < 0)
@@ -409,24 +440,23 @@ private:
 				pidArg->run_dir = (pidArg->end_pos - pos > 0) ? DIRECT : REVERSE;
 
 				float error = fabs(pidArg->end_pos - pos);
-				float max_error_before_decel = pow(fabs(pidArg->target_dps), 2) / pidArg->decel / 2;
+				float max_error_before_decel = pidArg->_target_dps_sq_div_decel_div_2;
 
 				if (error < max_error_before_decel)
-					decel_dps = sqrt(error / max_error_before_decel) * fabs(pidArg->target_dps);
+					decel_dps = fabs(pidArg->target_dps) * sqrt(error / max_error_before_decel);
 			}
 
 			if (pidArg->run_time)
 			{
-				if ((now - pidArg->start_time_us) >= pidArg->run_time_ms * 1000)
+				if (now - pidArg->start_time_us >= pidArg->run_time_us)
 				{
 					stopAction_static(pidArg, encoderArg, pos, dps);
 					return;
 				}
 
-				float run_time_s = (float)pidArg->run_time_ms / 1000;
-				float elapsed_run_time_s = ((float)now - (float)pidArg->start_time_us) / 1000000;
-				if (pidArg->target_dps / pidArg->decel > run_time_s - elapsed_run_time_s)
-					decel_dps = pidArg->decel * (run_time_s - elapsed_run_time_s);
+				uint32_t elapsed_run_time_us = now - pidArg->start_time_us;
+				if (pidArg->_target_dps_div_decel_mul_1000000 > pidArg->run_time_us - elapsed_run_time_us)
+					decel_dps = pidArg->_decel_div_1000000 * (float)(pidArg->run_time_us - elapsed_run_time_us);
 			}
 
 			pidArg->target_dps_end_decel = decel_dps;
@@ -460,14 +490,14 @@ private:
 				bool old_sign;
 
 				if (pidArg->run_pos)
-					old_sign = pidArg->target_pos - pidArg->end_pos > 0;
+					old_sign = pidArg->target_pos > pidArg->end_pos;
 
 				if (!pidArg->run_pos || pidArg->target_pos != pidArg->end_pos)
 					pidArg->target_pos += time_since_last_loop * pidArg->target_dps_constrained;
 
 				if (pidArg->run_pos)
 				{
-					bool new_sign = pidArg->target_pos - pidArg->end_pos > 0;
+					bool new_sign = pidArg->target_pos > pidArg->end_pos;
 
 					if (old_sign != new_sign)
 						pidArg->target_pos = pidArg->end_pos;
@@ -702,7 +732,7 @@ class EVNDrivebase
 {
 public:
 	static const uint8_t MAX_DB_OBJECTS = 2;
-	static const uint16_t PID_TIMER_INTERVAL_US = 2500;
+	static const uint16_t PID_TIMER_INTERVAL_US = 1000;
 
 	friend class EVNMotor;
 
@@ -833,7 +863,10 @@ private:
 				if (odom_enabled[i])
 					if (EVNMotor::ports_enabled[dbArgs[i]->motor_left->_pid_control.port - 1]
 						&& EVNMotor::ports_enabled[dbArgs[i]->motor_right->_pid_control.port - 1])
+					{
+						max_rpm_update(dbArgs[i]);
 						pos_update(dbArgs[i]);
+					}
 
 				if (dbs_enabled[i])
 					if (EVNMotor::ports_enabled[dbArgs[i]->motor_left->_pid_control.port - 1]
@@ -847,6 +880,7 @@ private:
 
 			EVNCoreSync0.core1_timer_isr_exit();
 		}
+
 		return true;
 	}
 
@@ -887,18 +921,31 @@ private:
 
 	static float getDistance_static(volatile drivebase_state_t* arg)
 	{
-		return (arg->motor_right->getPosition_static(&arg->motor_right->_encoder) + arg->motor_left->getPosition_static(&arg->motor_left->_encoder)) * arg->wheel_dia * M_PI / 720;
+		return (arg->motor_right->getPosition_static(&arg->motor_right->_encoder) + arg->motor_left->getPosition_static(&arg->motor_left->_encoder)) * arg->_wheel_dia_mul_pi_div_720;
 	}
 
 	static float getAngle_static(volatile drivebase_state_t* arg)
 	{
-		return (arg->motor_right->getPosition_static(&arg->motor_right->_encoder) - arg->motor_left->getPosition_static(&arg->motor_left->_encoder)) * arg->wheel_dia / (2 * arg->axle_track);
+		return (arg->motor_right->getPosition_static(&arg->motor_right->_encoder) - arg->motor_left->getPosition_static(&arg->motor_left->_encoder)) * arg->_wheel_dia_mul_pi_div_360_div_axle_track;
 	}
 
 	static float motorsStopped_static(volatile drivebase_state_t* arg)
 	{
 		return (arg->motor_right->getDPS_static(&arg->motor_right->_encoder) <= DRIVEBASE_STOP_CHECK_THRESHOLD_DPS
 			&& arg->motor_left->getDPS_static(&arg->motor_left->_encoder) <= DRIVEBASE_STOP_CHECK_THRESHOLD_DPS);
+	}
+
+	static void max_rpm_update(volatile drivebase_state_t* arg)
+	{
+		if (!arg->motor_left->_pid_control.max_rpm_calculated || !arg->motor_right->_pid_control.max_rpm_calculated)
+		{
+			arg->max_rpm = min(arg->motor_left->_pid_control.max_rpm, arg->motor_right->_pid_control.max_rpm);
+			arg->max_dps = arg->max_rpm * 6;
+			arg->max_speed = arg->max_dps * arg->_wheel_dia_mul_pi_div_360;
+			arg->max_turn_rate = arg->max_dps * arg->_wheel_dia_div_axle_track;
+			arg->motor_left->_pid_control.max_rpm_calculated = true;
+			arg->motor_right->_pid_control.max_rpm_calculated = true;
+		}
 	}
 
 	static void pos_update(volatile drivebase_state_t* arg)
@@ -909,8 +956,9 @@ private:
 		float distance_travelled_in_last_loop = arg->current_distance - arg->prev_distance;
 		arg->prev_distance = arg->current_distance;
 
-		arg->position_x += distance_travelled_in_last_loop * cos(arg->current_angle / 180 * M_PI);
-		arg->position_y += distance_travelled_in_last_loop * sin(arg->current_angle / 180 * M_PI);
+		arg->position_x += distance_travelled_in_last_loop * cos(arg->current_angle);
+		arg->position_y += distance_travelled_in_last_loop * sin(arg->current_angle);
+		arg->current_angle *= RAD_TO_DEG;
 	}
 
 	static void pid_update(volatile drivebase_state_t* arg)
@@ -941,21 +989,21 @@ private:
 			{
 				float stop_speed_decel = arg->speed_decel;
 				float stop_turn_rate_decel = arg->turn_rate_decel;
-				float stop_time_to_decel_speed = fabs(arg->target_speed) / arg->speed_decel;
-				float stop_time_to_decel_turn_rate = fabs(arg->target_turn_rate) / arg->turn_rate_decel;
+				float stop_time_to_decel_speed = arg->_var1_fabs_target_speed_div_speed_decel;
+				float stop_time_to_decel_turn_rate = arg->_var2_fabs_target_turn_rate_div_turn_rate_decel;
 
 				//slow down either decel to match each each other
 				if (stop_time_to_decel_speed != 0 && stop_time_to_decel_turn_rate != 0)
 				{
 					if (stop_time_to_decel_speed > stop_time_to_decel_turn_rate)
-						stop_turn_rate_decel *= stop_time_to_decel_turn_rate / stop_time_to_decel_speed;
+						stop_turn_rate_decel = arg->_turn_rate_decel_mul_var2_div_var1;
 					else if (stop_time_to_decel_turn_rate > stop_time_to_decel_speed)
-						stop_speed_decel *= stop_time_to_decel_speed / stop_time_to_decel_turn_rate;
+						stop_speed_decel = arg->_speed_decel_mul_var1_div_var2;
 				}
 
 				//calculate what the current max speed & turn rate should be, based on respective errors
-				float error_to_start_decel_speed = pow(arg->target_speed, 2) / 2 / stop_speed_decel;
-				float error_to_start_decel_turn_rate = pow(arg->target_turn_rate, 2) / 2 / stop_turn_rate_decel;
+				float error_to_start_decel_speed = arg->_target_speed_sq_div_2 / stop_speed_decel;
+				float error_to_start_decel_turn_rate = arg->_target_turn_rate_sq_div_2 / stop_turn_rate_decel;
 				float current_distance_error = fabs(arg->end_distance - arg->current_distance);
 				float current_angle_error = fabs(arg->end_angle - arg->current_angle);
 
@@ -978,8 +1026,7 @@ private:
 
 			//increment target angle and XY position
 			//if speed or turn rate output is saturated or motors are stalled, stop incrementing (avoid excessive overshoot that PID cannot correct)
-			if (fabs(arg->speed_error * arg->speed_pid->getKp()) < arg->max_dps
-				&& fabs(arg->angle_error * arg->turn_rate_pid->getKp()) < arg->max_dps
+			if (fabs(arg->speed_error * arg->speed_pid->getKp()) < arg->max_dps && fabs(arg->angle_error * arg->turn_rate_pid->getKp()) < arg->max_dps
 				&& !arg->motor_left->stalled_unsafe() && !arg->motor_right->stalled_unsafe())
 			{
 				//calculating time taken to decel/accel to target speed & turn rate
@@ -991,8 +1038,7 @@ private:
 				float time_to_hit_speed = 0;
 				float time_to_hit_turn_rate = 0;
 
-				if (target_speed_after_decel != arg->target_speed_constrained &&
-					target_turn_rate_after_decel != arg->target_turn_rate_constrained)
+				if (target_speed_after_decel != arg->target_speed_constrained && target_turn_rate_after_decel != arg->target_turn_rate_constrained)
 				{
 					if (target_speed_after_decel > 0 && arg->target_speed_constrained > 0)
 					{
@@ -1011,8 +1057,7 @@ private:
 							time_to_hit_speed = fabs(difference) / arg->speed_decel;
 					}
 					else
-						time_to_hit_speed = fabs(arg->target_speed_constrained) / arg->speed_decel +
-						fabs(target_speed_after_decel) / arg->speed_accel;
+						time_to_hit_speed = fabs(arg->target_speed_constrained) / arg->speed_decel + fabs(target_speed_after_decel) / arg->speed_accel;
 
 					if (target_turn_rate_after_decel > 0 && arg->target_turn_rate_constrained > 0)
 					{
@@ -1031,8 +1076,7 @@ private:
 							time_to_hit_turn_rate = fabs(difference) / arg->turn_rate_decel;
 					}
 					else
-						time_to_hit_turn_rate = fabs(arg->target_turn_rate_constrained) / arg->turn_rate_decel +
-						fabs(target_turn_rate_after_decel) / arg->turn_rate_accel;
+						time_to_hit_turn_rate = fabs(arg->target_turn_rate_constrained) / arg->turn_rate_decel + fabs(target_turn_rate_after_decel) / arg->turn_rate_accel;
 
 					//stretch the accel/decel for turn rate and speed to match each other
 					if (time_to_hit_speed != 0 && time_to_hit_turn_rate != 0)
@@ -1133,12 +1177,13 @@ private:
 				arg->angle_error -= 360;
 			if (arg->angle_error < -180)
 				arg->angle_error += 360;
-			arg->angle_error = arg->angle_error / arg->wheel_dia * arg->axle_track;	//in motor degrees
+
+			arg->angle_error = arg->angle_error * arg->_axle_track_div_wheel_dia;	//in motor degrees
 			arg->angle_output = arg->turn_rate_pid->compute(arg->angle_error);
 
 			//speed error -> distance between the db position and its target
 			arg->speed_error = arg->target_distance - arg->current_distance;
-			arg->speed_error = arg->speed_error / M_PI / arg->wheel_dia * 360;		//in motor degrees
+			arg->speed_error = arg->speed_error * arg->_360_div_pi_div_wheel_dia;	//in motor degrees
 			arg->speed_output = arg->speed_pid->compute(arg->speed_error);
 
 			//calculate motor speeds

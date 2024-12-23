@@ -3,14 +3,16 @@
 #include <Arduino.h>
 #include "pico/stdlib.h"
 
-#define CORE1_ISR_WAIT_TIME_US 1000
+#define CORE1_ISR_SPIN_TIMEOUT_US 1000
+#define CORE1_ISR_STALL_TIME_US 100
 
 class EVNCoreSync
 {
 public:
-    EVNCoreSync(uint16_t wait_time_us)
+    EVNCoreSync(uint16_t spin_timeout_us, uint16_t stall_time_us)
     {
-        _wait_time_us = wait_time_us;
+        _spin_timeout_us = spin_timeout_us;
+        _stall_time_us = stall_time_us;
     };
 
     void begin()
@@ -24,22 +26,24 @@ public:
         }
     };
 
-    void core0_ensure_core1_isr_executed()
+    void core0_ensure_core1_isr_can_execute()
     {
         if (!_started) return;
 
+        // boolean is only used when we are checking if timer ISR has executed
+        // on the same core the timer ISR runs on
+        // doing this for the other core is not thread-safe, because writing booleans is NOT atomic
         if (rp2040.cpuid() == _core)
         {
-            // boolean is only used when we are checking if timer ISR has executed
-            // on the same core the timer ISR runs on
-            // doing this for the other core is not thread-safe, because writing booleans is NOT atomic
-            while (!_timer_isr_executed);
-            _timer_isr_executed = false;
+            if (!_timer_isr_executed)
+                stall();
+            else
+                _timer_isr_executed = false;
         }
-        else
-            // for the non-timer ISR core, a spin lock is used as an atomic variable
-            // if pin ISRs are using mutex, 2nd spin lock is used
-            while (!is_spin_locked(_lock));
+        // for the non-timer ISR core, a spin lock is used as an atomic variable
+        // if pin ISRs are using mutex, 2nd spin lock is used
+        else if (!is_spin_locked(_lock))
+            stall();
 
     };
 
@@ -47,7 +51,7 @@ public:
     {
         if (!_started) return;
 
-        core0_ensure_core1_isr_executed();
+        core0_ensure_core1_isr_can_execute();
         mutex_enter_blocking(&_mutex);
     };
 
@@ -73,7 +77,7 @@ public:
     {
         if (!_started) return false;
 
-        _timer_isr_acquired = mutex_try_enter_block_until(&_mutex, delayed_by_us(get_absolute_time(), _wait_time_us));
+        _timer_isr_acquired = mutex_try_enter_block_until(&_mutex, delayed_by_us(get_absolute_time(), _spin_timeout_us));
 
         if (_timer_isr_acquired)
             spin_lock_unsafe_blocking(_lock);
@@ -106,7 +110,7 @@ public:
         uint32_t owner;
         _pin_isr_acquired = mutex_try_enter(&_mutex, &owner);
         if (!_pin_isr_acquired && owner != _core)
-            _pin_isr_acquired = mutex_try_enter_block_until(&_mutex, delayed_by_us(get_absolute_time(), _wait_time_us));
+            _pin_isr_acquired = mutex_try_enter_block_until(&_mutex, delayed_by_us(get_absolute_time(), _spin_timeout_us));
 
         return (_pin_isr_acquired || owner == _core);
     };
@@ -124,12 +128,20 @@ public:
     };
 
 private:
+
+    void stall()
+    {
+        uint32_t start = micros();
+        while (micros() - start < 500);
+    }
+
     mutex_t _mutex = {};
     spin_lock_t* _lock = nullptr;
     volatile uint8_t _core;
     volatile bool _started = false;
 
-    volatile uint16_t _wait_time_us;
+    volatile uint16_t _spin_timeout_us;
+    volatile uint16_t _stall_time_us;
 
     volatile bool _pin_isr_acquired = false;
     volatile bool _timer_isr_acquired = false;
