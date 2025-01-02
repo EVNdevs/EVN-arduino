@@ -1,3 +1,15 @@
+1.3.0 (3/1/25)
+
+Happy new year!
+
+-- Features --
+
+EVNMotor, EVNDrivebase: Lots of under-the-hood improvements. We've optimized some of the math running on core 1 and sped up our control loops, which should allow for more responsive drivebase movements. We also sped up our core synchronization mechanism, so core 0 is not significantly slowed down by function calls. Finally, we added many more settings functions, which will be documented later (but soon!)
+
+-- Bugfixes --
+
+EVNMotor, EVNDrivebase: Bug where EVNDrivebase functions behaves erratically when called after an EVNMotor function fixed
+
 1.2.2 (20/12/24)
 
 -- Features --
