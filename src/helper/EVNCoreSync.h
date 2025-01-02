@@ -3,8 +3,8 @@
 #include <Arduino.h>
 #include "pico/stdlib.h"
 
-#define CORE1_ISR_SPIN_TIMEOUT_US 1000
-#define CORE1_ISR_STALL_TIME_US 100
+#define CORE1_ISR_SPIN_TIMEOUT_US 500
+#define CORE1_ISR_STALL_TIME_US 50
 
 class EVNCoreSync
 {
@@ -132,7 +132,7 @@ private:
     void stall()
     {
         uint32_t start = micros();
-        while (micros() - start < 500);
+        while (micros() - start < _stall_time_us);
     }
 
     mutex_t _mutex = {};
