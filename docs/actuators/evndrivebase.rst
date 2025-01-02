@@ -406,33 +406,41 @@ To view the default PD and accel/decel values, look at ``src\evn_motor_defs.h`` 
     
         db.setTurnRateKd(0.2);
 
-.. function:: void setSpeedAccel(float speed_accel);
+.. function:: void setSpeedAccel(float accel_mm_per_s_sq);
 
     Sets speed acceleration value for drivebase (in mm/s^2).
+
+    :param accel_mm_per_s_sq: Acceleration in mm/s^2
 
     .. code-block:: cpp
     
         db.setSpeedAccel(500);
 
-.. function:: void setSpeedDecel(float speed_decel);
+.. function:: void setSpeedDecel(float decel_mm_per_s_sq);
 
     Sets speed deceleration value for drivebase (in mm/s^2).
+
+    :param decel_mm_per_s_sq: Deceleration in mm/s^2
 
     .. code-block:: cpp
     
         db.setSpeedDecel(500);
 
-.. function:: void setTurnRateAccel(float turn_rate_accel);
+.. function:: void setTurnRateAccel(float accel_deg_per_s_sq);
 
     Sets turn rate acceleration value for drivebase (in deg/s^2).
+
+    :param accel_deg_per_s_sq: Acceleration in deg/s^2
 
     .. code-block:: cpp
     
         db.setTurnRateAccel(500);
 
-.. function:: void setTurnRateDecel(float turn_rate_decel);
+.. function:: void setTurnRateDecel(float decel_deg_per_s_sq);
 
     Sets turn rate deceleration value for drivebase (in deg/s^2).
+
+    :param decel_deg_per_s_sq: Deceleration in deg/s^2
 
     .. code-block:: cpp
     

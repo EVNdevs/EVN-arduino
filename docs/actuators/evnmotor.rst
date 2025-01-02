@@ -291,17 +291,21 @@ To view the default PD and accel/decel values, look at ``src\evn_motor_defs.h`` 
 
         motor.setKd(0.00600);
 
-.. function:: void setAccel(float accel_dps_sq)
+.. function:: void setAccel(float accel_dps_per_s)
 
     Set acceleration value of motor (in deg/s^2). This value can be adjusted to avoid wheel slippage caused by high accelerations.
+
+    :param accel_dps_per_s: Acceleration in DPS per second
 
     .. code-block:: cpp
 
         motor.setAccel(500);
 
-.. function:: void setDecel(float decel_dps_sq)
+.. function:: void setDecel(float decel_dps_per_s)
 
     Set deceleration value of motor (in deg/s^2). This value can be adjusted to avoid wheel slippage caused by high accelerations.
+
+    :param accel_dps_per_s: Deceleration in DPS per second
 
     .. code-block:: cpp
 
@@ -317,7 +321,7 @@ To view the default PD and accel/decel values, look at ``src\evn_motor_defs.h`` 
 
         motor.setMaxRPM(140);
 
-.. function:: void setPPR(uint32_t ppr)
+.. function:: void setPPR(float ppr)
 
     Set pulses per revolution of motor shaft. For all LEGO EV3/NXT motors, PPR is 360 so it requires no adjustment.
 

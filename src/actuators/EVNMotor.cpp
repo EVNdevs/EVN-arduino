@@ -110,6 +110,8 @@ EVNMotor::EVNMotor(uint8_t port, uint8_t motor_type, uint8_t motor_dir, uint8_t 
 		_encoder.ppr = CUSTOM_PPR;
 		break;
 	}
+
+	compute_ppr_derived_values_unsafe();
 }
 
 void EVNMotor::begin() volatile
@@ -166,22 +168,25 @@ void EVNMotor::setPWMMapping(float mag, float exp) volatile
 	EVNCoreSync0.core0_exit();
 }
 
-void EVNMotor::setAccel(float accel_dps_sq) volatile
+void EVNMotor::setAccel(float accel_dps_per_s) volatile
 {
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
 
-	_pid_control.accel = fabs(accel_dps_sq);
+	_pid_control.accel = fabs(accel_dps_per_s);
 
 	EVNCoreSync0.core0_exit();
 }
 
-void EVNMotor::setDecel(float decel_dps_sq) volatile
+void EVNMotor::setDecel(float decel_dps_per_s) volatile
 {
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
 
-	_pid_control.decel = fabs(decel_dps_sq);
+	_pid_control.decel = fabs(decel_dps_per_s);
+	_pid_control.max_error_before_decel = _pid_control.target_dps * _pid_control.target_dps / _pid_control.decel / 2;
+	_pid_control.decel_dps_per_us = _pid_control.decel / 1000000;
+	_pid_control.time_to_decel_us = _pid_control.target_dps / _pid_control.decel * 1000000;
 
 	EVNCoreSync0.core0_exit();
 }
@@ -192,16 +197,18 @@ void EVNMotor::setMaxRPM(float max_rpm) volatile
 	EVNCoreSync0.core0_enter();
 
 	_pid_control.max_rpm = fabs(max_rpm);
+	_pid_control.max_rpm_calculated = false;
 
 	EVNCoreSync0.core0_exit();
 }
 
-void EVNMotor::setPPR(uint32_t ppr) volatile
+void EVNMotor::setPPR(float ppr) volatile
 {
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
 
 	_encoder.ppr = ppr;
+	compute_ppr_derived_values_unsafe();
 
 	EVNCoreSync0.core0_exit();
 }
@@ -216,12 +223,72 @@ void EVNMotor::setDebug(bool enable) volatile
 	EVNCoreSync0.core0_exit();
 }
 
-float EVNMotor::getError() volatile
+float EVNMotor::getKp() volatile
 {
 	if (!timerisr_enabled) return 0;
 	EVNCoreSync0.core0_enter();
 
-	float output = _pid_control.error;
+	float output = _pid_control.pos_pid->getKp();
+
+	EVNCoreSync0.core0_exit();
+
+	return output;
+}
+
+float EVNMotor::getKd() volatile
+{
+	if (!timerisr_enabled) return 0;
+	EVNCoreSync0.core0_enter();
+
+	float output = _pid_control.pos_pid->getKd();
+
+	EVNCoreSync0.core0_exit();
+
+	return output;
+}
+
+float EVNMotor::getPWMMag() volatile
+{
+	if (!timerisr_enabled) return 0;
+	EVNCoreSync0.core0_enter();
+
+	float output = _pid_control.pwm_mag;
+
+	EVNCoreSync0.core0_exit();
+
+	return output;
+}
+
+float EVNMotor::getPWMExp() volatile
+{
+	if (!timerisr_enabled) return 0;
+	EVNCoreSync0.core0_enter();
+
+	float output = _pid_control.pwm_exp;
+
+	EVNCoreSync0.core0_exit();
+
+	return output;
+}
+
+float EVNMotor::getAccel() volatile
+{
+	if (!timerisr_enabled) return 0;
+	EVNCoreSync0.core0_enter();
+
+	float output = _pid_control.accel;
+
+	EVNCoreSync0.core0_exit();
+
+	return output;
+}
+
+float EVNMotor::getDecel() volatile
+{
+	if (!timerisr_enabled) return 0;
+	EVNCoreSync0.core0_enter();
+
+	float output = _pid_control.decel;
 
 	EVNCoreSync0.core0_exit();
 
@@ -234,6 +301,42 @@ float EVNMotor::getMaxRPM() volatile
 	EVNCoreSync0.core0_enter();
 
 	float output = _pid_control.max_rpm;
+
+	EVNCoreSync0.core0_exit();
+
+	return output;
+}
+
+float EVNMotor::getPPR() volatile
+{
+	if (!timerisr_enabled) return 0;
+	EVNCoreSync0.core0_enter();
+
+	float output = _encoder.ppr;
+
+	EVNCoreSync0.core0_exit();
+
+	return output;
+}
+
+bool EVNMotor::getDebug() volatile
+{
+	if (!timerisr_enabled) return 0;
+	EVNCoreSync0.core0_enter();
+
+	float output = _pid_control.debug;
+
+	EVNCoreSync0.core0_exit();
+
+	return output;
+}
+
+float EVNMotor::getError() volatile
+{
+	if (!timerisr_enabled) return 0;
+	EVNCoreSync0.core0_enter();
+
+	float output = _pid_control.error;
 
 	EVNCoreSync0.core0_exit();
 
@@ -274,10 +377,10 @@ float EVNMotor::get_target_heading() volatile
 	return fmod(fmod(get_target_position(), 360) + 360, 360);
 }
 
-void EVNMotor::disable_connected_drivebase() volatile
+void EVNMotor::disable_connected_drivebase_unsafe() volatile
 {
 	for (int i = 0; i < EVNDrivebase::MAX_DB_OBJECTS; i++)
-		if (EVNDrivebase::dbs_enabled[i])
+		if (EVNDrivebase::odom_enabled[i])
 			if (EVNDrivebase::dbArgs[i]->motor_left == this || EVNDrivebase::dbArgs[i]->motor_right == this)
 				EVNDrivebase::set_mode_unsafe(i, false);
 }
@@ -287,12 +390,15 @@ void EVNMotor::setPosition(float position) volatile
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
 
-	_encoder.position_offset = ((float)_encoder.position * 90.0 / _encoder.ppr) - position;
+	_encoder.position_offset = ((float)_encoder.count * 90.0 / _encoder.ppr) - position;
 
 	EVNCoreSync0.core0_exit();
 }
 
-void EVNMotor::resetPosition() volatile { this->setPosition(0); }
+void EVNMotor::resetPosition() volatile
+{
+	this->setPosition(0);
+}
 
 float EVNMotor::getSpeed() volatile
 {
@@ -306,7 +412,7 @@ float EVNMotor::getSpeed() volatile
 	return output;
 }
 
-float EVNMotor::clean_input_dps(float dps) volatile
+float EVNMotor::clean_input_dps_unsafe(float dps) volatile
 {
 	return min(fabs(dps), _pid_control.max_rpm * 6);
 }
@@ -321,11 +427,17 @@ uint8_t EVNMotor::clean_input_stop_action(uint8_t stop_action) volatile
 	return min(2, stop_action);
 }
 
+void EVNMotor::compute_ppr_derived_values_unsafe() volatile
+{
+	_encoder._90_div_ppr = 90 / _encoder.ppr;
+	_encoder._360000000_div_ppr = 360000000 / _encoder.ppr;
+}
+
 void EVNMotor::runPWM(float duty_cycle_pct) volatile
 {
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
-	disable_connected_drivebase();
+	disable_connected_drivebase_unsafe();
 
 	duty_cycle_pct = constrain(duty_cycle_pct, -100, 100) / 100;
 
@@ -343,7 +455,7 @@ void EVNMotor::runSpeed(float dps) volatile
 {
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
-	disable_connected_drivebase();
+	disable_connected_drivebase_unsafe();
 
 	runSpeed_unsafe(dps);
 
@@ -352,7 +464,7 @@ void EVNMotor::runSpeed(float dps) volatile
 
 void EVNMotor::runSpeed_unsafe(float dps) volatile
 {
-	_pid_control.target_dps = clean_input_dps(dps);
+	_pid_control.target_dps = clean_input_dps_unsafe(dps);
 	_pid_control.run_dir = clean_input_dir(dps);
 
 	_pid_control.run_pwm = false;
@@ -365,9 +477,9 @@ void EVNMotor::runPosition(float dps, float position, uint8_t stop_action, bool 
 {
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
-	disable_connected_drivebase();
+	disable_connected_drivebase_unsafe();
 
-	_pid_control.target_dps = clean_input_dps(dps);
+	_pid_control.target_dps = clean_input_dps_unsafe(dps);
 	_pid_control.end_pos = position;
 	_pid_control.stop_action = clean_input_stop_action(stop_action);
 
@@ -375,6 +487,8 @@ void EVNMotor::runPosition(float dps, float position, uint8_t stop_action, bool 
 	_pid_control.run_pos = true;
 	_pid_control.run_time = false;
 	_pid_control.run_speed = false;
+
+	_pid_control.max_error_before_decel = _pid_control.target_dps * _pid_control.target_dps / _pid_control.decel / 2;
 
 	EVNCoreSync0.core0_exit();
 
@@ -411,18 +525,21 @@ void EVNMotor::runTime(float dps, uint32_t time_ms, uint8_t stop_action, bool wa
 {
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
-	disable_connected_drivebase();
+	disable_connected_drivebase_unsafe();
 
-	_pid_control.target_dps = clean_input_dps(dps);
+	_pid_control.target_dps = clean_input_dps_unsafe(dps);
 	_pid_control.run_dir = clean_input_dir(dps);
 	_pid_control.start_time_us = micros();
-	_pid_control.run_time_ms = time_ms;
+	_pid_control.run_time_us = time_ms * 1000;
 	_pid_control.stop_action = clean_input_stop_action(stop_action);
 
 	_pid_control.run_pwm = false;
 	_pid_control.run_pos = false;
 	_pid_control.run_time = true;
 	_pid_control.run_speed = false;
+
+	_pid_control.decel_dps_per_us = _pid_control.decel / 1000000;
+	_pid_control.time_to_decel_us = _pid_control.target_dps / _pid_control.decel * 1000000;
 
 	EVNCoreSync0.core0_exit();
 
@@ -451,7 +568,7 @@ void EVNMotor::stop() volatile
 {
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
-	disable_connected_drivebase();
+	disable_connected_drivebase_unsafe();
 
 	stop_unsafe();
 
@@ -462,7 +579,7 @@ void EVNMotor::coast() volatile
 {
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
-	disable_connected_drivebase();
+	disable_connected_drivebase_unsafe();
 
 	coast_unsafe();
 
@@ -473,7 +590,7 @@ void EVNMotor::hold() volatile
 {
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
-	disable_connected_drivebase();
+	disable_connected_drivebase_unsafe();
 
 	hold_unsafe();
 
@@ -517,18 +634,10 @@ EVNDrivebase::EVNDrivebase(float wheel_dia, float axle_track, EVNMotor* motor_le
 	db.axle_track = fabs(axle_track);
 	db.wheel_dia = fabs(wheel_dia);
 
-
 	if (db.motor_left->_pid_control.motor_type == db.motor_right->_pid_control.motor_type)
 		db.motor_type = db.motor_left->_pid_control.motor_type;
 	else
 		db.motor_type = CUSTOM_MOTOR;
-
-	db.max_rpm = min(db.motor_left->_pid_control.max_rpm, db.motor_right->_pid_control.max_rpm);
-	db.max_speed = db.max_rpm / 60 * db.wheel_dia * M_PI;
-	db.max_turn_rate = db.max_rpm * 6 * db.wheel_dia / db.axle_track;
-	db.max_dps = db.max_rpm * 6;
-	db.max_distance_error = DRIVEBASE_POS_MIN_ERROR_MOTOR_DEG * db.wheel_dia * M_PI / 360;
-	db.max_angle_error = DRIVEBASE_POS_MIN_ERROR_MOTOR_DEG * db.wheel_dia / db.axle_track;
 
 	db.turn_rate_pid = new PIDController(DRIVEBASE_KP_TURN_RATE, 0, DRIVEBASE_KD_TURN_RATE, DIRECT);
 	db.speed_pid = new PIDController(DRIVEBASE_KP_SPEED, 0, DRIVEBASE_KD_SPEED, DIRECT);
@@ -537,6 +646,10 @@ EVNDrivebase::EVNDrivebase(float wheel_dia, float axle_track, EVNMotor* motor_le
 	db.speed_decel = fabs(DRIVEBASE_SPEED_DECEL);
 	db.turn_rate_accel = fabs(DRIVEBASE_TURN_RATE_ACCEL);
 	db.turn_rate_decel = fabs(DRIVEBASE_TURN_RATE_DECEL);
+
+	compute_drivebase_derived_values_unsafe();
+	compute_max_rpm_drivebase_derived_values_unsafe(&db);
+	compute_targets_decel_derived_values_unsafe();
 }
 
 void EVNDrivebase::begin() volatile
@@ -592,42 +705,44 @@ void EVNDrivebase::setTurnRateKd(float kd) volatile
 	EVNCoreSync0.core0_exit();
 }
 
-void EVNDrivebase::setSpeedAccel(float speed_accel) volatile
+void EVNDrivebase::setSpeedAccel(float accel_mm_per_s_sq) volatile
 {
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
 
-	db.speed_accel = fabs(speed_accel);
+	db.speed_accel = fabs(accel_mm_per_s_sq);
 
 	EVNCoreSync0.core0_exit();
 }
 
-void EVNDrivebase::setSpeedDecel(float speed_decel) volatile
+void EVNDrivebase::setSpeedDecel(float decel_mm_per_s_sq) volatile
 {
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
 
-	db.speed_decel = fabs(speed_decel);
+	db.speed_decel = fabs(decel_mm_per_s_sq);
+	compute_targets_decel_derived_values_unsafe();
 
 	EVNCoreSync0.core0_exit();
 }
 
-void EVNDrivebase::setTurnRateAccel(float turn_rate_accel) volatile
+void EVNDrivebase::setTurnRateAccel(float accel_deg_per_s_sq) volatile
 {
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
 
-	db.turn_rate_accel = fabs(turn_rate_accel);
+	db.turn_rate_accel = fabs(accel_deg_per_s_sq);
 
 	EVNCoreSync0.core0_exit();
 }
 
-void EVNDrivebase::setTurnRateDecel(float turn_rate_decel) volatile
+void EVNDrivebase::setTurnRateDecel(float decel_deg_per_s_sq) volatile
 {
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
 
-	db.turn_rate_decel = fabs(turn_rate_decel);
+	db.turn_rate_decel = fabs(decel_deg_per_s_sq);
+	compute_targets_decel_derived_values_unsafe();
 
 	EVNCoreSync0.core0_exit();
 }
@@ -640,6 +755,162 @@ void EVNDrivebase::setDebug(uint8_t debug_type) volatile
 	db.debug = constrain(debug_type, 0, 2);
 
 	EVNCoreSync0.core0_exit();
+}
+
+void EVNDrivebase::setAxleTrack(float axle_track) volatile
+{
+	if (!timerisr_enabled) return;
+	EVNCoreSync0.core0_enter();
+
+	db.axle_track = fabs(axle_track);
+	compute_drivebase_derived_values_unsafe();
+	compute_max_rpm_drivebase_derived_values_unsafe(&db);
+
+	EVNCoreSync0.core0_exit();
+}
+
+void EVNDrivebase::setWheelDia(float wheel_dia) volatile
+{
+	if (!timerisr_enabled) return;
+	EVNCoreSync0.core0_enter();
+
+	db.wheel_dia = fabs(wheel_dia);
+	compute_drivebase_derived_values_unsafe();
+	compute_max_rpm_drivebase_derived_values_unsafe(&db);
+
+	EVNCoreSync0.core0_exit();
+}
+
+float EVNDrivebase::getSpeedKp() volatile
+{
+	if (!timerisr_enabled) return 0;
+	EVNCoreSync0.core0_enter();
+
+	float output = db.speed_pid->getKp();
+
+	EVNCoreSync0.core0_exit();
+
+	return output;
+}
+
+float EVNDrivebase::getSpeedKd() volatile
+{
+	if (!timerisr_enabled) return 0;
+	EVNCoreSync0.core0_enter();
+
+	float output = db.speed_pid->getKd();
+
+	EVNCoreSync0.core0_exit();
+
+	return output;
+}
+
+float EVNDrivebase::getTurnRateKp() volatile
+{
+	if (!timerisr_enabled) return 0;
+	EVNCoreSync0.core0_enter();
+
+	float output = db.turn_rate_pid->getKp();
+
+	EVNCoreSync0.core0_exit();
+
+	return output;
+}
+
+float EVNDrivebase::getTurnRateKd() volatile
+{
+	if (!timerisr_enabled) return 0;
+	EVNCoreSync0.core0_enter();
+
+	float output = db.turn_rate_pid->getKd();
+
+	EVNCoreSync0.core0_exit();
+
+	return output;
+}
+
+float EVNDrivebase::getSpeedAccel() volatile
+{
+	if (!timerisr_enabled) return 0;
+	EVNCoreSync0.core0_enter();
+
+	float output = db.speed_accel;
+
+	EVNCoreSync0.core0_exit();
+
+	return output;
+}
+
+float EVNDrivebase::getSpeedDecel() volatile
+{
+	if (!timerisr_enabled) return 0;
+	EVNCoreSync0.core0_enter();
+
+	float output = db.speed_decel;
+
+	EVNCoreSync0.core0_exit();
+
+	return output;
+}
+
+float EVNDrivebase::getTurnRateAccel() volatile
+{
+	if (!timerisr_enabled) return 0;
+	EVNCoreSync0.core0_enter();
+
+	float output = db.turn_rate_accel;
+
+	EVNCoreSync0.core0_exit();
+
+	return output;
+}
+
+float EVNDrivebase::getTurnRateDecel() volatile
+{
+	if (!timerisr_enabled) return 0;
+	EVNCoreSync0.core0_enter();
+
+	float output = db.turn_rate_decel;
+
+	EVNCoreSync0.core0_exit();
+
+	return output;
+}
+
+uint8_t EVNDrivebase::getDebug() volatile
+{
+	if (!timerisr_enabled) return 0;
+	EVNCoreSync0.core0_enter();
+
+	uint8_t output = db.debug;
+
+	EVNCoreSync0.core0_exit();
+
+	return output;
+}
+
+float EVNDrivebase::getAxleTrack() volatile
+{
+	if (!timerisr_enabled) return 0;
+	EVNCoreSync0.core0_enter();
+
+	float output = db.axle_track;
+
+	EVNCoreSync0.core0_exit();
+
+	return output;
+}
+
+float EVNDrivebase::getWheelDia() volatile
+{
+	if (!timerisr_enabled) return 0;
+	EVNCoreSync0.core0_enter();
+
+	float output = db.wheel_dia;
+
+	EVNCoreSync0.core0_exit();
+
+	return output;
 }
 
 float EVNDrivebase::getDistance() volatile
@@ -659,19 +930,7 @@ float EVNDrivebase::getAngle() volatile
 	if (!timerisr_enabled) return 0;
 	EVNCoreSync0.core0_enter();
 
-	float output = getAngle_static(&db);
-
-	EVNCoreSync0.core0_exit();
-
-	return output;
-}
-
-float EVNDrivebase::get_target_angle() volatile
-{
-	if (!timerisr_enabled) return 0;
-	EVNCoreSync0.core0_enter();
-
-	float output = db.target_angle;
+	float output = getAngleRad_static(&db) * RAD_TO_DEG;
 
 	EVNCoreSync0.core0_exit();
 
@@ -681,11 +940,6 @@ float EVNDrivebase::get_target_angle() volatile
 float EVNDrivebase::getHeading() volatile
 {
 	return fmod(fmod(getAngle(), 360) + 360, 360);
-}
-
-float EVNDrivebase::get_target_heading() volatile
-{
-	return fmod(fmod(get_target_angle(), 360) + 360, 360);
 }
 
 float EVNDrivebase::getX() volatile
@@ -763,39 +1017,21 @@ float EVNDrivebase::getMaxTurnRate() volatile
 	return output;
 }
 
-float EVNDrivebase::clean_input_turn_rate(float turn_rate) volatile
+float EVNDrivebase::get_target_angle() volatile
 {
-	return constrain(turn_rate, -db.max_turn_rate, db.max_turn_rate);
+	if (!timerisr_enabled) return 0;
+	EVNCoreSync0.core0_enter();
+
+	float output = db.target_angle;
+
+	EVNCoreSync0.core0_exit();
+
+	return output;
 }
 
-float EVNDrivebase::clean_input_speed(float speed, float turn_rate) volatile
+float EVNDrivebase::get_target_heading() volatile
 {
-	float scale = 1 - fabs(turn_rate) / db.max_turn_rate;
-	return constrain(speed, -scale * db.max_speed, scale * db.max_speed);
-}
-
-uint8_t EVNDrivebase::clean_input_stop_action(uint8_t stop_action) volatile
-{
-	return min(2, stop_action);
-}
-
-float EVNDrivebase::scaling_factor_for_maintaining_radius(float speed, float turn_rate) volatile
-{
-	float w1 = fabs(turn_rate / db.max_turn_rate);
-	float w2 = fabs(speed / db.max_speed);
-
-	if (w1 + w2 > 1)
-		return 1 / (w1 + w2);
-
-	return 1;
-}
-
-float EVNDrivebase::radius_to_turn_rate(float speed, float radius) volatile
-{
-	if (radius == 0)
-		return db.max_turn_rate;
-
-	return fabs(speed) * 180 / (M_PI * radius);
+	return fmod(fmod(get_target_angle(), 360) + 360, 360);
 }
 
 void EVNDrivebase::stall_until_stopped() volatile
@@ -810,6 +1046,63 @@ void EVNDrivebase::stall_until_stopped() volatile
 		stop = db.stall_until_stop;
 		EVNCoreSync0.core0_exit();
 	}
+}
+
+void EVNDrivebase::compute_targets_decel_derived_values_unsafe() volatile
+{
+	db.time_to_decel_speed = fabs(db.target_speed) / db.speed_decel;
+	db.time_to_decel_turn_rate = fabs(db.target_turn_rate) / db.turn_rate_decel;
+	db.slowed_turn_rate_decel = db.turn_rate_decel * db.time_to_decel_turn_rate / db.time_to_decel_speed;
+	db.slowed_speed_decel = db.speed_decel * db.time_to_decel_speed / db.time_to_decel_turn_rate;
+	db.target_speed_sq_div_2 = db.target_speed * db.target_speed / 2;
+	db.target_turn_rate_sq_div_2 = db.target_turn_rate * db.target_turn_rate / 2;
+}
+
+void EVNDrivebase::compute_drivebase_derived_values_unsafe() volatile
+{
+	db.wheel_dia_mul_pi_div_720 = db.wheel_dia * M_PI / 720;
+	db.wheel_dia_mul_pi_div_360 = db.wheel_dia_mul_pi_div_720 * 2;
+	db.wheel_dia_mul_pi_div_360_div_axle_track = db.wheel_dia_mul_pi_div_360 / db.axle_track;
+	db._360_div_pi_div_wheel_dia = 360 / (M_PI * db.wheel_dia);
+	db.axle_track_div_wheel_dia = db.axle_track / db.wheel_dia;
+	db.wheel_dia_div_axle_track = db.wheel_dia / db.axle_track;
+	db.max_distance_error = DRIVEBASE_POS_MIN_ERROR_MOTOR_DEG * db.wheel_dia * M_PI / 360;
+	db.max_angle_error = DRIVEBASE_POS_MIN_ERROR_MOTOR_DEG * db.wheel_dia / db.axle_track;
+}
+
+float EVNDrivebase::clean_input_turn_rate_unsafe(float turn_rate) volatile
+{
+	return constrain(turn_rate, -db.max_turn_rate, db.max_turn_rate);
+}
+
+float EVNDrivebase::clean_input_speed_unsafe(float speed, float turn_rate) volatile
+{
+	float scale = 1 - fabs(turn_rate) / db.max_turn_rate;
+	return constrain(speed, -scale * db.max_speed, scale * db.max_speed);
+}
+
+uint8_t EVNDrivebase::clean_input_stop_action(uint8_t stop_action) volatile
+{
+	return min(2, stop_action);
+}
+
+float EVNDrivebase::scaling_factor_for_maintaining_radius_unsafe(float speed, float turn_rate) volatile
+{
+	float w1 = fabs(turn_rate / db.max_turn_rate);
+	float w2 = fabs(speed / db.max_speed);
+
+	if (w1 + w2 > 1)
+		return 1 / (w1 + w2);
+
+	return 1;
+}
+
+float EVNDrivebase::radius_to_turn_rate_unsafe(float speed, float radius) volatile
+{
+	if (radius == 0)
+		return db.max_turn_rate;
+
+	return fabs(speed) * 180 / (M_PI * radius);
 }
 
 void EVNDrivebase::drive(float speed, float turn_rate) volatile
@@ -851,8 +1144,8 @@ void EVNDrivebase::drivePct(float speed_outer_pct, float turn_rate_pct) volatile
 
 void EVNDrivebase::driveTurnRate(float speed, float turn_rate) volatile
 {
-	turn_rate = clean_input_turn_rate(turn_rate);
-	speed = clean_input_speed(speed, turn_rate);
+	turn_rate = clean_input_turn_rate_unsafe(turn_rate);
+	speed = clean_input_speed_unsafe(speed, turn_rate);
 
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
@@ -868,11 +1161,11 @@ void EVNDrivebase::driveTurnRate(float speed, float turn_rate) volatile
 
 void EVNDrivebase::driveRadius(float speed, float radius) volatile
 {
-	float turn_rate = radius_to_turn_rate(speed, radius);
+	float turn_rate = radius_to_turn_rate_unsafe(speed, radius);
 	if (radius == 0)
 		speed = 0;
 
-	float scale = scaling_factor_for_maintaining_radius(speed, turn_rate);
+	float scale = scaling_factor_for_maintaining_radius_unsafe(speed, turn_rate);
 	turn_rate *= scale;
 	speed *= scale;
 
@@ -881,7 +1174,7 @@ void EVNDrivebase::driveRadius(float speed, float radius) volatile
 
 void EVNDrivebase::straight(float speed, float distance, uint8_t stop_action, bool wait) volatile
 {
-	speed = clean_input_speed(speed, 0);
+	speed = clean_input_speed_unsafe(speed, 0);
 
 	if (distance == 0 || speed == 0)
 		return;
@@ -904,6 +1197,8 @@ void EVNDrivebase::straight(float speed, float distance, uint8_t stop_action, bo
 	db.drive = true;
 	db.drive_position = true;
 
+	compute_targets_decel_derived_values_unsafe();
+
 	EVNCoreSync0.core0_exit();
 
 	if (wait)
@@ -920,12 +1215,12 @@ void EVNDrivebase::curve(float speed, float radius, float angle, uint8_t stop_ac
 
 void EVNDrivebase::curveRadius(float speed, float radius, float angle, uint8_t stop_action, bool wait) volatile
 {
-	float turn_rate = radius_to_turn_rate(speed, radius);
+	float turn_rate = radius_to_turn_rate_unsafe(speed, radius);
 
 	if (radius == 0)
 		speed = 0;
 
-	float scale = scaling_factor_for_maintaining_radius(speed, turn_rate);
+	float scale = scaling_factor_for_maintaining_radius_unsafe(speed, turn_rate);
 	turn_rate *= scale;
 	speed *= scale;
 
@@ -934,8 +1229,8 @@ void EVNDrivebase::curveRadius(float speed, float radius, float angle, uint8_t s
 
 void EVNDrivebase::curveTurnRate(float speed, float turn_rate, float angle, uint8_t stop_action, bool wait) volatile
 {
-	turn_rate = clean_input_turn_rate(turn_rate);
-	speed = clean_input_speed(speed, turn_rate);
+	turn_rate = clean_input_turn_rate_unsafe(turn_rate);
+	speed = clean_input_speed_unsafe(speed, turn_rate);
 
 	if (turn_rate == 0 || angle == 0)
 		return;
@@ -959,6 +1254,8 @@ void EVNDrivebase::curveTurnRate(float speed, float turn_rate, float angle, uint
 	db.stop_action = clean_input_stop_action(stop_action);
 	db.drive = true;
 	db.drive_position = true;
+
+	compute_targets_decel_derived_values_unsafe();
 
 	EVNCoreSync0.core0_exit();
 
