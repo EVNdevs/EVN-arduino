@@ -21,6 +21,8 @@ EVNAlpha::EVNAlpha(uint8_t mode, bool link_led, bool link_movement, bool button_
 
 void EVNAlpha::begin()
 {
+    rp2040.idleOtherCore();
+
     //set correct I2C and Serial pins
 #if (defined(ARDUINO_GENERIC_RP2040))
     Wire1.setSDA(PIN_WIRE1_SDA);
@@ -48,7 +50,7 @@ void EVNAlpha::begin()
     //initialize battery ADC if available
     if (this->beginADC()) _battery_adc_started = true;
 
-    ports.setPort(1);
+    rp2040.resumeOtherCore();
 }
 
 void EVNAlpha::printPorts()

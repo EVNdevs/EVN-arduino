@@ -116,12 +116,9 @@ EVNMotor::EVNMotor(uint8_t port, uint8_t motor_type, uint8_t motor_dir, uint8_t 
 
 void EVNMotor::begin() volatile
 {
-	EVNCoreSync0.begin();
+	rp2040.idleOtherCore();
 
-	if (timerisr_enabled)
-		EVNCoreSync0.core0_enter();
-	else
-		EVNCoreSync0.core0_enter_force();
+	EVNCoreSync0.begin();
 
 	//configure pins
 	analogWriteFreq(PWM_FREQ);
@@ -134,7 +131,7 @@ void EVNMotor::begin() volatile
 	//attach pin change interrupts (encoder) and timer interrupt (PID control)
 	attach_interrupts(&_encoder, &_pid_control);
 
-	EVNCoreSync0.core0_exit();
+	rp2040.resumeOtherCore();
 }
 
 void EVNMotor::setKp(float kp) volatile
@@ -654,15 +651,12 @@ EVNDrivebase::EVNDrivebase(float wheel_dia, float axle_track, EVNMotor* motor_le
 
 void EVNDrivebase::begin() volatile
 {
-	EVNCoreSync0.begin();
-	if (timerisr_enabled || EVNMotor::timerisr_enabled)
-		EVNCoreSync0.core0_enter();
-	else
-		EVNCoreSync0.core0_enter_force();
+	rp2040.idleOtherCore();
 
+	EVNCoreSync0.begin();
 	attach_interrupts(&db);
 
-	EVNCoreSync0.core0_exit();
+	rp2040.resumeOtherCore();
 }
 
 void EVNDrivebase::setSpeedKp(float kp) volatile

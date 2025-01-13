@@ -72,8 +72,6 @@ private:
 
             if (!timerisr_enabled)
             {
-                EVNCoreSync1.begin();
-
                 if (rp2040.cpuid() == 0)
                     alarm_pool_add_repeating_timer_us(EVNISRTimer0.sharedAlarmPool(), TIMER_INTERVAL_US, timerisr, nullptr, &EVNISRTimer0.sharedISRTimer(0));
                 else
@@ -178,8 +176,6 @@ private:
                     cancel_repeating_timer(&EVNISRTimer0.sharedISRTimer(0));
                     cancel_repeating_timer(&EVNISRTimer1.sharedISRTimer(0));
                 }
-
-                EVNCoreSync1.begin();
 
                 if (rp2040.cpuid() == 0)
                     alarm_pool_add_repeating_timer_us(EVNISRTimer0.sharedAlarmPool(), TIMER_INTERVAL_US, timerisr, nullptr, &EVNISRTimer0.sharedISRTimer(1));

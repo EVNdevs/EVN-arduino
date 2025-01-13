@@ -34,6 +34,7 @@ EVNServoBase::EVNServoBase(uint8_t port, bool servo_dir, uint16_t min_pulse_us, 
 
 void EVNServoBase::begin() volatile
 {
+    EVNCoreSync1.begin();
     _servo.servo->attach(_servo.pin, 200, 2800);
 }
 
@@ -52,6 +53,8 @@ EVNServo::EVNServo(uint8_t port, bool servo_dir, uint16_t range, float start_pos
 
 void EVNServo::begin() volatile
 {
+    rp2040.idleOtherCore();
+
     EVNServoBase::begin();
     attach_interrupts(&_servo);
 
@@ -62,6 +65,8 @@ void EVNServo::begin() volatile
         pulse = (float)_servo.max_pulse_us - pulse;
 
     this->writeMicroseconds(pulse);
+
+    rp2040.resumeOtherCore();
 }
 
 void EVNServo::write(float position, uint16_t wait_time_ms, float dps) volatile
@@ -136,11 +141,15 @@ void EVNServo::setMode(bool enable) volatile
 
 void EVNContinuousServo::begin() volatile
 {
+    rp2040.idleOtherCore();
+
     EVNServoBase::begin();
     attach_interrupts(&_servo);
 
     float pulse = (float)(_servo.max_pulse_us - _servo.min_pulse_us) / 2 + _servo.min_pulse_us;
     this->writeMicroseconds(pulse);
+
+    rp2040.resumeOtherCore();
 }
 
 void EVNContinuousServo::write(float duty_cycle_pct) volatile
