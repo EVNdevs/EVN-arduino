@@ -13,7 +13,7 @@ public:
     {
         _spin_timeout_us = spin_timeout_us;
         _stall_time_us = stall_time_us;
-    };
+    }
 
     void begin()
     {
@@ -24,7 +24,7 @@ public:
             _core = rp2040.cpuid();
             _started = true;
         }
-    };
+    }
 
     void core0_ensure_core1_isr_can_execute()
     {
@@ -44,8 +44,7 @@ public:
         // if pin ISRs are using mutex, 2nd spin lock is used
         else if (!is_spin_locked(_lock))
             stall();
-
-    };
+    }
 
     void core0_enter()
     {
@@ -53,16 +52,7 @@ public:
 
         core0_ensure_core1_isr_can_execute();
         mutex_enter_blocking(&_mutex);
-    };
-
-    void core0_enter_force()
-    {
-        //grabs mutex without ensuring timerisr has executed once
-
-        if (!_started) return;
-
-        mutex_enter_blocking(&_mutex);
-    };
+    }
 
     void core0_exit()
     {
@@ -71,7 +61,7 @@ public:
         if (!_started) return;
 
         mutex_exit(&_mutex);
-    };
+    }
 
     bool core1_timer_isr_enter()
     {
@@ -83,7 +73,7 @@ public:
             spin_lock_unsafe_blocking(_lock);
 
         return _timer_isr_acquired;
-    };
+    }
 
     void core1_timer_isr_exit()
     {
@@ -98,7 +88,7 @@ public:
             spin_unlock_unsafe(_lock);
             mutex_exit(&_mutex);
         }
-    };
+    }
 
     bool core1_pin_isr_enter()
     {
@@ -113,7 +103,7 @@ public:
             _pin_isr_acquired = mutex_try_enter_block_until(&_mutex, delayed_by_us(get_absolute_time(), _spin_timeout_us));
 
         return (_pin_isr_acquired || owner == _core);
-    };
+    }
 
     void core1_pin_isr_exit()
     {
@@ -125,7 +115,7 @@ public:
             _pin_isr_acquired = false;
             mutex_exit(&_mutex);
         }
-    };
+    }
 
 private:
 
