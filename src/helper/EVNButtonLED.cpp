@@ -1,69 +1,95 @@
 #include "EVNButtonLED.h"
 
-volatile button_led_state_t EVNButtonLED::button;
+volatile button_led_state_t EVNButtonLED::_button;
+volatile uint8_t EVNButtonLED::_btn_lock_num = spin_lock_claim_unused(true),
+				EVNButtonLED::_var_lock_num = spin_lock_claim_unused(true);
+spin_lock_t* EVNButtonLED::_var_lock;
 
 EVNButtonLED::EVNButtonLED(uint8_t mode, bool link_led, bool link_movement, bool button_invert)
 {
-	button.state = false;
+	_button.state = false;
 
-	button.mode = constrain(mode, 0, 2);
-	button.link_led = link_led;
-	button.link_movement = link_movement;
-	button.button_invert = button_invert;
+	_button.mode = constrain(mode, 0, 2);
+	_button.link_led = link_led;
+	_button.link_movement = link_movement;
+	_button.button_invert = button_invert;
 
-	if (button.mode == BUTTON_TOGGLE && button.button_invert)
-		button.state = !button.state;
+	if (_button.mode == BUTTON_TOGGLE && _button.button_invert)
+		_button.state = !_button.state;
 
-	button.flash = false;
+	_button.flash = false;
 }
 
 void EVNButtonLED::begin()
 {
-	//use button.started to ensure that setup only occurs once
-	if (!button.started)
+	if (!_button.started)
 	{
-		//button pin change interrupt
+		_button.lock = spin_lock_init(_btn_lock_num);
+		_var_lock = spin_lock_init(_var_lock_num);
+
 		pinMode(PIN_BUTTON, INPUT_PULLUP);
+		pinMode(PIN_LED, OUTPUT_8MA);
 		attachInterrupt(PIN_BUTTON, isr, CHANGE);
 
-		//led timer interrupt
-		pinMode(PIN_LED, OUTPUT_8MA);
-		button.spin_lock = spin_lock_init(spin_lock_claim_unused(true));
 		if (rp2040.cpuid() == 0)
 			alarm_pool_add_repeating_timer_ms(EVNISRTimer0.sharedAlarmPool(), UPDATE_INTERVAL_MS, update, nullptr, &EVNISRTimer0.sharedISRTimer(2));
 		else
 			alarm_pool_add_repeating_timer_ms(EVNISRTimer1.sharedAlarmPool(), UPDATE_INTERVAL_MS, update, nullptr, &EVNISRTimer1.sharedISRTimer(2));
 
-		button.started = true;
+		_button.started = true;
 	}
 }
 
-bool EVNButtonLED::read() {
-
-	if (button.mode == BUTTON_DISABLE || !button.started)
-		return true;
-	else
-		return is_spin_locked(button.spin_lock);
+bool EVNButtonLED::read() 
+{
+	uint32_t out = spin_lock_blocking(_var_lock);
+	bool output = true;
+	if (_button.mode != BUTTON_DISABLE && _button.started)
+		output = is_spin_locked(_button.lock);
+	spin_unlock(_var_lock, out);
+	return output;
 }
 
-void EVNButtonLED::setMode(uint8_t mode) { button.mode = constrain(mode, 0, 2); }
-uint8_t EVNButtonLED::getMode() { return button.mode; }
+bool EVNButtonLED::motorsEnabled() 
+{
+	spin_lock_unsafe_blocking(_var_lock);
+	bool output = true;
+	if (_button.mode != BUTTON_DISABLE && _button.started && _button.link_movement)
+		output = is_spin_locked(_button.lock);
+	spin_unlock_unsafe(_var_lock);
+	return output;
+}
 
-void EVNButtonLED::setLinkLED(bool enable) { button.link_led = enable; }
-bool EVNButtonLED::getLinkLED() { return button.link_led; }
+void EVNButtonLED::setMode(uint8_t mode) { _button.mode = constrain(mode, 0, 2); }
+uint8_t EVNButtonLED::getMode() { return _button.mode; }
 
-void EVNButtonLED::setLinkMovement(bool enable) { button.link_movement = enable; }
-bool EVNButtonLED::getLinkMovement() { return button.link_movement; }
+void EVNButtonLED::setLinkLED(bool enable) { _button.link_led = enable; }
+bool EVNButtonLED::getLinkLED() { return _button.link_led; }
+
+void EVNButtonLED::setLinkMovement(bool enable) 
+{
+	uint32_t out = spin_lock_blocking(_var_lock);
+	_button.link_movement = enable;
+	spin_unlock(_var_lock, out);
+}
+
+bool EVNButtonLED::getLinkMovement()
+{
+	uint32_t out = spin_lock_blocking(_var_lock);
+	bool output = _button.link_movement;
+	spin_unlock(_var_lock, out);
+	return output;
+}
 
 void EVNButtonLED::setButtonInvert(bool enable)
 {
-	if (button.mode == BUTTON_TOGGLE && enable != button.button_invert)
-		button.state = !button.state;
-	button.button_invert = enable;
+	if (_button.mode == BUTTON_TOGGLE && enable != _button.button_invert)
+		_button.state = !_button.state;
+	_button.button_invert = enable;
 }
 
-bool EVNButtonLED::getButtonInvert() { return button.button_invert; }
+bool EVNButtonLED::getButtonInvert() { return _button.button_invert; }
 
-void EVNButtonLED::setFlash(bool enable) { button.flash = enable; }
-bool EVNButtonLED::getFlash() { return button.flash; }
+void EVNButtonLED::setFlash(bool enable) { _button.flash = enable; }
+bool EVNButtonLED::getFlash() { return _button.flash; }
 

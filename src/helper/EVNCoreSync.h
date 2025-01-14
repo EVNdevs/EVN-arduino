@@ -13,6 +13,7 @@ public:
     {
         _spin_timeout_us = spin_timeout_us;
         _stall_time_us = stall_time_us;
+        _lock_num = spin_lock_claim_unused(true);
     }
 
     void begin()
@@ -20,7 +21,7 @@ public:
         if (!_started)
         {
             mutex_init(&_mutex);
-            _lock = spin_lock_init(spin_lock_claim_unused(true));
+            _lock = spin_lock_init(_lock_num);
             _core = rp2040.cpuid();
             _started = true;
         }
@@ -127,6 +128,8 @@ private:
 
     mutex_t _mutex = {};
     spin_lock_t* _lock = nullptr;
+
+    volatile uint8_t _lock_num;
     volatile uint8_t _core;
     volatile bool _started = false;
 

@@ -173,8 +173,10 @@ private:
             {
                 if (EVNServo::timerisr_enabled)
                 {
-                    cancel_repeating_timer(&EVNISRTimer0.sharedISRTimer(0));
-                    cancel_repeating_timer(&EVNISRTimer1.sharedISRTimer(0));
+                    if (rp2040.cpuid() == 0)
+                        cancel_repeating_timer(&EVNISRTimer0.sharedISRTimer(0));
+                    else
+                        cancel_repeating_timer(&EVNISRTimer1.sharedISRTimer(0));
                 }
 
                 if (rp2040.cpuid() == 0)

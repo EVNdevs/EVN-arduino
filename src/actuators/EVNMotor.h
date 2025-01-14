@@ -858,8 +858,10 @@ private:
 			if (EVNMotor::timerisr_enabled)
 			{
 				//remove timer interrupt added by EVNMotor (if added)
-				cancel_repeating_timer(&EVNISRTimer0.sharedISRTimer(3));
-				cancel_repeating_timer(&EVNISRTimer1.sharedISRTimer(3));
+				if (rp2040.cpuid() == 0)
+					cancel_repeating_timer(&EVNISRTimer0.sharedISRTimer(3));
+				else
+					cancel_repeating_timer(&EVNISRTimer1.sharedISRTimer(3));
 			}
 
 			if (rp2040.cpuid() == 0)

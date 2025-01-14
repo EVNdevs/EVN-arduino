@@ -7,24 +7,28 @@ EVNPortSelector::EVNPortSelector(uint32_t i2c_freq)
 
 void EVNPortSelector::begin()
 {
-	Wire.begin();
-	Wire1.begin();
-	Serial.begin();
+	if (!_started)
+	{
+		Wire.begin();
+		Wire1.begin();
 
-	Wire.setClock(_i2c_freq);
-	Wire1.setClock(_i2c_freq);
+		Wire.setClock(_i2c_freq);
+		Wire1.setClock(_i2c_freq);
 
-	Wire1.beginTransmission(I2C_ADDR);
-	Wire1.write(1 << 0);
-	Wire1.endTransmission();
-	_wire1_port = 9;
-	_wire1_time_ms = millis();
+		Wire1.beginTransmission(I2C_ADDR);
+		Wire1.write(1 << 0);
+		Wire1.endTransmission();
+		_wire1_port = 9;
+		_wire1_time_ms = millis();
 
-	Wire.beginTransmission(I2C_ADDR);
-	Wire.write(1 << 0);
-	Wire.endTransmission();
-	_wire0_port = 1;
-	_wire0_time_ms = millis();
+		Wire.beginTransmission(I2C_ADDR);
+		Wire.write(1 << 0);
+		Wire.endTransmission();
+		_wire0_port = 1;
+		_wire0_time_ms = millis();
+
+		_started = true;
+	}
 }
 
 void EVNPortSelector::printPorts()
