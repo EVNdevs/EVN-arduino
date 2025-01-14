@@ -19,9 +19,10 @@ public:
 	void printPorts();
 
 private:
-	uint8_t _wire0_port = 1, _wire1_port = 9;
+	uint8_t _wire0_port, _wire1_port;
 	uint32_t _wire0_time_ms, _wire1_time_ms;
 	uint32_t _i2c_freq;
+	bool _started = false;
 };
 
 #endif
