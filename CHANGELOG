@@ -1,3 +1,13 @@
+1.3.2 (15/1/25)
+
+-- Improvements --
+
+EVNAlpha: Minor improvements to thread safety
+
+-- Bugfixes --
+
+EVNMotor, EVNDrivebase: Bug where begin() fails to execute should be fully squashed now
+
 1.3.1 (13/1/25)
 
 -- Bugfixes(?) --
