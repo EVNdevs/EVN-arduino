@@ -116,8 +116,6 @@ EVNMotor::EVNMotor(uint8_t port, uint8_t motor_type, uint8_t motor_dir, uint8_t 
 
 void EVNMotor::begin() volatile
 {
-	rp2040.idleOtherCore();
-
 	EVNCoreSync0.begin();
 
 	//configure pins
@@ -130,8 +128,6 @@ void EVNMotor::begin() volatile
 
 	//attach pin change interrupts (encoder) and timer interrupt (PID control)
 	attach_interrupts(&_encoder, &_pid_control);
-
-	rp2040.resumeOtherCore();
 }
 
 void EVNMotor::setKp(float kp) volatile
@@ -651,12 +647,8 @@ EVNDrivebase::EVNDrivebase(float wheel_dia, float axle_track, EVNMotor* motor_le
 
 void EVNDrivebase::begin() volatile
 {
-	rp2040.idleOtherCore();
-
 	EVNCoreSync0.begin();
 	attach_interrupts(&db);
-
-	rp2040.resumeOtherCore();
 }
 
 void EVNDrivebase::setSpeedKp(float kp) volatile

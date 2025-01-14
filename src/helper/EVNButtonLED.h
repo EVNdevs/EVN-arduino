@@ -22,8 +22,7 @@ typedef struct
 	bool button_invert;
 
 	bool flash;
-	spin_lock_t* spin_lock;
-
+	spin_lock_t* lock;
 } button_led_state_t;
 
 class EVNButtonLED
@@ -36,6 +35,7 @@ public:
 	EVNButtonLED(uint8_t mode = BUTTON_TOGGLE, bool link_led = true, bool link_movement = false, bool button_invert = false);
 	void begin();
 	bool read();
+	bool motorsEnabled(); //used by ISRs
 
 	void setMode(uint8_t mode);
 	void setLinkLED(bool enable);
@@ -50,50 +50,52 @@ public:
 	bool getFlash();
 
 	//singleton for state struct
-	volatile button_led_state_t* sharedState() volatile { return &button; }
+	volatile button_led_state_t* sharedState() volatile { return &_button; }
 
 private:
-	static volatile button_led_state_t button;
+	static spin_lock_t* _var_lock;
+	static volatile button_led_state_t _button;
+	static volatile uint8_t _btn_lock_num, _var_lock_num;
 	static void isr()
 	{
-		if (millis() - button.last_change > DEBOUNCE_TIMING_MS)
+		if (millis() - _button.last_change > DEBOUNCE_TIMING_MS)
 		{
 			uint8_t reading = digitalRead(PIN_BUTTON);
 
-			if (button.mode == BUTTON_PUSHBUTTON)
+			if (_button.mode == BUTTON_PUSHBUTTON)
 			{
-				//flip reading for button state, as pin is LOW when button is pressed
-				if (button.button_invert)
-					button.state = reading;
+				//flip reading for _button state, as pin is LOW when _button is pressed
+				if (_button.button_invert)
+					_button.state = reading;
 				else
-					button.state = !reading;
+					_button.state = !reading;
 			}
-			else if (button.mode == BUTTON_TOGGLE)
+			else if (_button.mode == BUTTON_TOGGLE)
 			{
-				//for toggle mode, the raw button reading is stored in substate instead of state
-				//when button was not pressed (substate false) and is pressed now (reading false), state is flipped
-				if (!button.substate && !reading)
-					button.state = !button.state;
+				//for toggle mode, the raw _button reading is stored in substate instead of state
+				//when _button was not pressed (substate false) and is pressed now (reading false), state is flipped
+				if (!_button.substate && !reading)
+					_button.state = !_button.state;
 
-				button.substate = !reading;
+				_button.substate = !reading;
 			}
 
 			//spin lock is used here as an atomic boolean variable
-			if (button.state && !is_spin_locked(button.spin_lock))
-				spin_lock_unsafe_blocking(button.spin_lock);
-			else if (!button.state && is_spin_locked(button.spin_lock))
-				spin_unlock_unsafe(button.spin_lock);
+			if (_button.state && !is_spin_locked(_button.lock))
+				spin_lock_unsafe_blocking(_button.lock);
+			else if (!_button.state && is_spin_locked(_button.lock))
+				spin_unlock_unsafe(_button.lock);
 
-			button.last_change = millis();
+			_button.last_change = millis();
 		}
 
 		//ensures that LED reflects output of read()
-		if (button.link_led && !button.flash) digitalWrite(PIN_LED, button.state);
+		if (_button.link_led && !_button.flash) digitalWrite(PIN_LED, _button.state);
 	}
 
 	static bool update(struct repeating_timer* t)
 	{
-		if (button.flash)
+		if (_button.flash)
 			digitalWrite(PIN_LED, !digitalRead(PIN_LED));
 		else
 			isr();
