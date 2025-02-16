@@ -1,13 +1,13 @@
 //TUNING FOR CUSTOM MOTOR
 //edit this to change CUSTOM_MOTOR defaults
-#define CUSTOM_KP                       0.1          //position PID gains (PD controller)
-#define CUSTOM_KD		                0.005
+#define CUSTOM_KP                       0.4          //position PID gains (PD controller)
+#define CUSTOM_KD		                0.0048
 #define CUSTOM_PWM_MAG                  -1
 #define CUSTOM_PWM_EXP                  -1
-#define CUSTOM_MAX_RPM	                100          //max RPM of the motor shaft
-#define CUSTOM_ACCEL                    100 * 600    //acceleration in rpm/s (60 means it takes 1 second to accelerate from 0RPM to 60)
-#define CUSTOM_DECEL                    100 * 600    //deceleration in rpm/s (60 means it takes 1 second to decelerate from 60RPM to 0)
-#define CUSTOM_PPR				        1000         //pulses on 1 encoder wheel for 1 revolution of the motor shaft
+#define CUSTOM_MAX_RPM	                77          //max RPM of the motor shaft
+#define CUSTOM_ACCEL                    100 * 77    //acceleration in rpm/s (60 means it takes 1 second to accelerate from 0RPM to 60)
+#define CUSTOM_DECEL                    100 * 77    //deceleration in rpm/s (60 means it takes 1 second to decelerate from 60RPM to 0)
+#define CUSTOM_PPR				        858         //pulses on 1 encoder wheel for 1 revolution of the motor shaft
 
 //LEGO MOTORS
 #define LEGO_PPR				        180
@@ -46,11 +46,6 @@
 #define DRIVEBASE_POS_MIN_ERROR_MOTOR_DEG   2
 #define DRIVEBASE_STOP_CHECK_THRESHOLD_DPS  20
 #define DRIVEBASE_STOP_CHECK_TIMEOUT_US     500000
-
-#define DRIVEBASE_KP_SPEED                  27.2
-#define DRIVEBASE_KD_SPEED                  0.272
-#define DRIVEBASE_KP_TURN_RATE              27.2
-#define DRIVEBASE_KD_TURN_RATE              0.272
 
 #define DRIVEBASE_SPEED_ACCEL               1000
 #define DRIVEBASE_SPEED_DECEL               1000

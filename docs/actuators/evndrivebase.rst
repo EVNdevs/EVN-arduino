@@ -27,8 +27,8 @@ Constructor
 
 .. note::
 
-    For those new to C, pointers can be quite confusing! Think of ``&`` as a means for you to provide a link to an object. 
-    Here, we pass a link to ``EVNMotor`` objects to our ``EVNDrivebase`` object, so that it can control the ``EVNMotor`` objects just like the user normally can.
+    For those new to C++, pointers can be quite confusing! Think of ``&`` as a means for you to provide a link to an object. 
+    Here, we pass a link to ``EVNMotor`` objects to our ``EVNDrivebase`` object, so that it can control the ``EVNMotor`` objects just like the user can.
 
 Functions
 ---------
@@ -352,13 +352,18 @@ Stopping
 Control Settings
 """"""""""""""""
 
-To view the default PD and accel/decel values, look at ``src\evn_motor_defs.h`` in the Github repository.
+To view the default accel/decel values, look at ``src\evn_motor_defs.h`` in the Github repository.
+
+The PD values for the speed and turn rate controllers are obtained from the motor objects linked to drivebase.
+
+If both motors are the same motor type, then the EVNMotor PD value for that motor type will be used by default.
+Otherwise, the CUSTOM_MOTOR PD values are used.
 
 .. function:: void setSpeedKp(float kp);
 
     Sets proportional gain values for the speed controller (controls average drivebase speed).
 
-    The error for the controller is the difference between the robot's target distance travelled (which increases over time) and the robot's current distance travelled.
+    The error for the controller is the difference between the robot's target distance travelled and the robot's current distance travelled (in motor degrees).
 
     :param kp: Proportional gain
 
@@ -370,7 +375,7 @@ To view the default PD and accel/decel values, look at ``src\evn_motor_defs.h`` 
 
     Sets derivative gain values for the speed controller (controls average drivebase speed).
 
-    The error for the controller is the difference between the robot's target distance travelled (which increases over time) and the robot's current distance travelled.
+    The error for the controller is the difference between the robot's target distance travelled and the robot's current distance travelled (in motor degrees).
 
     :param kd: Derivative gain
 
@@ -382,7 +387,7 @@ To view the default PD and accel/decel values, look at ``src\evn_motor_defs.h`` 
 
     Sets proportional gain values for the turn rate controller (controls rate of turning of drivebase).
 
-    The error for the controller is the difference between the robot's target angle (which shifts over time if travelling in a curve) and the robot's current angle.
+    The error for the controller is the difference between the robot's target angle and the robot's current angle (in motor degrees).
 
     This controller serves 2 purposes: to ensure the drivebase turns at the correct rate, and to stop either motor if the other is stalled, syncing their movement.
 
@@ -396,7 +401,7 @@ To view the default PD and accel/decel values, look at ``src\evn_motor_defs.h`` 
 
     Sets derivative gain values for the turn rate controller (controls rate of turning of drivebase).
 
-    The error for the controller is the difference between the robot's target angle (which shifts over time if travelling in a curve) and the robot's current angle.
+    The error for the controller is the difference between the robot's target angle and the robot's current angle (in motor degrees).
 
     This controller serves 2 purposes: to ensure the drivebase turns at the correct rate, and to stop either motor if the other is stalled, syncing their movement.
 

@@ -150,8 +150,8 @@ typedef struct
 	float angle_output;
 	float speed_error;
 	float speed_output;
-	float target_motor_left_dps;
-	float target_motor_right_dps;
+	float target_motor_left_duty_cycle;
+	float target_motor_right_duty_cycle;
 	bool stall_until_stop;
 	uint32_t stop_time;
 
@@ -237,6 +237,7 @@ private:
 	float get_target_heading() volatile;
 
 	void disable_connected_drivebase_unsafe() volatile;
+	void runPWM_unsafe(float duty_cycle) volatile;
 	void runSpeed_unsafe(float dps) volatile;
 	void stop_unsafe() volatile;
 	void coast_unsafe() volatile;
@@ -1046,9 +1047,8 @@ private:
 			}
 
 			//increment target angle and XY position
-			//if speed or turn rate output is saturated or motors are stalled, stop incrementing (avoid excessive overshoot that PID cannot correct)
-			if (fabs(arg->speed_error * arg->speed_pid->getKp()) < arg->max_dps && fabs(arg->angle_error * arg->turn_rate_pid->getKp()) < arg->max_dps
-				&& !arg->motor_left->stalled_unsafe() && !arg->motor_right->stalled_unsafe())
+			//if speed + turn rate output is saturated, stop incrementing (anti-windup)
+			if (fabs(arg->speed_error * arg->speed_pid->getKp()) + fabs(arg->angle_error * arg->turn_rate_pid->getKp()) < 1)
 			{
 				//calculating time taken to decel/accel to target speed & turn rate
 				float new_speed_accel = arg->speed_accel;
@@ -1213,48 +1213,54 @@ private:
 
 			if (arg->debug == DEBUG_SPEED)
 			{
-				arg->target_motor_left_dps = arg->speed_output;
-				arg->target_motor_right_dps = arg->speed_output;
+				arg->target_motor_left_duty_cycle = arg->speed_output;
+				arg->target_motor_right_duty_cycle = arg->speed_output;
 			}
 			else if (arg->debug == DEBUG_TURN_RATE)
 			{
-				arg->target_motor_left_dps = -arg->angle_output;
-				arg->target_motor_right_dps = arg->angle_output;
+				arg->target_motor_left_duty_cycle = -arg->angle_output;
+				arg->target_motor_right_duty_cycle = arg->angle_output;
 			}
 			else
 			{
-				arg->target_motor_left_dps = arg->speed_output - arg->angle_output;
-				arg->target_motor_right_dps = arg->speed_output + arg->angle_output;
+				arg->target_motor_left_duty_cycle = arg->speed_output - arg->angle_output;
+				arg->target_motor_right_duty_cycle = arg->speed_output + arg->angle_output;
 			}
 
 			//maintain ratio between speeds when either exceeds motor limits
-			if (arg->target_motor_left_dps != 0 && arg->target_motor_right_dps != 0)
+			if (arg->target_motor_left_duty_cycle != 0 && arg->target_motor_right_duty_cycle != 0)
 			{
-				if (fabs(arg->target_motor_left_dps) > arg->max_dps)
+				if (fabs(arg->target_motor_left_duty_cycle) > 1)
 				{
-					float ratio = arg->target_motor_right_dps / arg->target_motor_left_dps;
-					if (arg->target_motor_left_dps > 0)
-						arg->target_motor_left_dps = arg->max_dps;
+					float ratio = arg->target_motor_right_duty_cycle / arg->target_motor_left_duty_cycle;
+					if (arg->target_motor_left_duty_cycle > 0)
+						arg->target_motor_left_duty_cycle = 1;
 					else
-						arg->target_motor_left_dps = -arg->max_dps;
-					arg->target_motor_right_dps = arg->target_motor_left_dps * ratio;
+						arg->target_motor_left_duty_cycle = -1;
+					arg->target_motor_right_duty_cycle = arg->target_motor_left_duty_cycle * ratio;
 				}
 
-				if (fabs(arg->target_motor_right_dps) > arg->max_dps)
+				if (fabs(arg->target_motor_right_duty_cycle) > 1)
 				{
-					float ratio = arg->target_motor_left_dps / arg->target_motor_right_dps;
-					if (arg->target_motor_right_dps > 0)
-						arg->target_motor_right_dps = arg->max_dps;
+					float ratio = arg->target_motor_left_duty_cycle / arg->target_motor_right_duty_cycle;
+					if (arg->target_motor_right_duty_cycle > 0)
+						arg->target_motor_right_duty_cycle = 1;
 					else
-						arg->target_motor_right_dps = -arg->max_dps;
-					arg->target_motor_left_dps = arg->target_motor_right_dps * ratio;
+						arg->target_motor_right_duty_cycle = -1;
+					arg->target_motor_left_duty_cycle = arg->target_motor_right_duty_cycle * ratio;
 				}
 			}
 
+			if (arg->motor_left->_pid_control.pwm_exp > 0 && arg->motor_left->_pid_control.pwm_mag > 0)
+				arg->target_motor_left_duty_cycle = (arg->target_motor_left_duty_cycle > 0 ? 1 : -1) * arg->motor_left->_pid_control.pwm_mag * exp(fabs(arg->target_motor_left_duty_cycle) * arg->motor_left->_pid_control.pwm_exp);
+
+			if (arg->motor_right->_pid_control.pwm_exp > 0 && arg->motor_right->_pid_control.pwm_mag > 0)
+				arg->target_motor_right_duty_cycle = (arg->target_motor_right_duty_cycle > 0 ? 1 : -1) * arg->motor_right->_pid_control.pwm_mag * exp(fabs(arg->target_motor_right_duty_cycle) * arg->motor_right->_pid_control.pwm_exp);
+
 			//write speeds to motors
 			//non-thread safe write used here, assumed safe because EVNDrivebase and EVNMotor should be on same core
-			arg->motor_left->runSpeed_unsafe(arg->target_motor_left_dps);
-			arg->motor_right->runSpeed_unsafe(arg->target_motor_right_dps);
+			arg->motor_left->runPWM_unsafe(arg->target_motor_left_duty_cycle);
+			arg->motor_right->runPWM_unsafe(arg->target_motor_right_duty_cycle);
 
 			if (arg->debug == DEBUG_SPEED)
 			{

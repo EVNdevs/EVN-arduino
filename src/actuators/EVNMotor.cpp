@@ -426,20 +426,25 @@ void EVNMotor::compute_ppr_derived_values_unsafe() volatile
 	_encoder._360000000_div_ppr = 360000000 / _encoder.ppr;
 }
 
-void EVNMotor::runPWM(float duty_cycle_pct) volatile
+void EVNMotor::runPWM_unsafe(float duty_cycle) volatile
 {
-	if (!timerisr_enabled) return;
-	EVNCoreSync0.core0_enter();
-	disable_connected_drivebase_unsafe();
-
-	duty_cycle_pct = constrain(duty_cycle_pct, -100, 100) / 100;
 
 	_pid_control.run_pwm = true;
 	_pid_control.run_speed = false;
 	_pid_control.run_time = false;
 	_pid_control.run_pos = false;
 
-	runPWM_static(&_pid_control, duty_cycle_pct);
+	runPWM_static(&_pid_control, duty_cycle);
+}
+
+void EVNMotor::runPWM(float duty_cycle_pct) volatile
+{
+	if (!timerisr_enabled) return;
+	EVNCoreSync0.core0_enter();
+	disable_connected_drivebase_unsafe();
+
+	float duty_cycle = constrain(duty_cycle_pct, -100, 100) / 100;
+	runPWM_unsafe(duty_cycle);
 
 	EVNCoreSync0.core0_exit();
 }
@@ -628,12 +633,19 @@ EVNDrivebase::EVNDrivebase(float wheel_dia, float axle_track, EVNMotor* motor_le
 	db.wheel_dia = fabs(wheel_dia);
 
 	if (db.motor_left->_pid_control.motor_type == db.motor_right->_pid_control.motor_type)
+	{
 		db.motor_type = db.motor_left->_pid_control.motor_type;
+		float kp = db.motor_left->_pid_control.pos_pid->getKp();
+		float kd = db.motor_left->_pid_control.pos_pid->getKd();
+		db.turn_rate_pid = new PIDController(kp, 0, kd, DIRECT);
+		db.speed_pid = new PIDController(kp, 0, kd, DIRECT);
+	}
 	else
+	{
 		db.motor_type = CUSTOM_MOTOR;
-
-	db.turn_rate_pid = new PIDController(DRIVEBASE_KP_TURN_RATE, 0, DRIVEBASE_KD_TURN_RATE, DIRECT);
-	db.speed_pid = new PIDController(DRIVEBASE_KP_SPEED, 0, DRIVEBASE_KD_SPEED, DIRECT);
+		db.turn_rate_pid = new PIDController(CUSTOM_KP, 0, CUSTOM_KD, DIRECT);
+		db.speed_pid = new PIDController(CUSTOM_KP, 0, CUSTOM_KD, DIRECT);
+	}
 
 	db.speed_accel = fabs(DRIVEBASE_SPEED_ACCEL);
 	db.speed_decel = fabs(DRIVEBASE_SPEED_DECEL);
