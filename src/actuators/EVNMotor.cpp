@@ -633,31 +633,18 @@ EVNDrivebase::EVNDrivebase(float wheel_dia, float axle_track, EVNMotor* motor_le
 	db.wheel_dia = fabs(wheel_dia);
 
 	if (db.motor_left->_pid_control.motor_type == db.motor_right->_pid_control.motor_type)
-		db.motor_type = db.motor_left->_pid_control.motor_type;
-	else
-		db.motor_type = CUSTOM_MOTOR;
-
-	switch (db.motor_type)
 	{
-		case EV3_LARGE:
-			db.turn_rate_pid = new PIDController(EV3_LARGE_KP, 0, EV3_LARGE_KD, DIRECT);
-			db.speed_pid = new PIDController(EV3_LARGE_KP, 0, EV3_LARGE_KD, DIRECT);
-			break;
-
-		case EV3_MED:
-			db.turn_rate_pid = new PIDController(EV3_MED_KP, 0, EV3_MED_KD, DIRECT);
-			db.speed_pid = new PIDController(EV3_MED_KP, 0, EV3_MED_KD, DIRECT);
-			break;
-
-		case NXT_LARGE:
-			db.turn_rate_pid = new PIDController(NXT_LARGE_KP, 0, NXT_LARGE_KD, DIRECT);
-			db.speed_pid = new PIDController(NXT_LARGE_KP, 0, NXT_LARGE_KD, DIRECT);
-			break;
-
-		case CUSTOM_MOTOR:
-			db.turn_rate_pid = new PIDController(CUSTOM_KP, 0, CUSTOM_KD, DIRECT);
-			db.speed_pid = new PIDController(CUSTOM_KP, 0, CUSTOM_KD, DIRECT);
-			break;
+		db.motor_type = db.motor_left->_pid_control.motor_type;
+		float kp = db.motor_left->_pid_control.pos_pid->getKp();
+		float kd = db.motor_left->_pid_control.pos_pid->getKd();
+		db.turn_rate_pid = new PIDController(kp, 0, kd, DIRECT);
+		db.speed_pid = new PIDController(kp, 0, kd, DIRECT);
+	}
+	else
+	{
+		db.motor_type = CUSTOM_MOTOR;
+		db.turn_rate_pid = new PIDController(CUSTOM_KP, 0, CUSTOM_KD, DIRECT);
+		db.speed_pid = new PIDController(CUSTOM_KP, 0, CUSTOM_KD, DIRECT);
 	}
 
 	db.speed_accel = fabs(DRIVEBASE_SPEED_ACCEL);
