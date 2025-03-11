@@ -32,7 +32,7 @@ typedef struct
 class EVNServoBase
 {
 public:
-    static const uint16_t TIMER_INTERVAL_US = 10000;
+    static const uint16_t TIMER_INTERVAL_US = 40000;
     static const uint8_t MAX_SERVO_OBJECTS = 4;
 
     EVNServoBase(uint8_t port, bool servo_dir = DIRECT, uint16_t min_pulse_us = 600, uint16_t max_pulse_us = 2400);
