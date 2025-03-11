@@ -1,3 +1,8 @@
+1.3.4 (11/3/25)
+
+-- Bugfixes --
+EVNServo, EVNContinuousServo: Fixed bug where when object is started on core 0, write() on core 0 runs indefinitely.
+
 1.3.3 (16/2/25)
 
 -- Improvements --
