@@ -55,7 +55,7 @@ public:
 private:
 	static spin_lock_t* _var_lock;
 	static volatile button_led_state_t _button;
-	static volatile uint8_t _btn_lock_num, _var_lock_num;
+	static volatile uint8_t _btn_lock_num, _var_lock_num, _core;
 	static void isr()
 	{
 		if (millis() - _button.last_change > DEBOUNCE_TIMING_MS)
