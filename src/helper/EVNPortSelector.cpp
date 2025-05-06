@@ -15,17 +15,29 @@ void EVNPortSelector::begin()
 		Wire.setClock(_i2c_freq);
 		Wire1.setClock(_i2c_freq);
 
-		Wire1.beginTransmission(I2C_ADDR);
-		Wire1.write(1 << 0);
-		Wire1.endTransmission();
-		_wire1_port = 9;
-		_wire1_time_ms = millis();
+		delay(50);
 
 		Wire.beginTransmission(I2C_ADDR);
-		Wire.write(1 << 0);
+		Wire.write(0);
+		Wire.endTransmission();
+		
+		Wire1.beginTransmission(I2C_ADDR);
+		Wire1.write(0);
+		Wire1.endTransmission();
+		
+		delay(50);
+
+		Wire.beginTransmission(I2C_ADDR);
+		Wire.write(1);
 		Wire.endTransmission();
 		_wire0_port = 1;
 		_wire0_time_ms = millis();
+
+		Wire1.beginTransmission(I2C_ADDR);
+		Wire1.write(1);
+		Wire1.endTransmission();
+		_wire1_port = 9;
+		_wire1_time_ms = millis();
 
 		_started = true;
 	}
