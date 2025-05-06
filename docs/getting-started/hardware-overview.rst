@@ -188,7 +188,7 @@ However, the remaining output-capable pins (GP0-3 and 8-9) are connected to othe
 
 Timers
 """"""
-The ``EVNAlpha``, ``EVNMotor``and ``EVNServo`` libraries use hardware timers 1 and 2 to automatically update control loops for the motors and servos, without any end-user code.
+The ``EVNAlpha``, ``EVNMotor`` and ``EVNServo`` libraries use hardware timers 1 and 2 to automatically update control loops for the motors and servos, without any end-user code.
 
 This leaves hardware timers 0 and 3 completely free for the end user. Users may also be able to share timers 1 and 2 with our libraries, as they are not fully utilised.
 
