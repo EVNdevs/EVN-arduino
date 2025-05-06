@@ -453,7 +453,6 @@ void EVNMotor::runSpeed(float dps) volatile
 {
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
-	disable_connected_drivebase_unsafe();
 
 	runSpeed_unsafe(dps);
 
@@ -462,6 +461,8 @@ void EVNMotor::runSpeed(float dps) volatile
 
 void EVNMotor::runSpeed_unsafe(float dps) volatile
 {
+	disable_connected_drivebase_unsafe();
+
 	_pid_control.target_dps = clean_input_dps_unsafe(dps);
 	_pid_control.run_dir = clean_input_dir(dps);
 
@@ -1306,12 +1307,10 @@ void EVNDrivebase::stop() volatile
 	EVNCoreSync0.core0_enter();
 
 	set_mode_unsafe(db.id, true);
-
 	db.stop_action = STOP_BRAKE;
 	stopAction_static(&db);
 
 	EVNCoreSync0.core0_exit();
-
 	stall_until_stopped();
 }
 
@@ -1321,12 +1320,10 @@ void EVNDrivebase::coast() volatile
 	EVNCoreSync0.core0_enter();
 
 	set_mode_unsafe(db.id, true);
-
 	db.stop_action = STOP_COAST;
 	stopAction_static(&db);
 
 	EVNCoreSync0.core0_exit();
-
 	stall_until_stopped();
 }
 
@@ -1335,13 +1332,10 @@ void EVNDrivebase::hold() volatile
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
 
-	set_mode_unsafe(db.id, true);
-
 	db.stop_action = STOP_HOLD;
 	stopAction_static(&db);
 
 	EVNCoreSync0.core0_exit();
-
 	stall_until_stopped();
 }
 
