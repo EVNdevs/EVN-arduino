@@ -1,3 +1,8 @@
+1.3.5 (7/5/25)
+
+-- Bugfixes --
+EVNDrivebase: Fix bug where hold() moves to incorrect setpoint when called immediately after calling individual EVNMotor functions on the drivebase motors.
+
 1.3.4 (11/3/25)
 
 -- Bugfixes --
