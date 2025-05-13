@@ -1118,27 +1118,11 @@ void EVNDrivebase::drivePct(float speed_outer_pct, float turn_rate_pct) volatile
 	speed_outer_pct = constrain(speed_outer_pct, -100, 100) / 100;
 	float speed_inner_pct = speed_outer_pct * (1 - 2 * fabs(turn_rate_pct));
 	float speed = (speed_outer_pct + speed_inner_pct) / 2 * db.max_speed;
+	float turn_rate = db.max_speed * (speed_outer_pct - speed_inner_pct) / db.axle_track * 180 / M_PI;
 
 	EVNCoreSync0.core0_exit();
-
-	//drive straight
-	if (turn_rate_pct == 0)
-		this->drive(speed, 0);
-
-	//turn on the spot
-	else if (fabs(turn_rate_pct) == 1)
-		this->drive(0, fabs(speed_outer_pct) * db.max_turn_rate * turn_rate_pct);
-
-	//centre of turning radius between wheels
-	else if (turn_rate_pct >= 0.5)
-		this->driveRadius(speed, db.axle_track * (1 - turn_rate_pct));
-
-	else if (turn_rate_pct <= -0.5)
-		this->driveRadius(speed, -db.axle_track * (1 + turn_rate_pct));
-
-	//centre of turning radius outside of wheels
-	else
-		this->driveRadius(speed, db.axle_track * 0.25 / turn_rate_pct);
+	
+	this->drive(speed, turn_rate);
 }
 
 void EVNDrivebase::driveTurnRate(float speed, float turn_rate) volatile
