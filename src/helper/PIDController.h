@@ -36,7 +36,7 @@ public:
 private:
 	volatile float _kp, _ki, _kd, _dir, _deriv_filter_alpha;
 	volatile float _error = 0, _integral = 0, _preverror = 0, _output = 0, _last_filtered_derivative = 0;
-	uint32_t _last_update_time_us = 0;
+	volatile uint32_t _last_update_time_us = 0;
 };
 
 #endif
