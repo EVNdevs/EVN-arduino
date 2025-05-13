@@ -24,9 +24,14 @@ def test(kp, kd, speed):
         while (not ser.in_waiting):
             pass
 
-        start_time = time.time_ns()
+        start_time = time.perf_counter_ns()
+        curr_time = time.perf_counter_ns()
+        elapsed_time = 0
 
-        while time.time_ns() - start_time < recording_time_s * 1000000:
+        while elapsed_time < recording_time_s * 1000000000:
+            curr_time = time.perf_counter_ns()
+            elapsed_time = curr_time - start_time
+
             #read line of serial
             if ser.in_waiting:
                 data = [[d.strip() for d in s.split(':')] for s in ser.readline().decode().split(',')]
@@ -37,7 +42,7 @@ def test(kp, kd, speed):
                     first_row_written = True
                 
                 #write new row of data
-                csv_writer.writerow([time.time_ns()//1000] + [s[1] for s in data])
+                csv_writer.writerow([elapsed_time] + [s[1] for s in data])
 
     time.sleep(2)
 
@@ -66,7 +71,7 @@ def plot():
         plt.show()
 
 if __name__ == "__main__":
-    com_port = 'COM7'
+    com_port = 'COM3'
     baud_rate = 115200
     recording_time_s = 1
 
