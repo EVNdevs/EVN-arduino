@@ -41,7 +41,7 @@ Functions
 
         EVNMotor left_motor(1, EV3_MED);
         EVNMotor right_motor(2, EV3_MED, REVERSE);
-        EVNDrivebase db(62, 178, &left_motor, &right_motor);
+        EVNDrivebase db(62.4, 178, &left_motor, &right_motor);
 
         void setup1()
         {

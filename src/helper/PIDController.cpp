@@ -21,16 +21,17 @@ float PIDController::getDerivativeFilterAlpha() volatile { return _deriv_filter_
 float PIDController::compute(float error, bool constrain_integral, bool constrain_input, bool constrain_output) volatile
 {
 	uint32_t now = micros();
-	float time = ((float)(now - _last_update_time_us)) / 1000000.0;
+	uint32_t time = now - _last_update_time_us;
 	_last_update_time_us = now;
 
 	if (constrain_input)
 		error = constrain(error, -1, 1);
 
-	_preverror = _error;
 	_error = error;
 	_integral += _ki * error * time;
-	float derivative = _kd * (_error - _preverror) / time;
+
+	float error_delta = (_error - _preverror);
+	float derivative =  (_kd * error_delta * 1000000.0) / (float) time;
 	float filtered_derivative = _deriv_filter_alpha * derivative + (1 - _deriv_filter_alpha) * _last_filtered_derivative;
 
 	if (constrain_integral)
@@ -38,6 +39,7 @@ float PIDController::compute(float error, bool constrain_integral, bool constrai
 
 	_output = _kp * _error + filtered_derivative + _integral;
 	_last_filtered_derivative = filtered_derivative;
+	_preverror = _error;
 
 	if (constrain_output)
 		_output = constrain(_output, -1, 1);
