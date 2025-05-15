@@ -1037,12 +1037,14 @@ void EVNDrivebase::stall_until_stopped() volatile
 {
 	if (!timerisr_enabled) return;
 
-	bool stop = false;
+	EVNCoreSync0.core0_enter();
+	bool stall_until_stop = db.stall_until_stop;
+	EVNCoreSync0.core0_exit();
 
-	while (!stop)
+	while (stall_until_stop)
 	{
 		EVNCoreSync0.core0_enter();
-		stop = db.stall_until_stop;
+		stall_until_stop = db.stall_until_stop;
 		EVNCoreSync0.core0_exit();
 	}
 }
@@ -1320,11 +1322,11 @@ void EVNDrivebase::hold() volatile
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
 
+	set_mode_unsafe(db.id, true);
 	db.stop_action = STOP_HOLD;
 	stopAction_static(&db);
 
 	EVNCoreSync0.core0_exit();
-	stall_until_stopped();
 }
 
 bool EVNDrivebase::completed() volatile

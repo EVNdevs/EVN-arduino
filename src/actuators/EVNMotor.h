@@ -360,8 +360,6 @@ private:
 		case STOP_HOLD:
 			if (no_loop_control_enabled)
 				pidArg->target_pos = getPosition_static(encoderArg);
-			else if (run_pos)
-				pidArg->target_pos = pidArg->end_pos;
 			pidArg->target_dps = 0;
 			pidArg->run_speed = true;
 			break;
@@ -907,37 +905,52 @@ private:
 
 	static void stopAction_static(volatile drivebase_state_t* arg)
 	{
+		bool no_loop_control_enabled = !(arg->drive || arg->drive_position);
+
+		arg->drive = false;
+		arg->drive_position = false;
+
 		switch (arg->stop_action)
 		{
 		case STOP_BRAKE:
 			arg->motor_left->stop_unsafe();
 			arg->motor_right->stop_unsafe();
+
+			arg->target_speed_constrained = 0;
+			arg->target_turn_rate_constrained = 0;
+
+			arg->stall_until_stop = true;
+			arg->stop_time = micros();
 			break;
 		case STOP_COAST:
 			arg->motor_left->coast_unsafe();
 			arg->motor_right->coast_unsafe();
+
+			arg->target_speed_constrained = 0;
+			arg->target_turn_rate_constrained = 0;
+
+			arg->stall_until_stop = true;
+			arg->stop_time = micros();
 			break;
 		case STOP_HOLD:
-			arg->motor_left->runSpeed_unsafe(0);
-			arg->motor_right->runSpeed_unsafe(0);
+			if (no_loop_control_enabled)
+			{
+				arg->target_angle = arg->current_angle;
+				arg->target_distance = arg->current_distance;
+
+				arg->target_speed_constrained = 0;
+				arg->target_turn_rate_constrained = 0;
+			}
+
+			arg->target_speed = 0;
+			arg->target_turn_rate = 0;
+			arg->drive = true;
 			break;
 		}
 
 		// can consider using this for "smart coast" in future
 		// arg->target_speed_constrained = (arg->motor_right->getDPS_static(&arg->motor_right->_encoder) + arg->motor_left->getDPS_static(&arg->motor_left->_encoder)) * arg->wheel_dia * M_PI / 720;
 		// arg->target_turn_rate_constrained = (arg->motor_right->getDPS_static(&arg->motor_right->_encoder) - arg->motor_left->getDPS_static(&arg->motor_left->_encoder)) * arg->wheel_dia / (2 * arg->axle_track);
-
-		arg->target_speed_constrained = 0;
-		arg->target_turn_rate_constrained = 0;
-
-		arg->target_angle = arg->current_angle;
-		arg->target_distance = arg->current_distance;
-
-		arg->drive = false;
-		arg->drive_position = false;
-
-		arg->stall_until_stop = true;
-		arg->stop_time = micros();
 	}
 
 	static float getDistance_static(volatile drivebase_state_t* arg)
@@ -998,7 +1011,12 @@ private:
 				arg->stop_time = arg->last_update;
 
 			if (motorsStopped_static(arg) || (arg->last_update - arg->stop_time) > DRIVEBASE_STOP_CHECK_TIMEOUT_US)
+			{
 				arg->stall_until_stop = false;
+				arg->target_angle = arg->current_angle;
+				arg->target_distance = arg->current_distance;
+				return;
+			}
 			else
 				return;
 		}
@@ -1008,9 +1026,16 @@ private:
 			float target_speed_after_decel = arg->target_speed;
 			float target_turn_rate_after_decel = arg->target_turn_rate;
 
+			//preserve sign of error between target and end distance/angle
+			bool old_sign_distance;
+			bool old_sign_angle;
+
 			//calculate speed & turn rate when motor is coming to a pause
 			if (arg->drive_position)
 			{
+				old_sign_distance = arg->target_distance - arg->end_distance > 0;
+				old_sign_angle = arg->target_angle - arg->end_angle > 0;
+
 				float stop_speed_decel = arg->speed_decel;
 				float stop_turn_rate_decel = arg->turn_rate_decel;
 
@@ -1034,16 +1059,6 @@ private:
 
 				if (current_angle_error < error_to_start_decel_turn_rate)
 					target_turn_rate_after_decel = arg->target_turn_rate * sqrt(current_angle_error / error_to_start_decel_turn_rate);
-			}
-
-			//preserve sign of error between target and end distance/angle
-			bool old_sign_distance;
-			bool old_sign_angle;
-
-			if (arg->drive_position)
-			{
-				old_sign_distance = arg->target_distance - arg->end_distance > 0;
-				old_sign_angle = arg->target_angle - arg->end_angle > 0;
 			}
 
 			//increment target angle and XY position
