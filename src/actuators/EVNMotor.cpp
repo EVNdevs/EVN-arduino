@@ -1112,16 +1112,20 @@ void EVNDrivebase::drive(float speed, float turn_rate) volatile
 void EVNDrivebase::drivePct(float speed_outer_pct, float turn_rate_pct) volatile
 {
 	if (!timerisr_enabled) return;
-	EVNCoreSync0.core0_enter();
 
 	turn_rate_pct = constrain(turn_rate_pct, -100, 100) / 100;
 	speed_outer_pct = constrain(speed_outer_pct, -100, 100) / 100;
 	float speed_inner_pct = speed_outer_pct * (1 - 2 * fabs(turn_rate_pct));
+
+	EVNCoreSync0.core0_enter();
+
 	float speed = (speed_outer_pct + speed_inner_pct) / 2 * db.max_speed;
-	float turn_rate = db.max_speed * (speed_outer_pct - speed_inner_pct) / db.axle_track * 180 / M_PI;
+	float unsigned_turn_rate_rad = db.max_speed * (speed_outer_pct - speed_inner_pct) / db.axle_track;
 
 	EVNCoreSync0.core0_exit();
-	
+
+	float turn_rate_rad = unsigned_turn_rate_rad  * (turn_rate_pct >= 0 ? 1 : -1);
+	float turn_rate = turn_rate_rad * 180 / M_PI;
 	this->drive(speed, turn_rate);
 }
 

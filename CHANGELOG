@@ -1,3 +1,8 @@
+1.3.7 (15/5/25)
+
+-- Bugfixes --
+EVNDrivebase: Fix bug where drivePct only turns robot anti-clockwise
+
 1.3.6 (14/5/25)
 
 -- Bugfixes --
