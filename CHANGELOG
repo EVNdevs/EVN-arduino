@@ -1,12 +1,10 @@
-1.4.0 (16/5/25)
+1.3.8 (19/5/25)
 
 -- Features --
 EVNMotor: getMaxDPS() function added, for easier setting of runSpeed() parameters
 
-EVNDrivebase, EVNMotor: Smart coast (function and stop action) has been added! More details can be found in the docs under the newly added smart_coast() functions for both classes.
-
 -- Bugfixes --
-EVNMotor, EVNDrivebase: As originally intended, the STOP_BRAKE and STOP_COAST stop actions (or their functions stop() and coast()) will now only return when the drivebase has come to a stop.
+EVNDrivebase: All stop actions (braking, coasting and position hold) should be more responsive (or less "laggy") now
 
 1.3.7 (15/5/25)
 
