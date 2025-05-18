@@ -325,25 +325,26 @@ Move to Point
 Stopping
 """"""""
 
-.. function::   void stop();
+.. function::   void stop()
 
-    Brakes both drivebase motors (slow decay)
+    Brakes both drivebase motors (slow decay). 
 
     .. code-block:: cpp
         
         db.stop();
 
-.. function:: void coast();
+.. function:: void coast()
     
-    Coasts both drivebase motors to a stop (fast decay)
+    Coasts both drivebase motors to a stop (fast decay). 
+    Compared to braking with `stop()`, the drivebase comes to a stop more slowly.
     
     .. code-block:: cpp
     
         db.coast();
 
-.. function:: void hold();
+.. function:: void hold()
     
-    Hold drivebase motors in their current positions
+    Hold drivebase motors in their current positions. Restricts the motor shafts from moving.
 
     .. code-block:: cpp
     

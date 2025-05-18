@@ -117,8 +117,12 @@ Measurements
 
 .. function:: float getMaxRPM()
 
-    :returns: Maximum RPM (revolutions per minute) of motor
+    :returns: Maximum speed in RPM (revolutions per minute) of motor
     
+.. function:: float getMaxDPS()
+
+    :returns: Maximum speed in DPS (degrees per second) of motor, which is max RPM * 6
+
 Run Forever
 """""""""""
 
@@ -248,7 +252,8 @@ Stopping
 
 .. function:: void coast()
 
-    Coasts the motor (fast decay). Compared to `stop()`, motor comes to a stop more slowly.
+    Coasts the motor (fast decay).
+    Compared to braking with `stop()`, motor comes to a stop more slowly.
 
     .. code-block:: cpp
         
@@ -256,7 +261,7 @@ Stopping
 
 .. function:: void hold()
 
-    Hold the motor in its current position. Stops the motor shaft from moving freely.
+    Hold the motor in its current position. Restricts the motor shaft from moving.
 
     .. code-block:: cpp
         

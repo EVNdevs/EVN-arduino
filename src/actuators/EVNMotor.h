@@ -10,21 +10,25 @@
 #include "../helper/EVNCoreSync.h"
 
 //INPUT PARAMETER MACROS
-#define DIRECT	1
-#define REVERSE	0
+#define DIRECT				1
+#define REVERSE				0
 
-#define EV3_LARGE		0
-#define NXT_LARGE		1
-#define EV3_MED			2
-#define CUSTOM_MOTOR	3
+#define EV3_LARGE			0
+#define NXT_LARGE			1
+#define EV3_MED				2
+#define CUSTOM_MOTOR		3
 
-#define STOP_BRAKE		0
-#define STOP_COAST		1
-#define STOP_HOLD		2
+#define MAX_STOP_VALUE		2
+#define STOP_BRAKE			0
+#define STOP_COAST			1
+#define STOP_HOLD			2
+// #define STOP_SMART_BRAKE	3
+// #define STOP_SMART_COAST	4
+// #define STOP_NONE			5
 
-#define DEBUG_OFF		0
-#define DEBUG_SPEED		1
-#define DEBUG_TURN_RATE	2
+#define DEBUG_OFF			0
+#define DEBUG_SPEED			1
+#define DEBUG_TURN_RATE		2
 
 //DPS MEASUREMENT (TIME BETWEEN PULSES)
 #define NO_OF_EDGES_STORED 3
@@ -152,8 +156,6 @@ typedef struct
 	float speed_output;
 	float target_motor_left_duty_cycle;
 	float target_motor_right_duty_cycle;
-	bool stall_until_stop;
-	uint32_t stop_time;
 
 	//DERIVED VARIABLES
 	float wheel_dia_mul_pi_div_720;
@@ -208,6 +210,7 @@ public:
 	float getAccel() volatile;
 	float getDecel() volatile;
 	float getMaxRPM() volatile;
+	float getMaxDPS() volatile;
 	float getPPR() volatile;
 	bool getDebug() volatile;
 
@@ -331,11 +334,10 @@ private:
 
 	static void stopAction_static(volatile pid_control_t* pidArg, volatile encoder_state_t* encoderArg, float pos, float dps)
 	{
+		bool no_loop_control_enabled = !loop_control_enabled(pidArg);
+
 		//keep at most recent state
 		pidArg->target_dps_constrained = dps;
-
-		bool run_pos = pidArg->run_pos;
-		bool no_loop_control_enabled = !loop_control_enabled(pidArg);
 
 		//reset PID controller, stop loop control
 		pidArg->run_pwm = false;
@@ -347,23 +349,24 @@ private:
 		//hold uses position PID control, setting the current position as an endpoint
 		switch (pidArg->stop_action)
 		{
-		case STOP_COAST:
-			pidArg->target_pos = pos;
-			digitalWrite(pidArg->motora, LOW);
-			digitalWrite(pidArg->motorb, LOW);
-			break;
 		case STOP_BRAKE:
-			pidArg->target_pos = pos;
 			digitalWrite(pidArg->motora, HIGH);
 			digitalWrite(pidArg->motorb, HIGH);
+			pidArg->target_pos = pos;
 			break;
+			
+		case STOP_COAST:
+			digitalWrite(pidArg->motora, LOW);
+			digitalWrite(pidArg->motorb, LOW);
+			pidArg->target_pos = pos;
+			break;
+			
 		case STOP_HOLD:
-			if (no_loop_control_enabled)
-				pidArg->target_pos = getPosition_static(encoderArg);
-			else if (run_pos)
-				pidArg->target_pos = pidArg->end_pos;
 			pidArg->target_dps = 0;
 			pidArg->run_speed = true;
+
+			if (no_loop_control_enabled)
+				pidArg->target_pos = pos;
 			break;
 		}
 	}
@@ -534,10 +537,11 @@ private:
 				Serial.println(pidArg->error);
 			}
 		}
-
-		else if (!EVNAlpha::motorsEnabled() || !pidArg->run_pwm)
+		else if (!(EVNAlpha::motorsEnabled() && pidArg->run_pwm))
 		{
-			pidArg->stop_action = STOP_BRAKE;
+			if (!EVNAlpha::motorsEnabled())
+				pidArg->stop_action = STOP_BRAKE;
+
 			stopAction_static(pidArg, encoderArg, pos, dps);
 		}
 	}
@@ -797,12 +801,12 @@ public:
 	void stop() volatile;
 	void coast() volatile;
 	void hold() volatile;
+
 	bool completed() volatile;
 
 private:
 	float get_target_angle() volatile;
 	float get_target_heading() volatile;
-	void stall_until_stopped() volatile;
 
 	void compute_targets_decel_derived_values_unsafe() volatile;
 	void compute_drivebase_derived_values_unsafe() volatile;
@@ -827,7 +831,7 @@ private:
 		arg->max_turn_rate = arg->max_dps * arg->wheel_dia_div_axle_track;
 	}
 
-	static void set_mode_unsafe(uint8_t idx, bool enable)
+	static void set_drivebase_mode_unsafe(uint8_t idx, bool enable)
 	{
 		if (odom_enabled[idx])
 		{
@@ -907,37 +911,44 @@ private:
 
 	static void stopAction_static(volatile drivebase_state_t* arg)
 	{
+		bool no_loop_control_enabled = !(arg->drive || arg->drive_position);
+
+		arg->drive = false;
+		arg->drive_position = false;
+
+		arg->target_speed_constrained = 0;
+		arg->target_turn_rate_constrained = 0;
+
 		switch (arg->stop_action)
 		{
 		case STOP_BRAKE:
 			arg->motor_left->stop_unsafe();
 			arg->motor_right->stop_unsafe();
+			
+			arg->target_angle = arg->current_angle;
+			arg->target_distance = arg->current_distance;
 			break;
+
 		case STOP_COAST:
 			arg->motor_left->coast_unsafe();
 			arg->motor_right->coast_unsafe();
+			arg->target_angle = arg->current_angle;
+			arg->target_distance = arg->current_distance;
 			break;
+
 		case STOP_HOLD:
-			arg->motor_left->runSpeed_unsafe(0);
-			arg->motor_right->runSpeed_unsafe(0);
+			arg->target_speed = 0;
+			arg->target_turn_rate = 0;
+			arg->drive = true;
+
+			if (no_loop_control_enabled)
+			{
+				arg->target_angle = arg->current_angle;
+				arg->target_distance = arg->current_distance;
+			}
+
 			break;
 		}
-
-		// can consider using this for "smart coast" in future
-		// arg->target_speed_constrained = (arg->motor_right->getDPS_static(&arg->motor_right->_encoder) + arg->motor_left->getDPS_static(&arg->motor_left->_encoder)) * arg->wheel_dia * M_PI / 720;
-		// arg->target_turn_rate_constrained = (arg->motor_right->getDPS_static(&arg->motor_right->_encoder) - arg->motor_left->getDPS_static(&arg->motor_left->_encoder)) * arg->wheel_dia / (2 * arg->axle_track);
-
-		arg->target_speed_constrained = 0;
-		arg->target_turn_rate_constrained = 0;
-
-		arg->target_angle = arg->current_angle;
-		arg->target_distance = arg->current_distance;
-
-		arg->drive = false;
-		arg->drive_position = false;
-
-		arg->stall_until_stop = true;
-		arg->stop_time = micros();
 	}
 
 	static float getDistance_static(volatile drivebase_state_t* arg)
@@ -948,12 +959,6 @@ private:
 	static float getAngleRad_static(volatile drivebase_state_t* arg)
 	{
 		return (arg->motor_right->getPosition_static(&arg->motor_right->_encoder) - arg->motor_left->getPosition_static(&arg->motor_left->_encoder)) * arg->wheel_dia_mul_pi_div_360_div_axle_track;
-	}
-
-	static float motorsStopped_static(volatile drivebase_state_t* arg)
-	{
-		return (arg->motor_right->getDPS_static(&arg->motor_right->_encoder) <= DRIVEBASE_STOP_CHECK_THRESHOLD_DPS
-			&& arg->motor_left->getDPS_static(&arg->motor_left->_encoder) <= DRIVEBASE_STOP_CHECK_THRESHOLD_DPS);
 	}
 
 	static void max_rpm_update(volatile drivebase_state_t* arg)
@@ -992,25 +997,21 @@ private:
 		if (arg->time_since_last_loop < 0)
 			return;
 
-		if (arg->stall_until_stop)
-		{
-			if (arg->last_update < arg->stop_time)
-				arg->stop_time = arg->last_update;
-
-			if (motorsStopped_static(arg) || (arg->last_update - arg->stop_time) > DRIVEBASE_STOP_CHECK_TIMEOUT_US)
-				arg->stall_until_stop = false;
-			else
-				return;
-		}
-
 		if (EVNAlpha::motorsEnabled() && arg->drive)
 		{
 			float target_speed_after_decel = arg->target_speed;
 			float target_turn_rate_after_decel = arg->target_turn_rate;
 
+			//preserve sign of error between target and end distance/angle
+			bool old_sign_distance;
+			bool old_sign_angle;
+
 			//calculate speed & turn rate when motor is coming to a pause
 			if (arg->drive_position)
 			{
+				old_sign_distance = arg->target_distance - arg->end_distance > 0;
+				old_sign_angle = arg->target_angle - arg->end_angle > 0;
+
 				float stop_speed_decel = arg->speed_decel;
 				float stop_turn_rate_decel = arg->turn_rate_decel;
 
@@ -1034,16 +1035,6 @@ private:
 
 				if (current_angle_error < error_to_start_decel_turn_rate)
 					target_turn_rate_after_decel = arg->target_turn_rate * sqrt(current_angle_error / error_to_start_decel_turn_rate);
-			}
-
-			//preserve sign of error between target and end distance/angle
-			bool old_sign_distance;
-			bool old_sign_angle;
-
-			if (arg->drive_position)
-			{
-				old_sign_distance = arg->target_distance - arg->end_distance > 0;
-				old_sign_angle = arg->target_angle - arg->end_angle > 0;
 			}
 
 			//increment target angle and XY position
