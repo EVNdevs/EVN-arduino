@@ -193,10 +193,9 @@ Move by a Fixed Amount
     :param distance: Distance to travel (in mm)
     :param stop_action: Behaviour of the motor upon completing its command. Defaults to ``STOP_BRAKE``
 
-        * ``STOP_BRAKE`` -- Brake (Slow decay) and wait for drivebase to stop
-        * ``STOP_COAST`` -- Coast (Fast decay) and wait for drivebase to stop
+        * ``STOP_BRAKE`` -- Brake (Slow decay)
+        * ``STOP_COAST`` -- Coast (Fast decay)
         * ``STOP_HOLD`` -- Hold position
-        * ``STOP_SMART_COAST`` -- Coast, but does not wait for drivebase to stop
 
     :param wait: Block function from returning until command is finished
 
@@ -217,10 +216,9 @@ Move by a Fixed Amount
     :param angle: Angle to travel by (in deg)
     :param stop_action: Behaviour of the motor upon completing its command. Defaults to ``STOP_BRAKE``
 
-        * ``STOP_BRAKE`` -- Brake (Slow decay) and wait for drivebase to stop
-        * ``STOP_COAST`` -- Coast (Fast decay) and wait for drivebase to stop
+        * ``STOP_BRAKE`` -- Brake (Slow decay)
+        * ``STOP_COAST`` -- Coast (Fast decay)
         * ``STOP_HOLD`` -- Hold position
-        * ``STOP_SMART_COAST`` -- Coast, but does not wait for drivebase to stop
 
     :param wait: Block function from returning until command is finished
 
@@ -240,10 +238,9 @@ Move by a Fixed Amount
     :param angle: Angle to travel by (in deg)
     :param stop_action: Behaviour of the motor upon completing its command. Defaults to ``STOP_BRAKE``
 
-        * ``STOP_BRAKE`` -- Brake (Slow decay) and wait for drivebase to stop
-        * ``STOP_COAST`` -- Coast (Fast decay) and wait for drivebase to stop
+        * ``STOP_BRAKE`` -- Brake (Slow decay)
+        * ``STOP_COAST`` -- Coast (Fast decay)
         * ``STOP_HOLD`` -- Hold position
-        * ``STOP_SMART_COAST`` -- Coast, but does not wait for drivebase to stop
 
     :param wait: Block function from returning until command is finished
 
@@ -261,10 +258,9 @@ Move by a Fixed Amount
     :param angle: Angle to travel by (in deg)
     :param stop_action: Behaviour of the motor upon completing its command. Defaults to ``STOP_BRAKE``
 
-        * ``STOP_BRAKE`` -- Brake (Slow decay) and wait for drivebase to stop
-        * ``STOP_COAST`` -- Coast (Fast decay) and wait for drivebase to stop
+        * ``STOP_BRAKE`` -- Brake (Slow decay)
+        * ``STOP_COAST`` -- Coast (Fast decay)
         * ``STOP_HOLD`` -- Hold position
-        * ``STOP_SMART_COAST`` -- Coast, but does not wait for drivebase to stop
 
     :param wait: Block function from returning until command is finished
 
@@ -281,10 +277,9 @@ Move by a Fixed Amount
     :param heading: Heading to travel to (in deg)
     :param stop_action: Behaviour of the motor upon completing its command. Defaults to ``STOP_BRAKE``
 
-        * ``STOP_BRAKE`` -- Brake (Slow decay) and wait for drivebase to stop
-        * ``STOP_COAST`` -- Coast (Fast decay) and wait for drivebase to stop
+        * ``STOP_BRAKE`` -- Brake (Slow decay)
+        * ``STOP_COAST`` -- Coast (Fast decay)
         * ``STOP_HOLD`` -- Hold position
-        * ``STOP_SMART_COAST`` -- Coast, but does not wait for drivebase to stop
 
     :param wait: Block function from returning until command is finished
 
@@ -314,10 +309,9 @@ Move to Point
     :param y: Y coordinate of target
     :param stop_action: Behaviour of the motor upon completing its command. Defaults to ``STOP_BRAKE``
 
-        * ``STOP_BRAKE`` -- Brake (Slow decay) and wait for drivebase to stop
-        * ``STOP_COAST`` -- Coast (Fast decay) and wait for drivebase to stop
+        * ``STOP_BRAKE`` -- Brake (Slow decay)
+        * ``STOP_COAST`` -- Coast (Fast decay)
         * ``STOP_HOLD`` -- Hold position
-        * ``STOP_SMART_COAST`` -- Coast, but does not wait for drivebase to stop
 
     :param wait: Block function from returning until command is finished
 
@@ -334,7 +328,6 @@ Stopping
 .. function::   void stop()
 
     Brakes both drivebase motors (slow decay). 
-    This function only returns when the drivebase has come to a stop.
 
     .. code-block:: cpp
         
@@ -344,7 +337,6 @@ Stopping
     
     Coasts both drivebase motors to a stop (fast decay). 
     Compared to braking with `stop()`, the drivebase comes to a stop more slowly.
-    This function only returns when the drivebase has come to a stop.
     
     .. code-block:: cpp
     
@@ -357,16 +349,6 @@ Stopping
     .. code-block:: cpp
     
         db.hold();
-
-.. function:: void smart_coast()
-    
-    Coasts both drivebase motors, but does not wait for drivebase to come to a stop before returning. 
-    Additionally, when smart coast is performed between 2 movement functions, the 2nd movement function will plan 
-    its path based on where the 1st movement function's path ended (ignoring coasting movements).
-
-    .. code-block:: cpp
-    
-        db.smart_coast();
 
 Control Settings
 """"""""""""""""

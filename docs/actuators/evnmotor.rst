@@ -160,10 +160,9 @@ Run by a Fixed Amount
     :param degrees: Angular displacement which the motor has to travel (in degrees)
     :param stop_action: Behaviour of the motor upon completing its command. Defaults to ``STOP_BRAKE``
 
-        * ``STOP_BRAKE`` -- Brake (Slow decay) and wait for motor to stop
-        * ``STOP_COAST`` -- Coast (Fast decay) and wait for motor to stop
+        * ``STOP_BRAKE`` -- Brake (Slow decay)
+        * ``STOP_COAST`` -- Coast (Fast decay)
         * ``STOP_HOLD`` -- Hold position
-        * ``STOP_SMART_COAST`` -- Coast, but does not wait for motor to stop
 
     :param wait: Block function from returning until command is finished
 
@@ -180,10 +179,9 @@ Run by a Fixed Amount
     :param position: Position which the motor has to travel to (in degrees)
     :param stop_action: Behaviour of the motor upon completing its command. Defaults to ``STOP_BRAKE``
 
-        * ``STOP_BRAKE`` -- Brake (Slow decay) and wait for motor to stop
-        * ``STOP_COAST`` -- Coast (Fast decay) and wait for motor to stop
+        * ``STOP_BRAKE`` -- Brake (Slow decay)
+        * ``STOP_COAST`` -- Coast (Fast decay)
         * ``STOP_HOLD`` -- Hold position
-        * ``STOP_SMART_COAST`` -- Coast, but does not wait for motor to stop
     
     :param wait: Block function from returning until command is finished
 
@@ -202,10 +200,9 @@ Run by a Fixed Amount
     :param time_ms: Heading which the motor has to travel to (0 - 360 degrees)
     :param stop_action: Behaviour of the motor upon completing its command. Defaults to ``STOP_BRAKE``
 
-        * ``STOP_BRAKE`` -- Brake (Slow decay) and wait for motor to stop
-        * ``STOP_COAST`` -- Coast (Fast decay) and wait for motor to stop
+        * ``STOP_BRAKE`` -- Brake (Slow decay)
+        * ``STOP_COAST`` -- Coast (Fast decay)
         * ``STOP_HOLD`` -- Hold position
-        * ``STOP_SMART_COAST`` -- Coast, but does not wait for motor to stop
 
     :param wait: Block function from returning until command is finished
 
@@ -222,10 +219,9 @@ Run by a Fixed Amount
     :param time_ms: Time which the motor has to run for (in milliseconds)
     :param stop_action: Behaviour of the motor upon completing its command. Defaults to ``STOP_BRAKE``
 
-        * ``STOP_BRAKE`` -- Brake (Slow decay) and wait for motor to stop
-        * ``STOP_COAST`` -- Coast (Fast decay) and wait for motor to stop
+        * ``STOP_BRAKE`` -- Brake (Slow decay)
+        * ``STOP_COAST`` -- Coast (Fast decay)
         * ``STOP_HOLD`` -- Hold position
-        * ``STOP_SMART_COAST`` -- Coast, but does not wait for motor to stop
 
     :param wait: Block function from returning until command is finished
 
@@ -249,7 +245,6 @@ Stopping
 .. function:: void stop()
 
     Brakes the motor (slow decay).
-    This function only returns when the motor has come to a stop.
 
     .. code-block:: cpp
         
@@ -259,7 +254,6 @@ Stopping
 
     Coasts the motor (fast decay).
     Compared to braking with `stop()`, motor comes to a stop more slowly.
-    This function only returns when the motor has come to a stop.
 
     .. code-block:: cpp
         
@@ -272,16 +266,6 @@ Stopping
     .. code-block:: cpp
         
         motor.hold();
-
-.. function:: void smart_coast()
-    
-    Coasts motor, but does not wait for motor to coast to a stop before returning. 
-    Additionally, when smart coast is performed between 2 movement functions, the 2nd movement function will plan 
-    its path based on where the 1st movement function's path ended (ignoring coasting movements).
-
-    .. code-block:: cpp
-    
-        motor.smart_coast();
 
 Control Settings
 """"""""""""""""
