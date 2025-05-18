@@ -429,30 +429,13 @@ uint8_t EVNMotor::clean_input_dir(float dps) volatile
 
 uint8_t EVNMotor::clean_input_stop_action(uint8_t stop_action) volatile
 {
-	//STOP_SMART_BRAKE is left out intentionally
-	return min(3, stop_action);
+	return min(MAX_STOP_VALUE, stop_action);
 }
 
 void EVNMotor::compute_ppr_derived_values_unsafe() volatile
 {
 	_encoder._90_div_ppr = 90 / _encoder.ppr;
 	_encoder._360000000_div_ppr = 360000000 / _encoder.ppr;
-}
-
-void EVNMotor::block_until_stopped() volatile
-{
-	if (!timerisr_enabled) return;
-
-	EVNCoreSync0.core0_enter();
-	bool block_until_stop = _pid_control.block_until_stop;
-	EVNCoreSync0.core0_exit();
-
-	while (block_until_stop)
-	{
-		EVNCoreSync0.core0_enter();
-		block_until_stop = _pid_control.block_until_stop;
-		EVNCoreSync0.core0_exit();
-	}
 }
 
 void EVNMotor::runPWM_unsafe(float duty_cycle) volatile
@@ -521,10 +504,7 @@ void EVNMotor::runPosition(float dps, float position, uint8_t stop_action, bool 
 	EVNCoreSync0.core0_exit();
 
 	if (wait)
-	{
 		while (!this->completed());
-		block_until_stopped();
-	}
 }
 
 void EVNMotor::runAngle(float dps, float degrees, uint8_t stop_action, bool wait) volatile
@@ -576,35 +556,24 @@ void EVNMotor::runTime(float dps, uint32_t time_ms, uint8_t stop_action, bool wa
 	EVNCoreSync0.core0_exit();
 
 	if (wait)
-	{
 		while (!this->completed());
-		block_until_stopped();
-	}
 }
 
-void EVNMotor::stop_unsafe(bool block_until_stop) volatile
+void EVNMotor::stop_unsafe() volatile
 {
 	_pid_control.stop_action = STOP_BRAKE;
 	stopAction_static(&_pid_control, &_encoder, getPosition_static(&_encoder), getDPS_static(&_encoder));
-	_pid_control.block_until_stop = block_until_stop;
 }
 
-void EVNMotor::coast_unsafe(bool block_until_stop) volatile
+void EVNMotor::coast_unsafe() volatile
 {
 	_pid_control.stop_action = STOP_BRAKE;
 	stopAction_static(&_pid_control, &_encoder, getPosition_static(&_encoder), getDPS_static(&_encoder));
-	_pid_control.block_until_stop = block_until_stop;
 }
 
 void EVNMotor::hold_unsafe() volatile
 {
 	_pid_control.stop_action = STOP_HOLD;
-	stopAction_static(&_pid_control, &_encoder, getPosition_static(&_encoder), getDPS_static(&_encoder));
-}
-
-void EVNMotor::smart_coast_unsafe() volatile
-{
-	_pid_control.stop_action = STOP_SMART_COAST;
 	stopAction_static(&_pid_control, &_encoder, getPosition_static(&_encoder), getDPS_static(&_encoder));
 }
 
@@ -617,8 +586,6 @@ void EVNMotor::stop() volatile
 	stop_unsafe();
 
 	EVNCoreSync0.core0_exit();
-
-	block_until_stopped();
 }
 
 void EVNMotor::coast() volatile
@@ -630,8 +597,6 @@ void EVNMotor::coast() volatile
 	coast_unsafe();
 
 	EVNCoreSync0.core0_exit();
-
-	block_until_stopped();
 }
 
 void EVNMotor::hold() volatile
@@ -641,17 +606,6 @@ void EVNMotor::hold() volatile
 
 	disable_connected_drivebase_unsafe();
 	hold_unsafe();
-
-	EVNCoreSync0.core0_exit();
-}
-
-void EVNMotor::smart_coast() volatile
-{
-	if (!timerisr_enabled) return;
-	EVNCoreSync0.core0_enter();
-
-	disable_connected_drivebase_unsafe();
-	smart_coast_unsafe();
 
 	EVNCoreSync0.core0_exit();
 }
@@ -1093,22 +1047,6 @@ float EVNDrivebase::get_target_heading() volatile
 	return fmod(fmod(get_target_angle(), 360) + 360, 360);
 }
 
-void EVNDrivebase::block_until_stopped() volatile
-{
-	if (!timerisr_enabled) return;
-
-	EVNCoreSync0.core0_enter();
-	bool block_until_stop = db.block_until_stop;
-	EVNCoreSync0.core0_exit();
-
-	while (block_until_stop)
-	{
-		EVNCoreSync0.core0_enter();
-		block_until_stop = db.block_until_stop;
-		EVNCoreSync0.core0_exit();
-	}
-}
-
 void EVNDrivebase::compute_targets_decel_derived_values_unsafe() volatile
 {
 	db.time_to_decel_speed = fabs(db.target_speed) / db.speed_decel;
@@ -1144,8 +1082,7 @@ float EVNDrivebase::clean_input_speed_unsafe(float speed, float turn_rate) volat
 
 uint8_t EVNDrivebase::clean_input_stop_action(uint8_t stop_action) volatile
 {
-	//STOP_SMART_BRAKE is left out intentionally
-	return min(3, stop_action);
+	return min(MAX_STOP_VALUE, stop_action);
 }
 
 float EVNDrivebase::scaling_factor_for_maintaining_radius_unsafe(float speed, float turn_rate) volatile
@@ -1252,10 +1189,7 @@ void EVNDrivebase::straight(float speed, float distance, uint8_t stop_action, bo
 	EVNCoreSync0.core0_exit();
 
 	if (wait)
-	{
 		while (!this->completed());
-		block_until_stopped();
-	}
 }
 
 void EVNDrivebase::curve(float speed, float radius, float angle, uint8_t stop_action, bool wait) volatile
@@ -1310,10 +1244,7 @@ void EVNDrivebase::curveTurnRate(float speed, float turn_rate, float angle, uint
 	EVNCoreSync0.core0_exit();
 
 	if (wait)
-	{
 		while (!this->completed());
-		block_until_stopped();
-	}
 }
 
 void EVNDrivebase::turn(float turn_rate, float degrees, uint8_t stop_action, bool wait) volatile
@@ -1362,7 +1293,6 @@ void EVNDrivebase::stop() volatile
 	stopAction_static(&db);
 
 	EVNCoreSync0.core0_exit();
-	block_until_stopped();
 }
 
 void EVNDrivebase::coast() volatile
@@ -1375,7 +1305,6 @@ void EVNDrivebase::coast() volatile
 	stopAction_static(&db);
 
 	EVNCoreSync0.core0_exit();
-	block_until_stopped();
 }
 
 void EVNDrivebase::hold() volatile
@@ -1385,18 +1314,6 @@ void EVNDrivebase::hold() volatile
 
 	set_drivebase_mode_unsafe(db.id, true);
 	db.stop_action = STOP_HOLD;
-	stopAction_static(&db);
-
-	EVNCoreSync0.core0_exit();
-}
-
-void EVNDrivebase::smart_coast() volatile
-{
-	if (!timerisr_enabled) return;
-	EVNCoreSync0.core0_enter();
-
-	set_drivebase_mode_unsafe(db.id, true);
-	db.stop_action = STOP_SMART_COAST;
 	stopAction_static(&db);
 
 	EVNCoreSync0.core0_exit();
