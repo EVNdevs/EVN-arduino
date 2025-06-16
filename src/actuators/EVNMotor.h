@@ -18,13 +18,13 @@
 #define EV3_MED				2
 #define CUSTOM_MOTOR		3
 
-#define MAX_STOP_VALUE		2
+#define MAX_STOP_VALUE		3
 #define STOP_BRAKE			0
 #define STOP_COAST			1
 #define STOP_HOLD			2
-// #define STOP_SMART_BRAKE	3
-// #define STOP_SMART_COAST	4
-// #define STOP_NONE			5
+#define STOP_NONE			3
+// #define STOP_SMART_BRAKE	4
+// #define STOP_SMART_COAST	5
 
 #define DEBUG_OFF			0
 #define DEBUG_SPEED			1
@@ -102,6 +102,11 @@ typedef struct
 	float output;
 	uint32_t start_time_us;
 	bool stalled;
+	bool hold_done;
+	uint32_t hold_start_time_us;
+	uint32_t last_stopped_time_us;
+	bool hit_end;
+	uint32_t hit_end_time_us;
 
 	//DERIVED VALUES
 	float max_error_before_decel; 	//only used by runPosition
@@ -156,6 +161,11 @@ typedef struct
 	float speed_output;
 	float target_motor_left_duty_cycle;
 	float target_motor_right_duty_cycle;
+	bool hold_done;
+	uint32_t hold_start_time_us;
+	uint32_t last_stopped_time_us;
+	bool hit_end;
+	uint32_t hit_end_time_us;
 
 	//DERIVED VARIABLES
 	float wheel_dia_mul_pi_div_720;
@@ -165,8 +175,6 @@ typedef struct
 	float axle_track_div_wheel_dia;
 	float wheel_dia_div_axle_track;
 
-	float max_angle_error;
-	float max_distance_error;
 	float max_rpm;
 	float max_dps;
 	float max_turn_rate;
@@ -353,12 +361,14 @@ private:
 			digitalWrite(pidArg->motora, HIGH);
 			digitalWrite(pidArg->motorb, HIGH);
 			pidArg->target_pos = pos;
+			pidArg->hold_done = true;
 			break;
 			
 		case STOP_COAST:
 			digitalWrite(pidArg->motora, LOW);
 			digitalWrite(pidArg->motorb, LOW);
 			pidArg->target_pos = pos;
+			pidArg->hold_done = true;
 			break;
 			
 		case STOP_HOLD:
@@ -367,6 +377,17 @@ private:
 
 			if (no_loop_control_enabled)
 				pidArg->target_pos = pos;
+
+			if (pidArg->hold_done)
+			{
+				pidArg->hold_done = false;
+				pidArg->hold_start_time_us = pidArg->last_update;
+				pidArg->last_stopped_time_us = pidArg->last_update;
+			}
+			break;
+
+		case STOP_NONE:
+
 			break;
 		}
 	}
@@ -431,6 +452,11 @@ private:
 			return arg->avg_dps * (float)arg->dir;
 	}
 
+	static float motorStopped_static(volatile encoder_state_t* arg)
+	{
+		return getDPS_static(arg) <= MOTOR_HOLD_THRESHOLD_DPS;
+	}
+
 	static void pid_update(volatile pid_control_t* pidArg, volatile encoder_state_t* encoderArg)
 	{
 		uint32_t now = micros();
@@ -442,6 +468,21 @@ private:
 
 		if (pidArg->time_since_last_loop < 0)
 			return;
+
+		if (!pidArg->hold_done)
+		{
+			if (motorStopped_static(encoderArg)
+			&& fabs(pidArg->error) <= MOTOR_HOLD_MIN_ERROR_MOTOR_DEG)
+			{
+				pidArg->last_stopped_time_us = pidArg->last_update;
+			}
+			else
+			{
+				if (pidArg->last_update - pidArg->hold_start_time_us  >= MOTOR_HOLD_MIN_TIME_US
+				|| pidArg->last_update - pidArg->last_stopped_time_us >= MOTOR_HOLD_TIMEOUT_US)
+					pidArg->hold_done = true;
+			}
+		}
 
 		if (EVNAlpha::motorsEnabled() && loop_control_enabled(pidArg))
 		{
@@ -473,7 +514,7 @@ private:
 			pidArg->target_dps_end_decel = decel_dps;
 			float signed_target_dps_end_decel = pidArg->target_dps_end_decel * (pidArg->run_dir == DIRECT ? 1 : -1);
 
-			if (fabs((pidArg->target_pos - pos) * pidArg->pos_pid->getKp()) < 1) //anti-windup
+			if (fabs(pidArg->error * pidArg->pos_pid->getKp()) < 1) //anti-windup
 			{
 				pidArg->stalled = false;
 
@@ -511,12 +552,28 @@ private:
 					bool new_sign = pidArg->target_pos > pidArg->end_pos;
 
 					if (old_sign != new_sign)
-						pidArg->target_pos = pidArg->end_pos;
-
-					if (fabs(pidArg->end_pos - pos) <= MOTOR_MIN_ERROR_MOTOR_DEG)
 					{
-						stopAction_static(pidArg, encoderArg, pos, dps);
-						return;
+						pidArg->target_pos = pidArg->end_pos;
+					}
+
+					if (pidArg->target_pos == pidArg->end_pos)
+					{
+						if (!pidArg->hit_end)
+						{
+							pidArg->hit_end = true;
+							pidArg->hit_end_time_us = pidArg->last_update;
+						}
+
+						if (fabs(pidArg->error) <= MOTOR_POS_MIN_ERROR_MOTOR_DEG
+						|| pidArg->last_update - pidArg->hit_end_time_us >= MOTOR_POS_TIMEOUT_US)
+						{
+							stopAction_static(pidArg, encoderArg, pos, dps);
+							return;
+						}
+					}
+					else
+					{
+						pidArg->hit_end = false;
 					}
 				}
 			}
@@ -927,6 +984,7 @@ private:
 			
 			arg->target_angle = arg->current_angle;
 			arg->target_distance = arg->current_distance;
+			arg->hold_done = true;
 			break;
 
 		case STOP_COAST:
@@ -934,6 +992,7 @@ private:
 			arg->motor_right->coast_unsafe();
 			arg->target_angle = arg->current_angle;
 			arg->target_distance = arg->current_distance;
+			arg->hold_done = true;
 			break;
 
 		case STOP_HOLD:
@@ -947,6 +1006,16 @@ private:
 				arg->target_distance = arg->current_distance;
 			}
 
+			if (arg->hold_done)
+			{
+				arg->hold_done = false;
+				arg->hold_start_time_us = arg->last_update;
+				arg->last_stopped_time_us = arg->last_update;
+			}
+			break;
+
+		case STOP_NONE:
+			
 			break;
 		}
 	}
@@ -992,10 +1061,32 @@ private:
 		arg->current_angle = current_angle_rad * RAD_TO_DEG;
 	}
 
+	static float motorsStopped_static(volatile drivebase_state_t* arg)
+	{
+		return (arg->motor_right->getDPS_static(&arg->motor_right->_encoder) <= DRIVEBASE_HOLD_THRESHOLD_DPS
+			&& arg->motor_left->getDPS_static(&arg->motor_left->_encoder) <= DRIVEBASE_HOLD_THRESHOLD_DPS);
+	}
+
 	static void pid_update(volatile drivebase_state_t* arg)
 	{
 		if (arg->time_since_last_loop < 0)
 			return;
+
+		if (!arg->hold_done)
+		{
+			if (motorsStopped_static(arg))
+			{
+				if (fabs(arg->angle_error) <= DRIVEBASE_HOLD_MIN_ERROR_MOTOR_DEG 
+				|| fabs(arg->speed_error) <= DRIVEBASE_HOLD_MIN_ERROR_MOTOR_DEG)
+					arg->last_stopped_time_us = arg->last_update;
+			}
+			else
+			{
+				if (arg->last_update - arg->hold_start_time_us >= DRIVEBASE_HOLD_MIN_TIME_US
+				|| arg->last_update - arg->last_stopped_time_us >= DRIVEBASE_HOLD_TIMEOUT_US)
+					arg->hold_done = true;
+			}
+		}
 
 		if (EVNAlpha::motorsEnabled() && arg->drive)
 		{
@@ -1175,11 +1266,25 @@ private:
 				//ideally, we should only stop when both errors are in acceptable range
 				//however, our control scheme might only hit both targets SOME of the time
 				//so we count it as complete when the motor is already targeting the angle and distance endpoints, and either error is acceptable
-				if (arg->target_angle == arg->end_angle && arg->target_distance == arg->end_distance &&
-					(fabs(arg->end_angle - arg->current_angle) <= arg->max_angle_error || fabs(arg->end_distance - arg->current_distance) <= arg->max_distance_error))
+				//TODO: Add timeout if both errors cannot be achieved?
+				if (arg->target_angle == arg->end_angle
+				&& arg->target_distance == arg->end_distance)
 				{
-					stopAction_static(arg);
-					return;
+					if (!arg->hit_end)
+					{
+						arg->hit_end = true;
+						arg->hit_end_time_us = arg->last_update;
+					}
+
+					if (fabs(arg->angle_error) <= DRIVEBASE_POS_MIN_ERROR_MOTOR_DEG
+					|| fabs(arg->speed_error) <= DRIVEBASE_POS_MIN_ERROR_MOTOR_DEG
+					|| arg->last_update - arg->hit_end_time_us >= DRIVEBASE_POS_TIMEOUT_US)
+					{
+						stopAction_static(arg);
+						return;
+					}
+				} else {
+					arg->hit_end = false;
 				}
 			}
 

@@ -112,6 +112,8 @@ EVNMotor::EVNMotor(uint8_t port, uint8_t motor_type, uint8_t motor_dir, uint8_t 
 	}
 
 	compute_ppr_derived_values_unsafe();
+
+	 _pid_control.hold_done = true;
 }
 
 void EVNMotor::begin() volatile
@@ -608,6 +610,8 @@ void EVNMotor::hold() volatile
 	hold_unsafe();
 
 	EVNCoreSync0.core0_exit();
+
+	while (!this->completed());
 }
 
 bool EVNMotor::completed() volatile
@@ -615,7 +619,7 @@ bool EVNMotor::completed() volatile
 	if (!timerisr_enabled) return 0;
 	EVNCoreSync0.core0_enter();
 
-	bool output = !_pid_control.run_time && !_pid_control.run_pos;
+	bool output = !_pid_control.run_time && !_pid_control.run_pos && _pid_control.hold_done;
 
 	EVNCoreSync0.core0_exit();
 
@@ -670,6 +674,8 @@ EVNDrivebase::EVNDrivebase(float wheel_dia, float axle_track, EVNMotor* motor_le
 	compute_drivebase_derived_values_unsafe();
 	compute_max_rpm_drivebase_derived_values_unsafe(&db);
 	compute_targets_decel_derived_values_unsafe();
+
+	db.hold_done = true;
 }
 
 void EVNDrivebase::begin() volatile
@@ -1065,8 +1071,6 @@ void EVNDrivebase::compute_drivebase_derived_values_unsafe() volatile
 	db._360_div_pi_div_wheel_dia = 360 / (M_PI * db.wheel_dia);
 	db.axle_track_div_wheel_dia = db.axle_track / db.wheel_dia;
 	db.wheel_dia_div_axle_track = db.wheel_dia / db.axle_track;
-	db.max_distance_error = DRIVEBASE_POS_MIN_ERROR_MOTOR_DEG * db.wheel_dia * M_PI / 360;
-	db.max_angle_error = DRIVEBASE_POS_MIN_ERROR_MOTOR_DEG * db.wheel_dia / db.axle_track;
 }
 
 float EVNDrivebase::clean_input_turn_rate_unsafe(float turn_rate) volatile
@@ -1317,6 +1321,8 @@ void EVNDrivebase::hold() volatile
 	stopAction_static(&db);
 
 	EVNCoreSync0.core0_exit();
+
+	while (!this->completed());
 }
 
 bool EVNDrivebase::completed() volatile
@@ -1324,7 +1330,7 @@ bool EVNDrivebase::completed() volatile
 	if (!timerisr_enabled) return 0;
 	EVNCoreSync0.core0_enter();
 
-	bool output = !db.drive_position;
+	bool output = !db.drive_position && db.hold_done;
 
 	EVNCoreSync0.core0_exit();
 
