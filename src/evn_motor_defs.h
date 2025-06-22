@@ -4,7 +4,8 @@
 #define CUSTOM_KD		                0.0048
 #define CUSTOM_PWM_MAG                  -1
 #define CUSTOM_PWM_EXP                  -1
-#define CUSTOM_MAX_RPM	                77          //max RPM of the motor shaft
+#define CUSTOM_UNLOADED_MAX_RPM	        77          //max RPM of the motor shaft
+#define CUSTOM_LOADED_MAX_RPM   		77
 #define CUSTOM_ACCEL                    100 * 77    //acceleration in rpm/s (60 means it takes 1 second to accelerate from 0RPM to 60)
 #define CUSTOM_DECEL                    100 * 77    //deceleration in rpm/s (60 means it takes 1 second to decelerate from 60RPM to 0)
 #define CUSTOM_PPR				        858         //pulses on 1 encoder wheel for 1 revolution of the motor shaft
@@ -17,7 +18,8 @@
 #define EV3_LARGE_KD	                0.00403
 #define EV3_LARGE_PWM_MAG               0.214
 #define EV3_LARGE_PWM_EXP               1.5304
-#define EV3_LARGE_MAX_RPM		        155
+#define EV3_LARGE_UNLOADED_MAX_RPM		155
+#define EV3_LARGE_LOADED_MAX_RPM		155
 #define EV3_LARGE_ACCEL                 155 * 600
 #define EV3_LARGE_DECEL                 155 * 600
 
@@ -26,7 +28,8 @@
 #define NXT_LARGE_KD	                0.00250
 #define NXT_LARGE_PWM_MAG               0.5544
 #define NXT_LARGE_PWM_EXP               0.612
-#define NXT_LARGE_MAX_RPM		        155
+#define NXT_LARGE_UNLOADED_MAX_RPM		155
+#define NXT_LARGE_LOADED_MAX_RPM		155
 #define NXT_LARGE_ACCEL                 155 * 600
 #define NXT_LARGE_DECEL                 155 * 600
 
@@ -35,7 +38,8 @@
 #define EV3_MED_KD	                    0.00138
 #define EV3_MED_PWM_MAG                 0.3962
 #define EV3_MED_PWM_EXP                 0.8718
-#define EV3_MED_MAX_RPM			        245
+#define EV3_MED_UNLOADED_MAX_RPM		245
+#define EV3_MED_LOADED_MAX_RPM			245
 #define EV3_MED_ACCEL                   245 * 600
 #define EV3_MED_DECEL                   245 * 600
 

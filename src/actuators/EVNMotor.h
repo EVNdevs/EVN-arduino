@@ -72,6 +72,8 @@ typedef struct
 	uint8_t motor_type;
 	uint8_t motora;
 	uint8_t motorb;
+	float unloaded_max_rpm;
+	float loaded_max_rpm;
 	float max_rpm;
 	bool max_rpm_calculated;
 	float accel;
@@ -207,7 +209,8 @@ public:
 	void setPWMMapping(float mag, float exp) volatile;
 	void setAccel(float accel_dps_per_s) volatile;
 	void setDecel(float decel_dps_per_s) volatile;
-	void setMaxRPM(float max_rpm) volatile;
+	void setLoadedMaxRPM(float loaded_max_rpm) volatile;
+	void setUnloadedMaxRPM(float unloaded_max_rpm) volatile;
 	void setPPR(float ppr) volatile;
 	void setDebug(bool enable) volatile;
 
@@ -260,6 +263,7 @@ private:
 	uint8_t clean_input_stop_action(uint8_t stop_action) volatile;
 
 	void compute_ppr_derived_values_unsafe() volatile;
+	void compute_max_rpm_unsafe() volatile;
 
 	volatile pid_control_t _pid_control = {};
 	volatile encoder_state_t _encoder = {};

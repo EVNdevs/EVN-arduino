@@ -25,20 +25,22 @@ void EVNButtonLED::begin()
 {
 	if (!_button.started)
 	{
-		_button.lock = spin_lock_init(_btn_lock_num);
-		_var_lock = spin_lock_init(_var_lock_num);
-
 		pinMode(PIN_BUTTON, INPUT_PULLUP);
 		pinMode(PIN_LED, OUTPUT_8MA);
 		attachInterrupt(PIN_BUTTON, isr, CHANGE);
+
+		_button.lock = spin_lock_init(_btn_lock_num);
+		_var_lock = spin_lock_init(_var_lock_num);
+
+		uint32_t out = spin_lock_blocking(_var_lock);
+		_button.started = true;
+		_core = rp2040.cpuid();
+		spin_unlock(_var_lock, out);
 
 		if (rp2040.cpuid() == 0)
 			alarm_pool_add_repeating_timer_ms(EVNISRTimer0.sharedAlarmPool(), UPDATE_INTERVAL_MS, update, nullptr, &EVNISRTimer0.sharedISRTimer(2));
 		else
 			alarm_pool_add_repeating_timer_ms(EVNISRTimer1.sharedAlarmPool(), UPDATE_INTERVAL_MS, update, nullptr, &EVNISRTimer1.sharedISRTimer(2));
-
-		_button.started = true;
-		_core = rp2040.cpuid();
 	}
 }
 
@@ -67,7 +69,13 @@ bool EVNButtonLED::motorsEnabled()
 	return output;
 }
 
-void EVNButtonLED::setMode(uint8_t mode) { _button.mode = constrain(mode, 0, 2); }
+void EVNButtonLED::setMode(uint8_t mode)
+{
+	uint32_t out = spin_lock_blocking(_var_lock);
+	_button.mode = constrain(mode, 0, 2);
+	spin_unlock(_var_lock, out);
+}
+
 uint8_t EVNButtonLED::getMode() { return _button.mode; }
 
 void EVNButtonLED::setLinkLED(bool enable) { _button.link_led = enable; }
@@ -82,10 +90,7 @@ void EVNButtonLED::setLinkMovement(bool enable)
 
 bool EVNButtonLED::getLinkMovement()
 {
-	uint32_t out = spin_lock_blocking(_var_lock);
-	bool output = _button.link_movement;
-	spin_unlock(_var_lock, out);
-	return output;
+	return _button.link_movement;
 }
 
 void EVNButtonLED::setButtonInvert(bool enable)

@@ -74,7 +74,8 @@ EVNMotor::EVNMotor(uint8_t port, uint8_t motor_type, uint8_t motor_dir, uint8_t 
 	switch (motor_type)
 	{
 	case EV3_LARGE:
-		_pid_control.max_rpm = EV3_LARGE_MAX_RPM;
+		_pid_control.unloaded_max_rpm = EV3_LARGE_UNLOADED_MAX_RPM;
+		_pid_control.loaded_max_rpm = EV3_LARGE_LOADED_MAX_RPM;
 		_pid_control.pwm_mag = EV3_LARGE_PWM_MAG;
 		_pid_control.pwm_exp = EV3_LARGE_PWM_EXP;
 		_pid_control.accel = EV3_LARGE_ACCEL;
@@ -83,7 +84,8 @@ EVNMotor::EVNMotor(uint8_t port, uint8_t motor_type, uint8_t motor_dir, uint8_t 
 		_encoder.ppr = LEGO_PPR;
 		break;
 	case NXT_LARGE:
-		_pid_control.max_rpm = NXT_LARGE_MAX_RPM;
+		_pid_control.unloaded_max_rpm = NXT_LARGE_UNLOADED_MAX_RPM;
+		_pid_control.loaded_max_rpm = NXT_LARGE_LOADED_MAX_RPM;
 		_pid_control.pwm_mag = NXT_LARGE_PWM_MAG;
 		_pid_control.pwm_exp = NXT_LARGE_PWM_EXP;
 		_pid_control.accel = NXT_LARGE_ACCEL;
@@ -92,7 +94,8 @@ EVNMotor::EVNMotor(uint8_t port, uint8_t motor_type, uint8_t motor_dir, uint8_t 
 		_encoder.ppr = LEGO_PPR;
 		break;
 	case EV3_MED:
-		_pid_control.max_rpm = EV3_MED_MAX_RPM;
+		_pid_control.unloaded_max_rpm = EV3_MED_UNLOADED_MAX_RPM;
+		_pid_control.loaded_max_rpm = EV3_MED_LOADED_MAX_RPM;
 		_pid_control.pwm_mag = EV3_MED_PWM_MAG;
 		_pid_control.pwm_exp = EV3_MED_PWM_EXP;
 		_pid_control.accel = EV3_MED_ACCEL;
@@ -101,7 +104,8 @@ EVNMotor::EVNMotor(uint8_t port, uint8_t motor_type, uint8_t motor_dir, uint8_t 
 		_encoder.ppr = LEGO_PPR;
 		break;
 	case CUSTOM_MOTOR:
-		_pid_control.max_rpm = CUSTOM_MAX_RPM;
+		_pid_control.unloaded_max_rpm = CUSTOM_UNLOADED_MAX_RPM;
+		_pid_control.loaded_max_rpm = CUSTOM_LOADED_MAX_RPM;
 		_pid_control.pwm_mag = CUSTOM_PWM_MAG;
 		_pid_control.pwm_exp = CUSTOM_PWM_EXP;
 		_pid_control.accel = CUSTOM_ACCEL;
@@ -112,13 +116,14 @@ EVNMotor::EVNMotor(uint8_t port, uint8_t motor_type, uint8_t motor_dir, uint8_t 
 	}
 
 	compute_ppr_derived_values_unsafe();
-
 	 _pid_control.hold_done = true;
 }
 
 void EVNMotor::begin() volatile
 {
+	while (!EVNAlpha::started()) { };
 	EVNCoreSync0.begin();
+	compute_max_rpm_unsafe();
 
 	//configure pins
 	analogWriteFreq(PWM_FREQ);
@@ -186,13 +191,25 @@ void EVNMotor::setDecel(float decel_dps_per_s) volatile
 	EVNCoreSync0.core0_exit();
 }
 
-void EVNMotor::setMaxRPM(float max_rpm) volatile
+void EVNMotor::setLoadedMaxRPM(float loaded_max_rpm) volatile
 {
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
 
-	_pid_control.max_rpm = fabs(max_rpm);
-	_pid_control.max_rpm_calculated = false;
+	_pid_control.loaded_max_rpm = min(fabs(loaded_max_rpm), _pid_control.unloaded_max_rpm);
+	compute_max_rpm_unsafe();
+
+	EVNCoreSync0.core0_exit();
+}
+
+void EVNMotor::setUnloadedMaxRPM(float unloaded_max_rpm) volatile
+{
+	if (!timerisr_enabled) return;
+	EVNCoreSync0.core0_enter();
+
+	_pid_control.unloaded_max_rpm = fabs(unloaded_max_rpm);
+	_pid_control.loaded_max_rpm = min(_pid_control.loaded_max_rpm, _pid_control.unloaded_max_rpm);
+	compute_max_rpm_unsafe();
 
 	EVNCoreSync0.core0_exit();
 }
@@ -440,9 +457,18 @@ void EVNMotor::compute_ppr_derived_values_unsafe() volatile
 	_encoder._360000000_div_ppr = 360000000 / _encoder.ppr;
 }
 
+void EVNMotor::compute_max_rpm_unsafe() volatile
+{
+	//set max rpm based on battery voltage and loaded + unloaded speeds at full charge (8.2V)
+	float vbatt_on_boot = (float) EVNAlpha::getBatteryVoltageOnBoot_unsafe();
+	float voltage_drop_from_load = 8200 * (1 - _pid_control.loaded_max_rpm / _pid_control.unloaded_max_rpm);
+	float scaling_factor = (vbatt_on_boot - voltage_drop_from_load) / (8200 - voltage_drop_from_load);
+	_pid_control.max_rpm = _pid_control.loaded_max_rpm * scaling_factor;
+	_pid_control.max_rpm_calculated = false;
+}
+
 void EVNMotor::runPWM_unsafe(float duty_cycle) volatile
 {
-
 	_pid_control.run_pwm = true;
 	_pid_control.run_speed = false;
 	_pid_control.run_time = false;
