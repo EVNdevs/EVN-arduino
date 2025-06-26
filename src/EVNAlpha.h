@@ -6,6 +6,10 @@
 #include <Arduino.h>
 
 class EVNAlpha {
+
+    friend class EVNMotor;
+    friend class EVNDrivebase;
+
 private:
     enum bq25887 : uint8_t
     {
@@ -43,6 +47,14 @@ public:
 
     static bool motorsEnabled() { return sharedButtonLED().motorsEnabled(); };
 
+    static bool started()
+    {
+        mutex_enter_blocking(&_mutex);
+        bool output = _started;
+        mutex_exit(&_mutex);
+        return output;
+    }
+
     // disabled, since flash is used for battery alerts
     // void setFlash(bool enable) { button_led.setFlash(enable); };
     // bool getFlash() { return button_led.getFlash(); };
@@ -62,6 +74,7 @@ public:
     //Singletons for Port Selector and Button/LED
     static EVNPortSelector& sharedPorts() { static EVNAlpha shared; return shared.ports; }
     static EVNButtonLED& sharedButtonLED() { static EVNAlpha shared; return shared.button_led; }
+    static int16_t getBatteryVoltageOnBoot_unsafe() { return _vbatt_on_boot; };
 
 private:
     bool beginADC();
@@ -71,13 +84,14 @@ private:
     void updateCell2Voltage();
 
     bool _battery_adc_started;
-
     int16_t _vbatt = 0, _vcell1 = 0, _vcell2 = 0;
 
+    static mutex_t _mutex;
     static EVNButtonLED button_led;
     static EVNPortSelector ports;
+    static bool _started, _link_led, _link_movement, _button_invert;
     static uint8_t _mode;
-    static bool _link_led, _link_movement, _button_invert;
+    static int16_t _vbatt_on_boot;
     static uint32_t _i2c_freq;
 };
 

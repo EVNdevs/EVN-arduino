@@ -1,16 +1,19 @@
 #include "EVNAlpha.h"
 
-uint8_t EVNAlpha::_mode;
+mutex_t EVNAlpha::_mutex = { };
+EVNButtonLED EVNAlpha::button_led(_mode, _link_led, _link_movement, _button_invert);
+EVNPortSelector EVNAlpha::ports(_i2c_freq);
+bool EVNAlpha::_started;
 bool EVNAlpha::_link_led;
 bool EVNAlpha::_link_movement;
 bool EVNAlpha::_button_invert;
-EVNButtonLED EVNAlpha::button_led(_mode, _link_led, _link_movement, _button_invert);
-
+uint8_t EVNAlpha::_mode;
+int16_t EVNAlpha::_vbatt_on_boot;
 uint32_t EVNAlpha::_i2c_freq;
-EVNPortSelector EVNAlpha::ports(_i2c_freq);
 
 EVNAlpha::EVNAlpha(uint8_t mode, bool link_led, bool link_movement, bool button_invert, uint32_t i2c_freq)
 {
+    _started = false;
     _battery_adc_started = false;
     _mode = constrain(mode, 0, 2);
     _link_led = link_led;
@@ -21,32 +24,42 @@ EVNAlpha::EVNAlpha(uint8_t mode, bool link_led, bool link_movement, bool button_
 
 void EVNAlpha::begin()
 {
-    //set correct I2C and Serial pins
-#if (defined(ARDUINO_GENERIC_RP2040))
-    Wire1.setSDA(PIN_WIRE1_SDA);
-    Wire1.setSCL(PIN_WIRE1_SCL);
-#endif
+    if (!_started)
+    {
+        //set correct I2C and Serial pins
+    #if (defined(ARDUINO_GENERIC_RP2040))
+        Wire1.setSDA(PIN_WIRE1_SDA);
+        Wire1.setSCL(PIN_WIRE1_SCL);
+    #endif
 
-#if (defined(ARDUINO_GENERIC_RP2040) && defined(__SPI0_DEVICE))
-    SPI.setRX(PIN_SPI0_MISO);
-    SPI.setTX(PIN_SPI0_MOSI);
-    SPI.setSCK(PIN_SPI0_SCK);
-    SPI.setCS(PIN_SPI0_SS);
-#endif
+    #if (defined(ARDUINO_GENERIC_RP2040) && defined(__SPI0_DEVICE))
+        SPI.setRX(PIN_SPI0_MISO);
+        SPI.setTX(PIN_SPI0_MOSI);
+        SPI.setSCK(PIN_SPI0_SCK);
+        SPI.setCS(PIN_SPI0_SS);
+    #endif
 
-#if (defined(ARDUINO_GENERIC_RP2040) && defined(__SPI1_DEVICE))
-    SPI1.setRX(PIN_SPI1_MISO);
-    SPI1.setTX(PIN_SPI1_MOSI);
-    SPI1.setSCK(PIN_SPI1_SCK);
-    SPI1.setCS(PIN_SPI1_SS);
-#endif
+    #if (defined(ARDUINO_GENERIC_RP2040) && defined(__SPI1_DEVICE))
+        SPI1.setRX(PIN_SPI1_MISO);
+        SPI1.setTX(PIN_SPI1_MOSI);
+        SPI1.setSCK(PIN_SPI1_SCK);
+        SPI1.setCS(PIN_SPI1_SS);
+    #endif
 
-    //initialize helper objects
-    ports.begin();
-    button_led.begin();
+        //initialize helper objects
+        ports.begin();
+        button_led.begin();
 
-    //initialize battery ADC if available
-    if (this->beginADC()) _battery_adc_started = true;
+        //initialize battery ADC if available
+        if (this->beginADC()) _battery_adc_started = true;
+
+        updateBatteryVoltage();
+        _vbatt_on_boot = _vbatt;
+        mutex_init(&_mutex);
+        mutex_enter_blocking(&_mutex);
+        _started = true;
+        mutex_exit(&_mutex);
+    }
 }
 
 void EVNAlpha::printPorts()

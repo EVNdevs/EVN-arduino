@@ -1,3 +1,15 @@
+1.4.0 (27/6/25)
+
+-- Features --
+EVNMotor, EVNDrivebase: Improvements made to position hold! Previously, all hold stop actions and hold() set the motor to hold its position, but did not wait for the motor to settle on its position before returning/completing. Now, it can do that (tolerances and timeout durations can be set in src\evn_motor_defs.h)
+
+EVNMotor: Automatic max RPM adjustments! We noticed that our drivebase turns were getting less accurate as the battery discharged, as the motors could not hit the same speeds at lower voltages. Now, the max RPMs are automatically adjusted to account for battery charge levels on boot.
+
+-- BREAKING Changes --
+EVNMotor, EVNAlpha: EVNMotor's begin() (called on 2nd core) will now wait indefinitely for EVNAlpha's begin() to complete on the 1st core before executing. This is done to allow EVNAlpha to take a battery voltage reading for EVNMotor. If your program runs EVNAlpha and EVNMotor on the same core (although we don't recommend it), make sure EVNAlpha is initialized first.
+
+EVNMotor: setMaxRPM() now takes in 2 parameters, unloaded_max_rpm (same as before) and an optional loaded_max_rpm.
+
 1.3.8 (19/5/25)
 
 -- Features --

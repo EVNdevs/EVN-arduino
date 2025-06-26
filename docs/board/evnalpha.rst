@@ -63,6 +63,10 @@ Functions
             board.begin();
         }
 
+.. note::
+    EVNAlpha **should** only be initialized on the main core using ``void setup()``.
+    Its functions should only be called on the main core as well (in ``void setup()`` or ``void loop()``).
+
 LED / Button
 """"""""""""
 
