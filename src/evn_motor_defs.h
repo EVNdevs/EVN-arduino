@@ -1,14 +1,14 @@
 //TUNING FOR CUSTOM MOTOR
 //edit this to change CUSTOM_MOTOR defaults
-#define CUSTOM_KP                       0.4          //position PID gains (PD controller)
-#define CUSTOM_KD		                0.0048
+#define CUSTOM_KP                       0.3     //position PID gains (PD controller)
+#define CUSTOM_KD		                0.0
 #define CUSTOM_PWM_MAG                  -1
 #define CUSTOM_PWM_EXP                  -1
-#define CUSTOM_UNLOADED_MAX_RPM	        77          //max RPM of the motor shaft
-#define CUSTOM_LOADED_MAX_RPM   		77
-#define CUSTOM_ACCEL                    100 * 77    //acceleration in rpm/s (60 means it takes 1 second to accelerate from 0RPM to 60)
-#define CUSTOM_DECEL                    100 * 77    //deceleration in rpm/s (60 means it takes 1 second to decelerate from 60RPM to 0)
-#define CUSTOM_PPR				        858         //pulses on 1 encoder wheel for 1 revolution of the motor shaft
+#define CUSTOM_UNLOADED_MAX_RPM	        100     //max RPM of the motor shaft
+#define CUSTOM_LOADED_MAX_RPM   		100
+#define CUSTOM_ACCEL                    10000   //acceleration in rpm/s (60 means it takes 1 second to accelerate from 0RPM to 60)
+#define CUSTOM_DECEL                    10000   //deceleration in rpm/s (60 means it takes 1 second to decelerate from 60RPM to 0)
+#define CUSTOM_PPR				        500     //pulses on 1 encoder wheel for 1 revolution of the motor shaft
 
 //LEGO MOTORS
 #define LEGO_PPR				        180
