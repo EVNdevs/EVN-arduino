@@ -229,9 +229,9 @@ The following classes use some of these 16 spinlocks:
 * ``EVNMotor`` and ``EVNDrivebase`` (shared): 1 striped, 1 exclusive
 * ``EVNServo`` and ``EVNContinuousServo`` (shared): 1 striped, 1 exclusive
 * ``EVNRGBLED``: 1 striped
-* ``EVNAlpha``: 2 exclusive
+* ``EVNAlpha``: 1 striped, 2 exclusive
 
-The spinlocks are shared across all instances of the given class(es).
+Spinlocks are shared across all instances of the given classes.
 
 Direct Memory Access (DMA)
 """"""""""""""""""""""""""

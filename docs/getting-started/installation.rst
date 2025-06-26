@@ -42,7 +42,7 @@ Currently, the best solution is to do a clean removal of the core before reinsta
 
 1. Uninstall Arduino-Pico in Boards Manager. Close Arduino IDE.
 
-2. Delete the following folder: C:\Users\%USERNAME%\AppData\Local\Arduino15\packages\rp2040
+2. Delete the following folder: ``C:\Users\%USERNAME%\AppData\Local\Arduino15\packages\rp2040``
 
 3. Reopen Arduino IDE and do a fresh install as described above.
 

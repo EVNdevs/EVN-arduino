@@ -7,6 +7,10 @@ Building upon the functionality provided by EVNMotor, EVNDrivebase provides func
 
 .. _page: ../getting-started/hardware-overview.html
 
+.. note::
+    EVNDrivebase uses the 2nd core to perform internal updates at a high rate. Between updates, user code can run on the 2nd core,
+    but this configuration may cause timing-sensitive code to fail or lead to unexpected behaviour.
+
 Constructor
 -----------
 
@@ -28,14 +32,16 @@ Constructor
 .. note::
 
     For those new to C++, pointers can be quite confusing! Think of ``&`` as a means for you to provide a link to an object. 
-    Here, we pass a link to ``EVNMotor`` objects to our ``EVNDrivebase`` object, so that it can control the ``EVNMotor`` objects just like the user can.
+    Here, we pass a link to ``EVNMotor`` objects to our ``EVNDrivebase`` object, so that it can control the ``EVNMotor`` objects for us.
 
 Functions
 ---------
 
 .. function:: void begin();
 
-    Initializes drivebase object. Call this function after calling ``begin()`` on the EVNMotor objects (which still need to be called!), but before calling any other ``EVNDrivebase`` functions (including settings functions).
+    Initializes drivebase object. 
+    Call this function after calling ``begin()`` on the EVNMotor objects (which still need to be called!), 
+    but before calling any other ``EVNDrivebase`` functions (including settings functions).
 
     .. code-block:: cpp
 
@@ -51,7 +57,7 @@ Functions
         }
 
 .. note::
-    This command should be run on the 2nd core using ``void setup1()``. 
+    EVNDrivebase **should** be initialized on the 2nd core using ``void setup1()``. 
     However, you can still call the movement functions in ``void loop()`` like a normal program.
 
 Measurements
@@ -162,7 +168,8 @@ Move Forever
 
     Positive turning rate values turn anti-clockwise, negative values turn clockwise.
 
-    Since the inputs range from -100 to 100 (unlike driveRadius, where radius ranges to infinity), it can be easier to use this function for PID control.
+    Since the inputs range from -100 to 100 (unlike driveRadius, where radius ranges to infinity), 
+    it can be easier to use this function for PID control.
 
     :param speed_outer_pct: Speed for outer (faster) wheel in % (number from -100 to 100)
     :param turn_rate_pct: Turning rate of drivebase in % (number from -100 to 100)
@@ -187,7 +194,9 @@ Move by a Fixed Amount
 
     Runs drivebase in a straight line for the specified distance, then performs given stop action.
 
-    Drivebase speed direction is reversed when the ``speed`` or ``distance`` inputs are negative (e.g. ``straight(100, -100)``, ``straight(-100, 100)``, or ``straight(-100, -100)`` will all move the drivebase backwards).
+    Drivebase speed direction is reversed when the ``speed`` or ``distance`` inputs are negative 
+    (e.g. ``straight(100, -100)``, ``straight(-100, 100)``, or
+    ``straight(-100, -100)`` will all move the drivebase backwards).
 
     :param speed: Velocity of drivebase (in mm/s)
     :param distance: Distance to travel (in mm)
@@ -209,7 +218,9 @@ Move by a Fixed Amount
 
     Runs drivebase in a curve of specified radius until its heading has shifted by the given angle, then performs given stop action.
 
-    Drivebase turning direction is reversed when the ``radius`` or ``angle`` inputs are negative (e.g. ``curve(100, 100, -100)``, ``curve(100, -100, 100)``, or ``curve(100, -100, -100)`` will all use a negative (clockwise) turning rate).
+    Drivebase turning direction is reversed when the ``radius`` or ``angle`` inputs are negative 
+    (e.g. ``curve(100, 100, -100)``, ``curve(100, -100, 100)``, or
+    ``curve(100, -100, -100)`` will all use a negative (clockwise) turning rate).
 
     :param speed: Velocity of drivebase (in mm/s)
     :param radius: Turning radius of drivebase (in mm)
@@ -231,7 +242,9 @@ Move by a Fixed Amount
 
     Runs drivebase at given speed and turn rate until its heading has shifted by the given angle, then runs specified stop action
 
-    Drivebase turning direction is reversed when the ``turn_rate`` or ``angle`` inputs are negative (e.g. ``curveTurnRate(100, 100, -100)``, ``curveTurnRate(100, -100, 100)``, or ``curveTurnRate(100, -100, -100)`` will all use a negative (clockwise) turning rate).
+    Drivebase turning direction is reversed when the ``turn_rate`` or ``angle`` inputs are negative 
+    (e.g. ``curveTurnRate(100, 100, -100)``, ``curveTurnRate(100, -100, 100)``,
+    or ``curveTurnRate(100, -100, -100)`` will all use a negative (clockwise) turning rate).
 
     :param speed: Velocity of drivebase (in mm/s)
     :param turn_rate: Turning rate of drivebase (in deg/s)
@@ -364,7 +377,8 @@ Otherwise, the CUSTOM_MOTOR PD values are used.
 
     Sets proportional gain values for the speed controller (controls average drivebase speed).
 
-    The error for the controller is the difference between the robot's target distance travelled and the robot's current distance travelled (in motor degrees).
+    The error for the controller is the difference between the robot's target distance travelled
+    and the robot's current distance travelled (in motor degrees).
 
     :param kp: Proportional gain
 
@@ -376,7 +390,8 @@ Otherwise, the CUSTOM_MOTOR PD values are used.
 
     Sets derivative gain values for the speed controller (controls average drivebase speed).
 
-    The error for the controller is the difference between the robot's target distance travelled and the robot's current distance travelled (in motor degrees).
+    The error for the controller is the difference between the robot's target distance travelled
+    and the robot's current distance travelled (in motor degrees).
 
     :param kd: Derivative gain
 
@@ -388,9 +403,11 @@ Otherwise, the CUSTOM_MOTOR PD values are used.
 
     Sets proportional gain values for the turn rate controller (controls rate of turning of drivebase).
 
-    The error for the controller is the difference between the robot's target angle and the robot's current angle (in motor degrees).
+    The error for the controller is the difference between the robot's target angle
+    and the robot's current angle (in motor degrees).
 
-    This controller serves 2 purposes: to ensure the drivebase turns at the correct rate, and to stop either motor if the other is stalled, syncing their movement.
+    This controller serves 2 purposes: to ensure the drivebase turns at the correct rate,
+    and to stop either motor if the other is stalled, syncing their movement.
 
     :param kp: Proportional gain
 
@@ -402,9 +419,11 @@ Otherwise, the CUSTOM_MOTOR PD values are used.
 
     Sets derivative gain values for the turn rate controller (controls rate of turning of drivebase).
 
-    The error for the controller is the difference between the robot's target angle and the robot's current angle (in motor degrees).
+    The error for the controller is the difference between the robot's target angle
+    and the robot's current angle (in motor degrees).
 
-    This controller serves 2 purposes: to ensure the drivebase turns at the correct rate, and to stop either motor if the other is stalled, syncing their movement.
+    This controller serves 2 purposes: to ensure the drivebase turns at the correct rate,
+    and to stop either motor if the other is stalled, syncing their movement.
 
     :param kd: Derivative gain
 
@@ -454,7 +473,8 @@ Otherwise, the CUSTOM_MOTOR PD values are used.
 
 .. function:: void setDebug(uint8_t debug_type)
 
-    Used to toggle debug mode, where drivebase will print the error for either speed or turn rate PD control over ``Serial``. Can be used to observe or tune PD controller behaviour.
+    Used to toggle debug mode, where drivebase will print the error for either speed or
+    turn rate PD control over ``Serial``. Can be used to observe or tune PD controller behaviour.
 
     :param debug_type: Type of debug mode to run
 

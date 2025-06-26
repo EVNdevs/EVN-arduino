@@ -8,9 +8,13 @@ We have built-in motor profiles for NXT Large Motors, EV3 Medium Motors and EV3 
 
 .. _page: ../getting-started/hardware-overview.html
 
-.. note:: For gearmotors plugged into the 6-pin headers, users may have to set default parameters for the CUSTOM_MOTOR preset in `src/evn_motor_pids.h`, such as maximum RPM and encoder PPR (pulses per revolution).
+.. note:: For custom motors plugged into the 6-pin headers, users may have to set default parameters for the CUSTOM_MOTOR preset in `src/evn_motor_pids.h`, such as maximum RPM and encoder PPR (pulses per revolution).
 
 .. warning:: A gearmotor and a LEGO motor should not be simultaneously plugged into the same motor port, as the 6-pin headers are wired in parallel with the LEGO ports.
+
+.. note::
+    EVNMotor uses the 2nd core to perform internal updates at a high rate. Between updates, user code can run on the 2nd core,
+    but this configuration may cause timing-sensitive code to fail or lead to unexpected behaviour.
 
 Constructor
 -----------
@@ -57,8 +61,12 @@ Functions
         }
 
 .. note::
-    This command should be run on the 2nd core using ``void setup1()``. 
-    However, you can still call the movement and settings functions in ``void loop()`` like a normal program.
+    EVNMotor **should** be initialized on the 2nd core using ``void setup1()``.
+    However, you can still call all movement and settings functions in ``void loop()`` like a normal program.
+
+.. warning::
+    This function only completes when EVNAlpha has been initialized using its ``begin()`` function on the 1st core (in ``void setup()``).
+    If EVNMotor and EVNAlpha must run on the same core for your program(not recommended for stability!), make sure EVNAlpha is initialized first.
 
 Measurements
 """"""""""""
@@ -316,21 +324,47 @@ To view the default PD and accel/decel values, look at ``src\evn_motor_defs.h`` 
 
         motor.setDecel(500);
 
-.. function:: void setMaxRPM(float max_rpm)
+.. function:: void setPWMMapping(float mag, float exp)
 
-    Set max RPM (revolutions per minute) of motor
+    Set PWM mapping for motor. Instead of mapping the PD controller output to a linear PWM value, 
+    the output is mapped non-linearly for better performance, using the following formula:
+    `PWM Output = mag * e to the power of (exp * output)`
 
-    :param max_rpm: Maximum RPM of motor
+    For Mindstorms motors, this is already provided in the motor profiles, but this can be used to set mappings for custom motors.
+
+    :param mag: Mangitude component (negative values will set motor to map linearly)
+    :param exp: Exponent component (negative values will set motor to map linearly)
 
     .. code-block:: cpp
 
-        motor.setMaxRPM(140);
+        motor.setPWMMapping(0.212, 0.00403);
+
+.. note::
+    We're also working on sharing how to generate such mappings for your custom motors!
+
+.. function:: void setMaxRPM(float unloaded_max_rpm, float loaded_max_rpm = -1)
+
+    Set motor's max RPM at full battery charge when motor shaft is unloaded (``unloaded_max_rpm``).
+    Using this value, EVN Alpha will automatically scale the motor's maximum RPM based on the battery charge level on startup.
+    
+    This is particularly useful for drivebase movements, where accurate turning might depend on motors being able to achieve their maximum speeds.
+    As the battery discharges, the maximum speed of the motor gradually decreases.
+
+    For greater accuracy, you can also specify max RPM for the motor under load (``loaded_max_rpm``). 
+    However, this may only be useful if the motor is driving a constant load (e.g. a robot driving only on flat terrain).
+
+    :param unloaded_max_rpm: Maximum unloaded RPM of motor
+    :param loaded_max_rpm: Maximum loaded RPM of motor (defaults to -1, negative values mean only ``unloaded_max_rpm`` will be used)
+
+    .. code-block:: cpp
+
+        motor.setMaxRPM(140, 100);
 
 .. function:: void setPPR(float ppr)
 
     Set pulses per revolution of motor shaft. For all LEGO EV3/NXT motors, PPR is 360 so it requires no adjustment.
 
-    Some motor manufacturers specify the motor's CPR (counts per revolution), which is 4 times of a motor's PPR.
+    Some motor manufacturers specify the motor's CPR (counts per revolution), which is 4 times of a motor's PPR when using quadrature encoders.
 
     :param ppr: Pulses per revolution of motor
 
