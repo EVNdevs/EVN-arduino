@@ -121,7 +121,10 @@ EVNMotor::EVNMotor(uint8_t port, uint8_t motor_type, uint8_t motor_dir, uint8_t 
 
 void EVNMotor::begin() volatile
 {
-	while (!EVNAlpha::started()) { };
+	while (!EVNAlpha::started())
+	{
+		delay(50);
+	}
 	EVNCoreSync0.begin();
 	compute_max_rpm_unsafe();
 
@@ -191,24 +194,16 @@ void EVNMotor::setDecel(float decel_dps_per_s) volatile
 	EVNCoreSync0.core0_exit();
 }
 
-void EVNMotor::setLoadedMaxRPM(float loaded_max_rpm) volatile
-{
-	if (!timerisr_enabled) return;
-	EVNCoreSync0.core0_enter();
-
-	_pid_control.loaded_max_rpm = min(fabs(loaded_max_rpm), _pid_control.unloaded_max_rpm);
-	compute_max_rpm_unsafe();
-
-	EVNCoreSync0.core0_exit();
-}
-
-void EVNMotor::setUnloadedMaxRPM(float unloaded_max_rpm) volatile
+void EVNMotor::setMaxRPM(float unloaded_max_rpm, float loaded_max_rpm) volatile
 {
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
 
 	_pid_control.unloaded_max_rpm = fabs(unloaded_max_rpm);
-	_pid_control.loaded_max_rpm = min(_pid_control.loaded_max_rpm, _pid_control.unloaded_max_rpm);
+	if (loaded_max_rpm <= 0)
+		_pid_control.loaded_max_rpm = _pid_control.unloaded_max_rpm;
+	else
+		_pid_control.loaded_max_rpm = min(loaded_max_rpm, _pid_control.unloaded_max_rpm);
 	compute_max_rpm_unsafe();
 
 	EVNCoreSync0.core0_exit();

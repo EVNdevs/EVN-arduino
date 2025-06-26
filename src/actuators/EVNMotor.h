@@ -209,8 +209,7 @@ public:
 	void setPWMMapping(float mag, float exp) volatile;
 	void setAccel(float accel_dps_per_s) volatile;
 	void setDecel(float decel_dps_per_s) volatile;
-	void setLoadedMaxRPM(float loaded_max_rpm) volatile;
-	void setUnloadedMaxRPM(float unloaded_max_rpm) volatile;
+	void setMaxRPM(float unloaded_max_rpm, float loaded_max_rpm = -1) volatile;
 	void setPPR(float ppr) volatile;
 	void setDebug(bool enable) volatile;
 
