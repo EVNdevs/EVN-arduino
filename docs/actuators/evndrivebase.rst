@@ -57,8 +57,9 @@ Functions
         }
 
 .. note::
-    EVNDrivebase **should** be initialized on the 2nd core using ``void setup1()``. 
-    However, you can still call the movement functions in ``void loop()`` like a normal program.
+    EVNDrivebase **should** be initialized on the 2nd core by calling ``begin()`` in ``void setup1()``. 
+    However, you can still call the other functions on both cores.
+    We recommend setting drivebase parameters on the 2nd core, while leaving movement to the main core.
 
 Measurements
 """"""""""""

@@ -62,7 +62,8 @@ Functions
 
 .. note::
     EVNMotor **should** be initialized on the 2nd core using ``void setup1()``.
-    However, you can still call all movement and settings functions in ``void loop()`` like a normal program.
+    However, you can still call the other functions on both cores.
+    We recommend setting motor parameters on the 2nd core, while leaving movements to the main core.
 
 .. warning::
     This function only completes when EVNAlpha has been initialized using its ``begin()`` function on the 1st core (in ``void setup()``).
