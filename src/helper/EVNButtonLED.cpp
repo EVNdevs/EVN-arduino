@@ -76,7 +76,12 @@ void EVNButtonLED::setMode(uint8_t mode)
 	spin_unlock(_var_lock, out);
 }
 
-uint8_t EVNButtonLED::getMode() { return _button.mode; }
+uint8_t EVNButtonLED::getMode() {
+	uint32_t out = spin_lock_blocking(_var_lock);
+	uint8_t output = _button.mode;
+	spin_unlock(_var_lock, out);
+	return output;
+}
 
 void EVNButtonLED::setLinkLED(bool enable) { _button.link_led = enable; }
 bool EVNButtonLED::getLinkLED() { return _button.link_led; }
@@ -90,7 +95,10 @@ void EVNButtonLED::setLinkMovement(bool enable)
 
 bool EVNButtonLED::getLinkMovement()
 {
-	return _button.link_movement;
+	uint32_t out = spin_lock_blocking(_var_lock);
+	bool output = _button.link_movement;
+	spin_unlock(_var_lock, out);
+	return output;
 }
 
 void EVNButtonLED::setButtonInvert(bool enable)
@@ -100,7 +108,12 @@ void EVNButtonLED::setButtonInvert(bool enable)
 	_button.button_invert = enable;
 }
 
-bool EVNButtonLED::getButtonInvert() { return _button.button_invert; }
+bool EVNButtonLED::getButtonInvert() {
+	uint32_t out = spin_lock_blocking(_var_lock);
+	bool output = _button.button_invert;
+	spin_unlock(_var_lock, out);
+	return output;
+}
 
 void EVNButtonLED::setFlash(bool enable) { _button.flash = enable; }
 bool EVNButtonLED::getFlash() { return _button.flash; }
