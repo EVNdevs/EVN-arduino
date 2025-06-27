@@ -1,3 +1,11 @@
+1.4.1 (28/6/25)
+
+Mainly added stability fixes to the changes added in 1.4.0.
+
+There may be more fixes to come, as we've witnessed occasional issues with drivebase movements after sustained use, but haven't been able to recreate them reliably or determine cause.
+
+If the issues do crop up again, we'll find and fix them swiftly.
+
 1.4.0 (27/6/25)
 
 -- Features --
