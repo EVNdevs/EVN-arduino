@@ -18,11 +18,11 @@
 #define EV3_MED				2
 #define CUSTOM_MOTOR		3
 
-#define MAX_STOP_VALUE		3
+#define MAX_STOP_VALUE		2
 #define STOP_BRAKE			0
 #define STOP_COAST			1
 #define STOP_HOLD			2
-#define STOP_NONE			3
+// #define STOP_NONE		3
 // #define STOP_SMART_BRAKE	4
 // #define STOP_SMART_COAST	5
 
@@ -388,10 +388,6 @@ private:
 				pidArg->last_stopped_time_us = pidArg->last_update;
 			}
 			break;
-
-		case STOP_NONE:
-
-			break;
 		}
 	}
 
@@ -561,22 +557,11 @@ private:
 
 					if (pidArg->target_pos == pidArg->end_pos)
 					{
-						if (!pidArg->hit_end)
-						{
-							pidArg->hit_end = true;
-							pidArg->hit_end_time_us = pidArg->last_update;
-						}
-
-						if (fabs(pidArg->error) <= MOTOR_POS_MIN_ERROR_MOTOR_DEG
-						|| pidArg->last_update - pidArg->hit_end_time_us >= MOTOR_POS_TIMEOUT_US)
+						if (fabs(pidArg->error) <= MOTOR_POS_MIN_ERROR_MOTOR_DEG)
 						{
 							stopAction_static(pidArg, encoderArg, pos, dps);
 							return;
 						}
-					}
-					else
-					{
-						pidArg->hit_end = false;
 					}
 				}
 			}
@@ -1016,10 +1001,6 @@ private:
 				arg->last_stopped_time_us = arg->last_update;
 			}
 			break;
-
-		case STOP_NONE:
-			
-			break;
 		}
 	}
 
@@ -1269,25 +1250,15 @@ private:
 				//ideally, we should only stop when both errors are in acceptable range
 				//however, our control scheme might only hit both targets SOME of the time
 				//so we count it as complete when the motor is already targeting the angle and distance endpoints, and either error is acceptable
-				//TODO: Add timeout if both errors cannot be achieved?
 				if (arg->target_angle == arg->end_angle
 				&& arg->target_distance == arg->end_distance)
 				{
-					if (!arg->hit_end)
-					{
-						arg->hit_end = true;
-						arg->hit_end_time_us = arg->last_update;
-					}
-
 					if (fabs(arg->angle_error) <= DRIVEBASE_POS_MIN_ERROR_MOTOR_DEG
-					|| fabs(arg->speed_error) <= DRIVEBASE_POS_MIN_ERROR_MOTOR_DEG
-					|| arg->last_update - arg->hit_end_time_us >= DRIVEBASE_POS_TIMEOUT_US)
+					|| fabs(arg->speed_error) <= DRIVEBASE_POS_MIN_ERROR_MOTOR_DEG)
 					{
 						stopAction_static(arg);
 						return;
 					}
-				} else {
-					arg->hit_end = false;
 				}
 			}
 
