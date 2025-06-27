@@ -18,11 +18,11 @@
 #define EV3_MED				2
 #define CUSTOM_MOTOR		3
 
-#define MAX_STOP_VALUE		3
+#define MAX_STOP_VALUE		2
 #define STOP_BRAKE			0
 #define STOP_COAST			1
 #define STOP_HOLD			2
-#define STOP_NONE			3
+// #define STOP_NONE		3
 // #define STOP_SMART_BRAKE	4
 // #define STOP_SMART_COAST	5
 
@@ -387,10 +387,6 @@ private:
 				pidArg->hold_start_time_us = pidArg->last_update;
 				pidArg->last_stopped_time_us = pidArg->last_update;
 			}
-			break;
-
-		case STOP_NONE:
-
 			break;
 		}
 	}
@@ -1004,10 +1000,6 @@ private:
 				arg->hold_start_time_us = arg->last_update;
 				arg->last_stopped_time_us = arg->last_update;
 			}
-			break;
-
-		case STOP_NONE:
-			
 			break;
 		}
 	}
