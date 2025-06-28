@@ -54,13 +54,13 @@ void EVNAlpha::begin()
         if (this->beginADC()) _battery_adc_started = true;
 
         updateBatteryVoltage();
+        _vbatt_on_boot = _vbatt;
         ports.setPort(9);
         ports.setPort(1);
 
         mutex_init(&_mutex);
         mutex_enter_blocking(&_mutex);
         _started = true;
-        _vbatt_on_boot = _vbatt;
         mutex_exit(&_mutex);
     }
 }

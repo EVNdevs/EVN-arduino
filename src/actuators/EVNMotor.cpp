@@ -455,7 +455,7 @@ void EVNMotor::compute_ppr_derived_values_unsafe() volatile
 void EVNMotor::compute_max_rpm_unsafe() volatile
 {
 	//set max rpm based on battery voltage and loaded + unloaded speeds at full charge (8.4V)
-	float vbatt_on_boot = (float) EVNAlpha::getBatteryVoltageOnBoot();
+	float vbatt_on_boot = (float) EVNAlpha::getBatteryVoltageOnBoot_unsafe();
 	if (vbatt_on_boot == 0)
 		vbatt_on_boot = 8400;
 	float voltage_drop_from_load = 8400 * (1 - _pid_control.loaded_max_rpm / _pid_control.unloaded_max_rpm);
