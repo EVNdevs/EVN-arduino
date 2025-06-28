@@ -71,16 +71,8 @@ public:
 
     void printPorts();
 
-    //Singletons for Port Selector and Button/LED
-    static EVNPortSelector& sharedPorts() { static EVNAlpha shared; return shared.ports; }
-    static EVNButtonLED& sharedButtonLED() { static EVNAlpha shared; return shared.button_led; }
-    static int16_t getBatteryVoltageOnBoot()
-    {
-        mutex_enter_blocking(&_mutex);
-        int16_t output = _vbatt_on_boot;
-        mutex_exit(&_mutex);
-        return output;
-    };
+    static EVNPortSelector& sharedPorts() { return ports; }
+    static EVNButtonLED& sharedButtonLED() { return button_led; }
 
 private:
     bool beginADC();
@@ -88,6 +80,7 @@ private:
     void updateBatteryVoltage();
     void updateCell1Voltage();
     void updateCell2Voltage();
+    static int16_t getBatteryVoltageOnBoot_unsafe() { return _vbatt_on_boot; };
 
     bool _battery_adc_started;
     int16_t _vbatt = 0, _vcell1 = 0, _vcell2 = 0;
