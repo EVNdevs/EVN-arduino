@@ -1,3 +1,23 @@
+1.4.3 (18/7/25)
+
+This update aims to resolve peculiarities in the movements created by acceleration/deceleration controls, and provide more versatile options for movement.
+
+For all "run forever" functions in EVNMotor and EVNDrivebase, there is now an option to disable the accel/decel controls if wheel slippage is not of concern and more responsiveness is needed (e.g. line tracking).
+
+Additionally, chained movements are now easier to execute with the STOP_NONE stop action, which removes the decelerating to a stop present in all other stop actions.
+
+Moving forward, the next tier for the actuator classes (apart from fixing bugs) will be closely following a trajectory while still fully obeying the accel/decel settings set by the user (and in doing so, providing more precise and accurate movement). This may take a while, but we are working on it.
+
+-- Features --
+
+EVNDrivebase, EVNMotor: For all "run by a fixed amount" functions, STOP_NONE is available as a stop action. This option will disable the deceleration when nearing the endpoint, and keep the motor running at the same speed even after the function completes (in other words, the motor does not stop).
+
+EVNDrivebase, EVNMotor: All "run forever" functions (except runPWM()) have an option to disable accel/decel controls. By default, the controls remain enabled, except for runPct() which has it disabled by default to provide better line tracking performance.
+
+-- Bugfixes --
+
+EVNDrivebase, EVNMotor: Bug where "run by a fixed amount" functions occasionally fail to complete (unless externally nudged) has finally been diagnosed and fixed.
+
 1.4.2 (28/6/25)
 
 -- Bugfixes --

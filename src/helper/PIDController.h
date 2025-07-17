@@ -13,7 +13,7 @@ public:
 		float ki,
 		float kd,
 		uint8_t dir,
-		float deriv_filter_alpha = 0.5);
+		float deriv_filter_alpha = 1);
 
 	void setKp(float kp) volatile;
 	float getKp() volatile;

@@ -133,32 +133,34 @@ Measurements
 Move Forever
 """"""""""""
 
-.. function::   void drive(float speed, float turn_rate);
-                void driveTurnRate(float speed, float turn_rate);
+.. function::   void drive(float speed, float turn_rate, bool disable_accel_decel = false);
+                void driveTurnRate(float speed, float turn_rate, bool disable_accel_decel = false);
 
     Runs drivebase at the given speed and turn rate until a new command is called
 
     :param speed: Velocity of drivebase (in mm/s)
     :param turn_rate: Turning rate of drivebase (in deg/s)
+    :param disable_accel_decel: Disables acceleration and deceleration control. Defaults to `false`
 
     .. code-block:: cpp
         
         //drive at a velocity of 50mm/s and turning rate of 5deg/s
         db.drive(50, 5);
 
-.. function:: void driveRadius(float speed, float radius);
+.. function:: void driveRadius(float speed, float radius, bool disable_accel_decel = false);
 
     Runs drivebase at the given speed and radius of turning until a new command is called
 
     :param speed: Velocity of drivebase (in mm/s)
     :param radius: Turning radius of drivebase (in mm)
+    :param disable_accel_decel: Disables acceleration and deceleration control. Defaults to `false`
 
     .. code-block:: cpp
         
         //drive at a velocity of 50mm/s and move in an arc of radius 50mm
         db.driveRadius(50, 50);
 
-.. function:: void drivePct(float speed_outer_pct, float turn_rate_pct)
+.. function:: void drivePct(float speed_outer_pct, float turn_rate_pct, bool disable_accel_decel = true)
     
     This function simulates a differential drive function where the outer wheel speed is given as a percentage, 
     along with a "turning rate" percentage input to define the turning behaviour as described below:
@@ -174,6 +176,7 @@ Move Forever
 
     :param speed_outer_pct: Speed for outer (faster) wheel in % (number from -100 to 100)
     :param turn_rate_pct: Turning rate of drivebase in % (number from -100 to 100)
+    :param disable_accel_decel: Disables acceleration and deceleration control. Defaults to `true`
 
     .. code-block:: cpp
         
@@ -206,6 +209,7 @@ Move by a Fixed Amount
         * ``STOP_BRAKE`` -- Brake (Slow decay)
         * ``STOP_COAST`` -- Coast (Fast decay)
         * ``STOP_HOLD`` -- Hold position
+        * ``STOP_NONE`` -- Continue running at current speed (and deceleration to a stop removed)
 
     :param wait: Block function from returning until command is finished
 
@@ -231,6 +235,7 @@ Move by a Fixed Amount
         * ``STOP_BRAKE`` -- Brake (Slow decay)
         * ``STOP_COAST`` -- Coast (Fast decay)
         * ``STOP_HOLD`` -- Hold position
+        * ``STOP_NONE`` -- Continue running at current speed (and deceleration to a stop removed)
 
     :param wait: Block function from returning until command is finished
 
@@ -255,6 +260,7 @@ Move by a Fixed Amount
         * ``STOP_BRAKE`` -- Brake (Slow decay)
         * ``STOP_COAST`` -- Coast (Fast decay)
         * ``STOP_HOLD`` -- Hold position
+        * ``STOP_NONE`` -- Continue running at current speed (and deceleration to a stop removed)
 
     :param wait: Block function from returning until command is finished
 
@@ -275,6 +281,7 @@ Move by a Fixed Amount
         * ``STOP_BRAKE`` -- Brake (Slow decay)
         * ``STOP_COAST`` -- Coast (Fast decay)
         * ``STOP_HOLD`` -- Hold position
+        * ``STOP_NONE`` -- Continue running at current speed (and deceleration to a stop removed)
 
     :param wait: Block function from returning until command is finished
 
@@ -294,6 +301,7 @@ Move by a Fixed Amount
         * ``STOP_BRAKE`` -- Brake (Slow decay)
         * ``STOP_COAST`` -- Coast (Fast decay)
         * ``STOP_HOLD`` -- Hold position
+        * ``STOP_NONE`` -- Continue running at current speed (and deceleration to a stop removed)
 
     :param wait: Block function from returning until command is finished
 
@@ -326,6 +334,7 @@ Move to Point
         * ``STOP_BRAKE`` -- Brake (Slow decay)
         * ``STOP_COAST`` -- Coast (Fast decay)
         * ``STOP_HOLD`` -- Hold position
+        * ``STOP_NONE`` -- Continue running at current speed (and deceleration to a stop removed)
 
     :param wait: Block function from returning until command is finished
 

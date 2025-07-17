@@ -146,11 +146,12 @@ Run Forever
         //run motor at 80% duty cycle
         motor.runPWM(80);
 
-.. function::   void runSpeed(float dps)
+.. function::   void runSpeed(float dps, bool disable_accel_decel = false)
 
     Runs the motor at the given angular velocity until a new command is called. Motor will attempt to maintain constant speed despite varying load torque.
 
     :param dps: Angular velocity to run the motor at (in DPS)
+    :param disable_accel_decel: Disables acceleration and deceleration control. Defaults to `false`
 
     .. code-block:: cpp
 
@@ -172,6 +173,7 @@ Run by a Fixed Amount
         * ``STOP_BRAKE`` -- Brake (Slow decay)
         * ``STOP_COAST`` -- Coast (Fast decay)
         * ``STOP_HOLD`` -- Hold position
+        * ``STOP_NONE`` -- Continue running at current speed (and deceleration to a stop removed)
 
     :param wait: Block function from returning until command is finished
 
@@ -191,7 +193,8 @@ Run by a Fixed Amount
         * ``STOP_BRAKE`` -- Brake (Slow decay)
         * ``STOP_COAST`` -- Coast (Fast decay)
         * ``STOP_HOLD`` -- Hold position
-    
+        * ``STOP_NONE`` -- Continue running at current speed (and deceleration to a stop removed)
+
     :param wait: Block function from returning until command is finished
 
     .. code-block:: cpp
@@ -212,6 +215,7 @@ Run by a Fixed Amount
         * ``STOP_BRAKE`` -- Brake (Slow decay)
         * ``STOP_COAST`` -- Coast (Fast decay)
         * ``STOP_HOLD`` -- Hold position
+        * ``STOP_NONE`` -- Continue running at current speed (and deceleration to a stop removed)
 
     :param wait: Block function from returning until command is finished
 
@@ -231,6 +235,7 @@ Run by a Fixed Amount
         * ``STOP_BRAKE`` -- Brake (Slow decay)
         * ``STOP_COAST`` -- Coast (Fast decay)
         * ``STOP_HOLD`` -- Hold position
+        * ``STOP_NONE`` -- Continue running at current speed (and deceleration to a stop removed)
 
     :param wait: Block function from returning until command is finished
 

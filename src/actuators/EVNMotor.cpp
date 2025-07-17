@@ -80,7 +80,7 @@ EVNMotor::EVNMotor(uint8_t port, uint8_t motor_type, uint8_t motor_dir, uint8_t 
 		_pid_control.pwm_exp = EV3_LARGE_PWM_EXP;
 		_pid_control.accel = EV3_LARGE_ACCEL;
 		_pid_control.decel = EV3_LARGE_DECEL;
-		_pid_control.pos_pid = new PIDController(EV3_LARGE_KP, 0, EV3_LARGE_KD, DIRECT);
+		_pid_control.pos_pid = new PIDController(EV3_LARGE_KP, 0, EV3_LARGE_KD, DIRECT, 0.5);
 		_encoder.ppr = LEGO_PPR;
 		break;
 	case NXT_LARGE:
@@ -90,7 +90,7 @@ EVNMotor::EVNMotor(uint8_t port, uint8_t motor_type, uint8_t motor_dir, uint8_t 
 		_pid_control.pwm_exp = NXT_LARGE_PWM_EXP;
 		_pid_control.accel = NXT_LARGE_ACCEL;
 		_pid_control.decel = NXT_LARGE_DECEL;
-		_pid_control.pos_pid = new PIDController(NXT_LARGE_KP, 0, NXT_LARGE_KD, DIRECT);
+		_pid_control.pos_pid = new PIDController(NXT_LARGE_KP, 0, NXT_LARGE_KD, DIRECT, 0.5);
 		_encoder.ppr = LEGO_PPR;
 		break;
 	case EV3_MED:
@@ -100,7 +100,7 @@ EVNMotor::EVNMotor(uint8_t port, uint8_t motor_type, uint8_t motor_dir, uint8_t 
 		_pid_control.pwm_exp = EV3_MED_PWM_EXP;
 		_pid_control.accel = EV3_MED_ACCEL;
 		_pid_control.decel = EV3_MED_DECEL;
-		_pid_control.pos_pid = new PIDController(EV3_MED_KP, 0, EV3_MED_KD, DIRECT);
+		_pid_control.pos_pid = new PIDController(EV3_MED_KP, 0, EV3_MED_KD, DIRECT, 0.5);
 		_encoder.ppr = LEGO_PPR;
 		break;
 	case CUSTOM_MOTOR:
@@ -110,7 +110,7 @@ EVNMotor::EVNMotor(uint8_t port, uint8_t motor_type, uint8_t motor_dir, uint8_t 
 		_pid_control.pwm_exp = CUSTOM_PWM_EXP;
 		_pid_control.accel = CUSTOM_ACCEL;
 		_pid_control.decel = CUSTOM_DECEL;
-		_pid_control.pos_pid = new PIDController(CUSTOM_KP, 0, CUSTOM_KD, DIRECT);
+		_pid_control.pos_pid = new PIDController(CUSTOM_KP, 0, CUSTOM_KD, DIRECT, 0.5);
 		_encoder.ppr = CUSTOM_PPR;
 		break;
 	}
@@ -486,17 +486,17 @@ void EVNMotor::runPWM(float duty_cycle_pct) volatile
 	EVNCoreSync0.core0_exit();
 }
 
-void EVNMotor::runSpeed(float dps) volatile
+void EVNMotor::runSpeed(float dps, bool disable_accel_decel) volatile
 {
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
 
-	runSpeed_unsafe(dps);
+	runSpeed_unsafe(dps, disable_accel_decel);
 
 	EVNCoreSync0.core0_exit();
 }
 
-void EVNMotor::runSpeed_unsafe(float dps) volatile
+void EVNMotor::runSpeed_unsafe(float dps, bool disable_accel_decel) volatile
 {
 	disable_connected_drivebase_unsafe();
 
@@ -507,6 +507,7 @@ void EVNMotor::runSpeed_unsafe(float dps) volatile
 	_pid_control.run_pos = false;
 	_pid_control.run_time = false;
 	_pid_control.run_speed = true;
+	_pid_control.accel_decel_off = disable_accel_decel;
 }
 
 void EVNMotor::runPosition(float dps, float position, uint8_t stop_action, bool wait) volatile
@@ -523,6 +524,7 @@ void EVNMotor::runPosition(float dps, float position, uint8_t stop_action, bool 
 	_pid_control.run_pos = true;
 	_pid_control.run_time = false;
 	_pid_control.run_speed = false;
+	_pid_control.accel_decel_off = false;
 
 	_pid_control.max_error_before_decel = _pid_control.target_dps * _pid_control.target_dps / _pid_control.decel / 2;
 
@@ -574,6 +576,7 @@ void EVNMotor::runTime(float dps, uint32_t time_ms, uint8_t stop_action, bool wa
 	_pid_control.run_pos = false;
 	_pid_control.run_time = true;
 	_pid_control.run_speed = false;
+	_pid_control.accel_decel_off = false;
 
 	_pid_control.decel_dps_per_us = _pid_control.decel / 1000000;
 	_pid_control.time_to_decel_us = _pid_control.target_dps / _pid_control.decel * 1000000;
@@ -679,14 +682,14 @@ EVNDrivebase::EVNDrivebase(float wheel_dia, float axle_track, EVNMotor* motor_le
 		db.motor_type = db.motor_left->_pid_control.motor_type;
 		float kp = db.motor_left->_pid_control.pos_pid->getKp();
 		float kd = db.motor_left->_pid_control.pos_pid->getKd();
-		db.turn_rate_pid = new PIDController(kp, 0, kd, DIRECT);
-		db.speed_pid = new PIDController(kp, 0, kd, DIRECT);
+		db.turn_rate_pid = new PIDController(kp, 0, kd, DIRECT, 0.5);
+		db.speed_pid = new PIDController(kp, 0, kd, DIRECT, 0.5);
 	}
 	else
 	{
 		db.motor_type = CUSTOM_MOTOR;
-		db.turn_rate_pid = new PIDController(CUSTOM_KP, 0, CUSTOM_KD, DIRECT);
-		db.speed_pid = new PIDController(CUSTOM_KP, 0, CUSTOM_KD, DIRECT);
+		db.turn_rate_pid = new PIDController(CUSTOM_KP, 0, CUSTOM_KD, DIRECT, 0.5);
+		db.speed_pid = new PIDController(CUSTOM_KP, 0, CUSTOM_KD, DIRECT, 0.5);
 	}
 
 	db.speed_accel = fabs(DRIVEBASE_SPEED_ACCEL);
@@ -694,9 +697,9 @@ EVNDrivebase::EVNDrivebase(float wheel_dia, float axle_track, EVNMotor* motor_le
 	db.turn_rate_accel = fabs(DRIVEBASE_TURN_RATE_ACCEL);
 	db.turn_rate_decel = fabs(DRIVEBASE_TURN_RATE_DECEL);
 
-	compute_drivebase_derived_values_unsafe();
+	compute_drivebase_derived_values_unsafe(&db);
 	compute_max_rpm_drivebase_derived_values_unsafe(&db);
-	compute_targets_decel_derived_values_unsafe();
+	compute_targets_decel_derived_values_unsafe(&db);
 
 	db.hold_done = true;
 }
@@ -763,7 +766,7 @@ void EVNDrivebase::setSpeedDecel(float decel_mm_per_s_sq) volatile
 	EVNCoreSync0.core0_enter();
 
 	db.speed_decel = fabs(decel_mm_per_s_sq);
-	compute_targets_decel_derived_values_unsafe();
+	compute_targets_decel_derived_values_unsafe(&db);
 
 	EVNCoreSync0.core0_exit();
 }
@@ -784,7 +787,7 @@ void EVNDrivebase::setTurnRateDecel(float decel_deg_per_s_sq) volatile
 	EVNCoreSync0.core0_enter();
 
 	db.turn_rate_decel = fabs(decel_deg_per_s_sq);
-	compute_targets_decel_derived_values_unsafe();
+	compute_targets_decel_derived_values_unsafe(&db);
 
 	EVNCoreSync0.core0_exit();
 }
@@ -805,7 +808,7 @@ void EVNDrivebase::setAxleTrack(float axle_track) volatile
 	EVNCoreSync0.core0_enter();
 
 	db.axle_track = fabs(axle_track);
-	compute_drivebase_derived_values_unsafe();
+	compute_drivebase_derived_values_unsafe(&db);
 	compute_max_rpm_drivebase_derived_values_unsafe(&db);
 
 	EVNCoreSync0.core0_exit();
@@ -817,7 +820,7 @@ void EVNDrivebase::setWheelDia(float wheel_dia) volatile
 	EVNCoreSync0.core0_enter();
 
 	db.wheel_dia = fabs(wheel_dia);
-	compute_drivebase_derived_values_unsafe();
+	compute_drivebase_derived_values_unsafe(&db);
 	compute_max_rpm_drivebase_derived_values_unsafe(&db);
 
 	EVNCoreSync0.core0_exit();
@@ -1076,26 +1079,6 @@ float EVNDrivebase::get_target_heading() volatile
 	return fmod(fmod(get_target_angle(), 360) + 360, 360);
 }
 
-void EVNDrivebase::compute_targets_decel_derived_values_unsafe() volatile
-{
-	db.time_to_decel_speed = fabs(db.target_speed) / db.speed_decel;
-	db.time_to_decel_turn_rate = fabs(db.target_turn_rate) / db.turn_rate_decel;
-	db.slowed_turn_rate_decel = db.turn_rate_decel * db.time_to_decel_turn_rate / db.time_to_decel_speed;
-	db.slowed_speed_decel = db.speed_decel * db.time_to_decel_speed / db.time_to_decel_turn_rate;
-	db.target_speed_sq_div_2 = db.target_speed * db.target_speed / 2;
-	db.target_turn_rate_sq_div_2 = db.target_turn_rate * db.target_turn_rate / 2;
-}
-
-void EVNDrivebase::compute_drivebase_derived_values_unsafe() volatile
-{
-	db.wheel_dia_mul_pi_div_720 = db.wheel_dia * M_PI / 720;
-	db.wheel_dia_mul_pi_div_360 = db.wheel_dia_mul_pi_div_720 * 2;
-	db.wheel_dia_mul_pi_div_360_div_axle_track = db.wheel_dia_mul_pi_div_360 / db.axle_track;
-	db._360_div_pi_div_wheel_dia = 360 / (M_PI * db.wheel_dia);
-	db.axle_track_div_wheel_dia = db.axle_track / db.wheel_dia;
-	db.wheel_dia_div_axle_track = db.wheel_dia / db.axle_track;
-}
-
 float EVNDrivebase::clean_input_turn_rate_unsafe(float turn_rate) volatile
 {
 	return constrain(turn_rate, -db.max_turn_rate, db.max_turn_rate);
@@ -1131,12 +1114,12 @@ float EVNDrivebase::radius_to_turn_rate_unsafe(float speed, float radius) volati
 	return fabs(speed) * 180 / (M_PI * radius);
 }
 
-void EVNDrivebase::drive(float speed, float turn_rate) volatile
+void EVNDrivebase::drive(float speed, float turn_rate, bool disable_accel_decel) volatile
 {
-	this->driveTurnRate(speed, turn_rate);
+	this->driveTurnRate(speed, turn_rate, disable_accel_decel);
 }
 
-void EVNDrivebase::drivePct(float speed_outer_pct, float turn_rate_pct) volatile
+void EVNDrivebase::drivePct(float speed_outer_pct, float turn_rate_pct, bool disable_accel_decel) volatile
 {
 	if (!timerisr_enabled) return;
 
@@ -1153,10 +1136,10 @@ void EVNDrivebase::drivePct(float speed_outer_pct, float turn_rate_pct) volatile
 
 	float turn_rate_rad = unsigned_turn_rate_rad  * (turn_rate_pct >= 0 ? 1 : -1);
 	float turn_rate = turn_rate_rad * 180 / M_PI;
-	this->drive(speed, turn_rate);
+	this->drive(speed, turn_rate, disable_accel_decel);
 }
 
-void EVNDrivebase::driveTurnRate(float speed, float turn_rate) volatile
+void EVNDrivebase::driveTurnRate(float speed, float turn_rate, bool disable_accel_decel) volatile
 {
 	turn_rate = clean_input_turn_rate_unsafe(turn_rate);
 	speed = clean_input_speed_unsafe(speed, turn_rate);
@@ -1169,11 +1152,12 @@ void EVNDrivebase::driveTurnRate(float speed, float turn_rate) volatile
 	db.target_turn_rate = turn_rate;
 	db.drive = true;
 	db.drive_position = false;
+	db.accel_decel_off = disable_accel_decel;
 
 	EVNCoreSync0.core0_exit();
 }
 
-void EVNDrivebase::driveRadius(float speed, float radius) volatile
+void EVNDrivebase::driveRadius(float speed, float radius, bool disable_accel_decel) volatile
 {
 	float turn_rate = radius_to_turn_rate_unsafe(speed, radius);
 	if (radius == 0)
@@ -1183,11 +1167,11 @@ void EVNDrivebase::driveRadius(float speed, float radius) volatile
 	turn_rate *= scale;
 	speed *= scale;
 
-	this->driveTurnRate(speed, turn_rate);
+	this->driveTurnRate(speed, turn_rate, disable_accel_decel);
 }
 
 void EVNDrivebase::straight(float speed, float distance, uint8_t stop_action, bool wait) volatile
-{
+{	
 	speed = clean_input_speed_unsafe(speed, 0);
 
 	if (distance == 0 || speed == 0)
@@ -1210,8 +1194,9 @@ void EVNDrivebase::straight(float speed, float distance, uint8_t stop_action, bo
 	db.stop_action = clean_input_stop_action(stop_action);
 	db.drive = true;
 	db.drive_position = true;
+	db.accel_decel_off = false;
 
-	compute_targets_decel_derived_values_unsafe();
+	compute_targets_decel_derived_values_unsafe(&db);
 
 	EVNCoreSync0.core0_exit();
 
@@ -1265,8 +1250,9 @@ void EVNDrivebase::curveTurnRate(float speed, float turn_rate, float angle, uint
 	db.stop_action = clean_input_stop_action(stop_action);
 	db.drive = true;
 	db.drive_position = true;
+	db.accel_decel_off = false;
 
-	compute_targets_decel_derived_values_unsafe();
+	compute_targets_decel_derived_values_unsafe(&db);
 
 	EVNCoreSync0.core0_exit();
 
