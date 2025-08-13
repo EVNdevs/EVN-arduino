@@ -1,3 +1,11 @@
+1.4.4 (14/8/25)
+
+Small quick bugfix update
+
+-- Bugfixes --
+
+EVNMotor: Fix bug where setPosition()/resetPosition() does not take effect if motor shaft is stationary
+
 1.4.3 (18/7/25)
 
 This update aims to resolve peculiarities in the movements created by acceleration/deceleration controls, and provide more versatile options for movement.

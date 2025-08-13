@@ -1399,14 +1399,12 @@ private:
 			if (arg->motor_left->_pid_control.pwm_exp > 0 && arg->motor_left->_pid_control.pwm_mag > 0)
 				arg->target_motor_left_duty_cycle = (arg->target_motor_left_duty_cycle > 0 ? 1 : -1)
 					* arg->motor_left->_pid_control.pwm_mag
-					* exp(fabs(arg->target_motor_left_duty_cycle)
-					* arg->motor_left->_pid_control.pwm_exp);
+					* exp(fabs(arg->target_motor_left_duty_cycle) * arg->motor_left->_pid_control.pwm_exp);
 
 			if (arg->motor_right->_pid_control.pwm_exp > 0 && arg->motor_right->_pid_control.pwm_mag > 0)
 				arg->target_motor_right_duty_cycle = (arg->target_motor_right_duty_cycle > 0 ? 1 : -1)
 					* arg->motor_right->_pid_control.pwm_mag
-					* exp(fabs(arg->target_motor_right_duty_cycle)
-					* arg->motor_right->_pid_control.pwm_exp);
+					* exp(fabs(arg->target_motor_right_duty_cycle) * arg->motor_right->_pid_control.pwm_exp);
 
 			//write speeds to motors
 			//non-threadsafe write used here, assumed safe because EVNDrivebase and EVNMotor should be on same core

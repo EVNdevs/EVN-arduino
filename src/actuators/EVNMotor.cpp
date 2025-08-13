@@ -409,7 +409,11 @@ void EVNMotor::setPosition(float position) volatile
 	if (!timerisr_enabled) return;
 	EVNCoreSync0.core0_enter();
 
-	_encoder.position_offset = ((float)_encoder.count * 90.0 / _encoder.ppr) - position;
+	_encoder.position_offset = ((float)_encoder.count * _encoder._90_div_ppr) - position;	
+
+	//position is usually assumed to only change when encoder pulses are sent, but it also changes when we set/reset position
+	//if this code is not here, position will not change if there are no encoder pulses (e.g. motor stationary)
+	_encoder.position = ((float)_encoder.count * _encoder._90_div_ppr) - _encoder.position_offset;
 
 	EVNCoreSync0.core0_exit();
 }
