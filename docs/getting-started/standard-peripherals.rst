@@ -194,18 +194,18 @@ List of Standard Peripherals
 .. |contservo.JPG| image:: ../images/standard-peripherals/contservo.JPG
 
 
-.. _EVNColourSensor: ../sensors/EVNColourSensor.html
-.. _EVNDistanceSensor: ../sensors/EVNDistanceSensor.html
-.. _EVNCompassSensor: ../sensors/EVNCompassSensor.html
-.. _EVNIMUSensor: ../sensors/EVNIMUSensor.html
-.. _EVNGestureSensor: ../sensors/EVNGestureSensor.html
-.. _EVNEnvSensor: ../sensors/EVNEnvSensor.html
-.. _EVNTouchArray: ../sensors/EVNTouchArray.html
-.. _EVNDisplay: ../displays/EVNDisplay.html
-.. _EVNMatrixLED: ../displays/EVNMatrixLED.html
-.. _EVNSevenSegmentLED: ../displays/EVNSevenSegmentLED.html
-.. _EVNRGBLED: ../displays/EVNRGBLED.html
-.. _EVNServo: ../actuators/EVNServo.html
-.. _EVNContinuousServo: ../actuators/EVNContinuousServo.html
-.. _EVNAnalogMux: ../others/EVNAnalogMux.html
-.. _EVNBluetooth: ../others/EVNBluetooth.html
+.. _EVNColourSensor: ../sensors/evncoloursensor.html
+.. _EVNDistanceSensor: ../sensors/evndistancesensor.html
+.. _EVNCompassSensor: ../sensors/evncompasssensor.html
+.. _EVNIMUSensor: ../sensors/evnimusensor.html
+.. _EVNGestureSensor: ../sensors/evngesturesensor.html
+.. _EVNEnvSensor: ../sensors/evnenvsensor.html
+.. _EVNTouchArray: ../sensors/evntoucharray.html
+.. _EVNDisplay: ../displays/evndisplay.html
+.. _EVNMatrixLED: ../displays/evnmatrixled.html
+.. _EVNSevenSegmentLED: ../displays/evnsevensegmentled.html
+.. _EVNRGBLED: ../displays/evnrgbled.html
+.. _EVNServo: ../actuators/evnservo.html
+.. _EVNContinuousServo: ../actuators/evncontinuousservo.html
+.. _EVNAnalogMux: ../others/evnadc.html
+.. _EVNBluetooth: ../others/evnbluetooth.html
