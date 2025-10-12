@@ -67,7 +67,7 @@ public:
         X1 = 0x00,
         X4 = 0x01,
         X16 = 0x02,
-        X64 = 0x03
+        X60 = 0x03
     };
 
     EVNColourSensor(uint8_t port, uint8_t integration_cycles = 1, gain gain = COLOUR_GAIN_X16) : EVNI2CDevice(port)

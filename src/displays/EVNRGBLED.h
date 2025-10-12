@@ -11,7 +11,7 @@ static PIOProgram _rgbLedPgm(&ws2812_program);
 class EVNRGBLED
 {
 public:
-    const static uint16_t RESET_TIME_US = 310;
+    const static uint16_t RESET_TIME_US = 340;
     const static uint8_t MAX_OBJECTS = 4;
 
     EVNRGBLED(uint8_t port, uint8_t led_count = 8, bool invert = false)

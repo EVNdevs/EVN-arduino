@@ -1,3 +1,17 @@
+1.4.5 (12/10/25)
+
+More quick fixes!
+
+-- Bugfixes --
+
+EVNColourSensor: Fix broken COLOUR_GAIN_X60 preprocessor macro
+
+Docs: Fix broken links to peripheral docs in Standard Peripherals page
+
+EVNRGBLED: Improved timings on the LEDs' PIO controller, which might be the cause of some reported glitches, so it should be more stable now.
+
+-- Changes --
+
 1.4.4 (14/8/25)
 
 Small quick bugfix update
