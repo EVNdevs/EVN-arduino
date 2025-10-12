@@ -7,9 +7,9 @@
 .program ws2812
 .side_set 1
 
-.define public T1 8
-.define public T2 9
-.define public T3 8
+.define public T1 3
+.define public T2 3
+.define public T3 4
 
 .lang_opt python sideset_init = pico.PIO.OUT_HIGH
 .lang_opt python out_init     = pico.PIO.OUT_HIGH
