@@ -334,13 +334,13 @@ private:
 		if (EVNAlpha::motorsEnabled()) {
 			if (speedc > 0)
 			{
-				digitalWrite(pidArg->motorb, LOW);
-				analogWrite(pidArg->motora, speedc * PWM_MAX_VAL);
+				analogWrite(pidArg->motorb, (1-speedc) * PWM_MAX_VAL);
+				digitalWrite(pidArg->motora, HIGH);
 			}
 			else
 			{
-				digitalWrite(pidArg->motora, LOW);
-				analogWrite(pidArg->motorb, -speedc * PWM_MAX_VAL);
+				analogWrite(pidArg->motora, (1+speedc) * PWM_MAX_VAL);
+				digitalWrite(pidArg->motorb, HIGH);
 			}
 		}
 	}
