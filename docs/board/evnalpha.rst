@@ -24,7 +24,7 @@ EVN Alpha has 2 TCA9548A I2C multiplexers, 1 on each I2C bus. This allows users 
 
 .. note:: For Ports 9-16, 3rd party libraries and end-user code have to use Wire1 to interface with their sensors, as these ports are connected to the I2C1 bus.
 
-.. class:: EVNAlpha(uint8_t mode = BUTTON_TOGGLE, bool link_led = true, bool link_movement = false, bool button_invert = false, uint32_t i2c_freq = 100000)
+.. class:: EVNAlpha(uint8_t mode = BUTTON_TOGGLE, bool link_led = true, bool link_movement = false, bool button_invert = false, uint32_t i2c_freq = 400000)
     
     :param mode: Determines behaviour of ``buttonRead()``. Defaults to ``BUTTON_TOGGLE``
 
