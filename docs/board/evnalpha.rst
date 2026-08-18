@@ -150,20 +150,12 @@ These functions will be used mainly if you are trying to operate third-party I2C
 Battery Voltage Reading
 """"""""""""""""""""""""
 All battery voltage reading functions have a ``flash_when_low`` input. 
-This is a low battery alert function, which flashes the LED at a rate of 5Hz (5 blinks per second) when the battery voltage is too low.
+This is for a low battery alert function, which flashes the LED at a rate of 5Hz (5 blinks per second) when the battery voltage is too low.
 
+To add the alert to your code, call any of the functions below and the board will alert if the voltage is below your set threshold.
 When the alert is on, the LED's previous output (whether linked to button or controlled by the user) will be overridden.
-To add the alert to your code, add ``getBatteryVoltage()`` (or ``getCell1Voltage()`` **and** ``getCell2Voltage()``) to ``void loop()`` and they will check the voltage each loop.
 
-.. code-block:: c++
-
-    void loop()
-    {
-      //main code here
-      
-      board.getBatteryVoltage(); //battery alert!
-    }
-
+.. note:: All battery voltage reading functions require 3-4ms to execute (for the ADC to perform a one-shot measurement).
 
 .. function:: int16_t getBatteryVoltage(bool flash_when_low = true, uint16_t low_threshold_mv = 6900)
 
@@ -178,7 +170,7 @@ To add the alert to your code, add ``getBatteryVoltage()`` (or ``getCell1Voltage
         
 .. function:: int16_t getCell1Voltage(bool flash_when_low = true, uint16_t low_threshold_mv = 3450)
 
-    Cell 1 refers to the cell nearer to the edge of the board.
+    Cell 1 refers to the cell nearer to the edge of the board. Circuit-wise, it is the "top" cell where one end is at battery potential.
     
     :param flash_when_low: Sets LED to flash when battery voltage falls below ``low_threshold_mv``. Defaults to ``true``
     :param low_threshold_mv: Cell voltage threshold (in millivolts). When this cell's voltage falls below this threshold and ``flash_when_low`` is ``true``, low battery alert is triggered. Defaults to 3450.
@@ -191,7 +183,7 @@ To add the alert to your code, add ``getBatteryVoltage()`` (or ``getCell1Voltage
 
 .. function:: int16_t getCell2Voltage(bool flash_when_low = true, uint16_t low_threshold_mv = 3450)
 
-    Cell 2 refers to the cell nearer to the centre of the board.
+    Cell 2 refers to the cell nearer to the centre of the board. Circuit-wise, it is the "bottom" cell where one end is at ground potential.
 
     :param flash_when_low: Sets LED to flash when battery voltage falls below ``low_threshold_mv``. Defaults to ``true``
     :param low_threshold_mv: Cell voltage threshold (in millivolts). When this cell's voltage falls below this threshold and ``flash_when_low`` is ``true``, the low battery alert is triggered. Defaults to 3450.

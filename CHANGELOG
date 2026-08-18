@@ -1,3 +1,9 @@
+1.4.7 (19/8/26)
+
+-- Bugfixes --
+
+EVNAlpha: Modified battery reading functions to be blocking (about 3-4ms to execute). This change was made with an internal change to use the ADC in one-shot measurement mode; our previous usage of continuous conversion mode with a disabled watchdog timer led to very high idle current draw which drained batteries very quickly.
+
 1.4.6 (16/8/26)
 
 -- Changes --
