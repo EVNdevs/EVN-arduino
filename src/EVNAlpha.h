@@ -22,8 +22,8 @@ private:
         REG_VCELLTOP_ADC1 = 0x1F,
         REG_PART_INFO = 0x25,
         REG_VCELLBOT_ADC1 = 0x26,
-        CMD_ADC_CONTROL_ENABLE = 0b10110000,
-        CMD_WATCHDOG_DISABLE = 0b10001101,
+        CMD_ADC_CONTROL_ENABLE = 0b11110000,
+        CMD_WATCHDOG_ENABLE = 0b10011101,
         MASK_PART_INFO = 0b01111000,
     };
 
@@ -75,14 +75,16 @@ public:
     static EVNButtonLED& sharedButtonLED() { return button_led; }
 
 private:
-    bool beginADC();
+    bool checkADC();
+    void startADCOneShot();
     uint16_t readADC16(uint8_t reg);
     void updateBatteryVoltage();
     void updateCell1Voltage();
     void updateCell2Voltage();
     static int16_t getBatteryVoltageOnBoot_unsafe() { return _vbatt_on_boot; };
+    
 
-    bool _battery_adc_started;
+    bool _bq_adc_avail;
     int16_t _vbatt = 0, _vcell1 = 0, _vcell2 = 0;
 
     static mutex_t _mutex;

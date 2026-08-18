@@ -14,7 +14,7 @@ uint32_t EVNAlpha::_i2c_freq;
 EVNAlpha::EVNAlpha(uint8_t mode, bool link_led, bool link_movement, bool button_invert, uint32_t i2c_freq)
 {
     _started = false;
-    _battery_adc_started = false;
+    _bq_adc_avail = false;
     _mode = constrain(mode, 0, 2);
     _link_led = link_led;
     _link_movement = link_movement;
@@ -50,8 +50,8 @@ void EVNAlpha::begin()
         ports.begin();
         button_led.begin();
 
-        //initialize battery ADC if available
-        if (this->beginADC()) _battery_adc_started = true;
+        //check if battery ADC is available
+        _bq_adc_avail = checkADC();
 
         updateBatteryVoltage();
         _vbatt_on_boot = _vbatt;
@@ -81,43 +81,44 @@ void EVNAlpha::printPorts()
 
 }
 
-bool EVNAlpha::beginADC()
+bool EVNAlpha::checkADC()
 {
     ports.setPort((uint8_t)bq25887::I2C_PORT);
 
     //check for BQ25887 ID
     //NOTE: BQ25887 not in use for our pre-V1.3 users, so this is important
-    uint8_t id = 0;
     Wire1.beginTransmission((uint8_t)bq25887::I2C_ADDR);
     Wire1.write((uint8_t)bq25887::REG_PART_INFO);
     Wire1.endTransmission();
     Wire1.requestFrom((uint8_t)bq25887::I2C_ADDR, (uint8_t)1);
-    id = Wire1.read();
-
-    id = (id & (uint8_t)bq25887::MASK_PART_INFO) >> 3;
+    uint8_t id = (Wire1.read() & (uint8_t)bq25887::MASK_PART_INFO) >> 3;
 
     if (id != (uint8_t)bq25887::ID)
         return false;
 
-    //enable ADCs on BQ25887
+    // enable watchdog, as it may have been disabled by older library versions
+    Wire1.beginTransmission((uint8_t)bq25887::I2C_ADDR);
+    Wire1.write((uint8_t)bq25887::REG_CHG_CONTROL1);
+    Wire1.write((uint8_t)bq25887::CMD_WATCHDOG_ENABLE);
+    Wire1.endTransmission();
+    
+    return true;
+}
+
+void EVNAlpha::startADCOneShot()
+{
     Wire1.beginTransmission((uint8_t)bq25887::I2C_ADDR);
     Wire1.write((uint8_t)bq25887::REG_ADC_CONTROL);
     Wire1.write((uint8_t)bq25887::CMD_ADC_CONTROL_ENABLE);
     Wire1.endTransmission();
-
-    //disable watchdog, or ADC resets after 40s
-    Wire1.beginTransmission((uint8_t)bq25887::I2C_ADDR);
-    Wire1.write((uint8_t)bq25887::REG_CHG_CONTROL1);
-    Wire1.write((uint8_t)bq25887::CMD_WATCHDOG_DISABLE);
-    Wire1.endTransmission();
-
-    return true;
 }
 
 int16_t EVNAlpha::getBatteryVoltage(bool flash_when_low, uint16_t low_threshold_mv)
 {
-    if (_battery_adc_started)
+    if (_bq_adc_avail)
     {
+        startADCOneShot();
+        delay(3);
         updateBatteryVoltage();
 
         if (flash_when_low)
@@ -130,8 +131,10 @@ int16_t EVNAlpha::getBatteryVoltage(bool flash_when_low, uint16_t low_threshold_
 
 int16_t EVNAlpha::getCell1Voltage(bool flash_when_low, uint16_t low_threshold_mv)
 {
-    if (_battery_adc_started)
+    if (_bq_adc_avail)
     {
+        startADCOneShot();
+        delay(3);
         updateCell1Voltage();
 
         if (flash_when_low)
@@ -144,8 +147,10 @@ int16_t EVNAlpha::getCell1Voltage(bool flash_when_low, uint16_t low_threshold_mv
 
 int16_t EVNAlpha::getCell2Voltage(bool flash_when_low, uint16_t low_threshold_mv)
 {
-    if (_battery_adc_started)
+    if (_bq_adc_avail)
     {
+        startADCOneShot();
+        delay(3);
         updateCell2Voltage();
 
         if (flash_when_low)
@@ -156,9 +161,9 @@ int16_t EVNAlpha::getCell2Voltage(bool flash_when_low, uint16_t low_threshold_mv
     return 0;
 }
 
-void EVNAlpha::updateBatteryVoltage() { if (_battery_adc_started)_vbatt = readADC16((uint8_t)bq25887::REG_VBAT_ADC1); }
-void EVNAlpha::updateCell1Voltage() { if (_battery_adc_started) _vcell1 = readADC16((uint8_t)bq25887::REG_VCELLTOP_ADC1); }
-void EVNAlpha::updateCell2Voltage() { if (_battery_adc_started) _vcell2 = readADC16((uint8_t)bq25887::REG_VCELLBOT_ADC1); }
+void EVNAlpha::updateBatteryVoltage() { if (_bq_adc_avail)_vbatt = readADC16((uint8_t)bq25887::REG_VBAT_ADC1); }
+void EVNAlpha::updateCell1Voltage() { if (_bq_adc_avail) _vcell1 = readADC16((uint8_t)bq25887::REG_VCELLTOP_ADC1); }
+void EVNAlpha::updateCell2Voltage() { if (_bq_adc_avail) _vcell2 = readADC16((uint8_t)bq25887::REG_VCELLBOT_ADC1); }
 
 uint16_t EVNAlpha::readADC16(uint8_t reg)
 {
