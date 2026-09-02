@@ -53,7 +53,7 @@ void EVNAlpha::begin()
         //check if battery ADC is available
         _bq_adc_avail = checkADC();
 
-        updateBatteryVoltage();
+        getBatteryVoltage(false);
         _vbatt_on_boot = _vbatt;
         ports.setPort(9);
         ports.setPort(1);
@@ -96,11 +96,11 @@ bool EVNAlpha::checkADC()
     if (id != (uint8_t)bq25887::ID)
         return false;
 
-    // enable watchdog, as it may have been disabled by older library versions
     Wire1.beginTransmission((uint8_t)bq25887::I2C_ADDR);
-    Wire1.write((uint8_t)bq25887::REG_CHG_CONTROL1);
-    Wire1.write((uint8_t)bq25887::CMD_WATCHDOG_ENABLE);
+    Wire1.write((uint8_t)bq25887::REG_PART_INFO);
+    Wire1.write((uint8_t)bq25887::CMD_RESET);
     Wire1.endTransmission();
+    delay(5);
     
     return true;
 }
@@ -118,7 +118,7 @@ int16_t EVNAlpha::getBatteryVoltage(bool flash_when_low, uint16_t low_threshold_
     if (_bq_adc_avail)
     {
         startADCOneShot();
-        delay(3);
+        delay(30);
         updateBatteryVoltage();
 
         if (flash_when_low)
@@ -134,7 +134,7 @@ int16_t EVNAlpha::getCell1Voltage(bool flash_when_low, uint16_t low_threshold_mv
     if (_bq_adc_avail)
     {
         startADCOneShot();
-        delay(3);
+        delay(30);
         updateCell1Voltage();
 
         if (flash_when_low)
@@ -150,7 +150,7 @@ int16_t EVNAlpha::getCell2Voltage(bool flash_when_low, uint16_t low_threshold_mv
     if (_bq_adc_avail)
     {
         startADCOneShot();
-        delay(3);
+        delay(30);
         updateCell2Voltage();
 
         if (flash_when_low)

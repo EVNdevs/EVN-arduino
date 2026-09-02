@@ -1,3 +1,9 @@
+1.4.8 (1/9/26)
+
+-- Changes --
+
+EVNAlpha: Modified battery reading functions to be use higher resolution setting (about 30ms to execute).
+
 1.4.7 (19/8/26)
 
 -- Bugfixes --

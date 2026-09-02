@@ -155,7 +155,7 @@ This is for a low battery alert function, which flashes the LED at a rate of 5Hz
 To add the alert to your code, call any of the functions below and the board will alert if the voltage is below your set threshold.
 When the alert is on, the LED's previous output (whether linked to button or controlled by the user) will be overridden.
 
-.. note:: All battery voltage reading functions require 3-4ms to execute (for the ADC to perform a one-shot measurement).
+.. note:: All battery voltage reading functions require ~30ms to execute (for the ADC to perform a one-shot measurement).
 
 .. function:: int16_t getBatteryVoltage(bool flash_when_low = true, uint16_t low_threshold_mv = 6900)
 
